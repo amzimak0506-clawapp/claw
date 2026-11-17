@@ -300,11 +300,11 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-bold text-slate-600 mb-1">數量（隻）</label>
-              <input type="number" id="stockQtyInput" placeholder="純雜費填 0" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
+              <input type="number" id="stockQtyInput" value="1" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
             </div>
             <div>
               <label class="block text-xs font-bold text-slate-600 mb-1">墊付成本 (HK$)</label>
-              <input type="number" id="stockCostInput" placeholder="出貨填 0" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
+              <input type="number" id="stockCostInput" placeholder="輸入金額" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
             </div>
           </div>
 
@@ -314,11 +314,16 @@
         </div>
       </div>
 
-      <!-- 貨物 List -->
+      <!-- 貨物 List（含篩選） -->
       <div class="card">
         <div class="flex justify-between items-center mb-2">
           <h2 class="font-bold text-base text-slate-800">📋 本場貨物 List（可切換狀態）</h2>
           <span id="goodsListCount" class="text-xs text-slate-500">共 0 項</span>
+        </div>
+        <div class="flex gap-1.5 mb-2 text-xs">
+          <button onclick="setGoodsFilter('ACTIVE')" id="filter-ACTIVE" class="px-2.5 py-1 rounded-lg font-bold bg-blue-900 text-white">目前庫存 (入機/貨存)</button>
+          <button onclick="setGoodsFilter('ALL')" id="filter-ALL" class="px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600">全部明細</button>
+          <button onclick="setGoodsFilter('SHIPPED')" id="filter-SHIPPED" class="px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600">已出貨</button>
         </div>
         <div id="goodsListContainer" class="divide-y divide-slate-100 space-y-2"></div>
       </div>
@@ -382,8 +387,19 @@
       </div>
     </section>
 
-    <!-- 5. 獨立設定與危險操作頁面 -->
+    <!-- 5. 獨立設定、Excel 匯入與危險操作頁面 -->
     <section id="tab-danger" class="hidden">
+      <!-- 一鍵匯入《麗城夾 new.xlsx》真實資料 -->
+      <div class="card border-2 border-emerald-300 bg-emerald-50/40">
+        <h2 class="font-bold text-base text-emerald-900 mb-1">📥 一鍵匯入《麗城夾 new.xlsx》全部 129 筆真實帳目</h2>
+        <p class="text-xs text-emerald-800 mb-3">
+          已完整載入你發來的原始 Excel 全部數據：包含 <strong>129 筆獨立貨物明細</strong>（每隻獨立一項，含名稱、價錢、入機/貨存/出貨狀態及擁有人）、Amzi 2月租金 $3,000、3–7月各自舊帳以及 8–11月 50/50 兌現紀錄。
+        </p>
+        <button onclick="importLichengExcelData()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow">
+          📥 一鍵匯入《麗城夾 new.xlsx》真實帳目並同步雲端
+        </button>
+      </div>
+
       <div class="card">
         <h2 class="font-bold text-base text-slate-800 mb-2">📡 雲端連線診斷與手動同步（直連 default 資料庫）</h2>
         <div id="cloudDiagnosticBox" class="text-xs text-slate-600 space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200 mb-3">
@@ -434,13 +450,13 @@
       measurementId: "G-RPZDMHX5C1"
     };
 
-    // 關鍵修正：直接對準你專案裡已建立的無括號 "default" 資料庫實例！
     const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v6";
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v7";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
     let selectedSlot = "左上";
     let expandedSettlementLocIds = {};
+    let goodsFilterMode = "ACTIVE";
 
     function getTodayStr() {
       const d = new Date();
@@ -493,6 +509,194 @@
         },
         logs: []
       };
+    }
+
+    // 原始《麗城夾 new.xlsx》129 筆貨物明細（均為 1 隻，含名稱、價錢、狀態、擁有人）
+    const LICHENG_RAW_GOODS = [
+      ["Dennis", "2月出貨", 6780, "出貨"],
+      ["Dennis", "3月出貨", 4120, "出貨"],
+      ["Dennis", "4月出貨", 3790, "出貨"],
+      ["Dennis", "5月出貨", 2000, "出貨"],
+      ["Dennis", "6月出貨", 1180, "出貨"],
+      ["Dennis", "白龍", 500, "出貨"],
+      ["Dennis", "薑餅屋", 380, "出貨"],
+      ["Dennis", "孔雀", 500, "出貨"],
+      ["Dennis", "臘腸狗袋", 400, "出貨"],
+      ["Dennis", "鸚鵡", 200, "出貨"],
+      ["Dennis", "老虎", 350, "出貨"],
+      ["Dennis", "隔熱手套", 250, "出貨"],
+      ["Dennis", "白雲", 220, "出貨"],
+      ["Dennis", "情人節龍", 420, "出貨"],
+      ["Dennis", "情人節龍", 420, "出貨"],
+      ["Dennis", "黑蝙蝠", 270, "出貨"],
+      ["Dennis", "絕版熊", 280, "出貨"],
+      ["Dennis", "金標藍色兔", 350, "出貨"],
+      ["Dennis", "彩兔", 380, "出貨"],
+      ["Dennis", "彩兔", 380, "出貨"],
+      ["Dennis", "深粉紅兔", 200, "出貨"],
+      ["Dennis", "淺粉紅兔", 200, "出貨"],
+      ["Dennis", "卷毛馬騮", 270, "出貨"],
+      ["Dennis", "豬袋", 300, "出貨"],
+      ["Dennis", "31cm馬騮", 220, "出貨"],
+      ["Dennis", "灰兔", 200, "出貨"],
+      ["Dennis", "情人節龍", 450, "出貨"],
+      ["Dennis", "籃拼色兔", 310, "出貨"],
+      ["Dennis", "沙堡", 300, "出貨"],
+      ["Dennis", "水壺", 300, "出貨"],
+      ["Dennis", "生日兔", 350, "出貨"],
+      ["Dennis", "害羞恐龍", 250, "出貨"],
+      ["Dennis", "粉紅色兔", 200, "出貨"],
+      ["Dennis", "太空兔", 300, "出貨"],
+      ["Dennis", "紅兔", 350, "出貨"],
+      ["Dennis", "金標象", 350, "出貨"],
+      ["Dennis", "ET", 300, "出貨"],
+      ["Dennis", "青豆", 350, "出貨"],
+      ["Amzi", "黃袋 (刮)", 420, "出貨"],
+      ["Amzi", "火炬", 540, "貨存"],
+      ["Amzi", "西瓜", 400, "出貨"],
+      ["Amzi", "史納莎狗", 250, "出貨"],
+      ["Amzi", "老虎", 330, "出貨"],
+      ["Amzi", "白虎", 730, "出貨"],
+      ["Amzi", "水母蟹", 250, "出貨"],
+      ["Amzi", "啡狗袋", 300, "貨存"],
+      ["Amzi", "浴衣熊", 350, "出貨"],
+      ["Amzi", "紅標馬", 350, "出貨"],
+      ["Amzi", "Pancake", 250, "出貨"],
+      ["Amzi", "大蛇", 250, "出貨"],
+      ["Amzi", "花", 250, "出貨"],
+      ["Amzi", "花澆壺", 250, "出貨"],
+      ["Amzi", "坐兔", 250, "出貨"],
+      ["Amzi", "啡兔", 250, "出貨"],
+      ["Amzi", "灰白兔", 250, "出貨"],
+      ["Amzi", "細象", 160, "出貨"],
+      ["Amzi", "牧羊犬", 220, "出貨"],
+      ["Amzi", "嘟嘟魚", 280, "出貨"],
+      ["Amzi", "灰兔", 210, "出貨"],
+      ["Amzi", "太空狗", 350, "出貨"],
+      ["Amzi", "烏雲", 250, "出貨"],
+      ["Amzi", "花裝熊", 550, "出貨"],
+      ["Amzi", "綿羊", 350, "出貨"],
+      ["Amzi", "灰貓", 250, "出貨"],
+      ["Amzi", "黑白牛", 380, "出貨"],
+      ["Amzi", "大五彩蛋糕", 550, "入機"],
+      ["Amzi", "水母蟹", 250, "出貨"],
+      ["Amzi", "18cm紫兔 （刮）", 220, "出貨"],
+      ["Amzi", "長春藤", 350, "出貨"],
+      ["Amzi", "露營熊", 650, "出貨"],
+      ["Amzi", "浣熊", 410, "出貨"],
+      ["Amzi", "巨人", 600, "出貨"],
+      ["Amzi", "雪怪", 500, "出貨"],
+      ["Amzi", "50cm 飛馬", 700, "貨存"],
+      ["Amzi", "彩兔", 250, "出貨"],
+      ["Amzi", "31cm白色兔", 250, "出貨"],
+      ["Amzi", "31cm上海兔", 320, "出貨"],
+      ["Amzi", "白虎", 330, "出貨"],
+      ["Amzi", "趴趴狗", 250, "出貨"],
+      ["Amzi", "生日蛋糕", 220, "出貨"],
+      ["Amzi", "2月出貨", 1960, "出貨"],
+      ["Amzi", "3月出貨", 3730, "出貨"],
+      ["Amzi", "4月出貨", 970, "出貨"],
+      ["Amzi", "5月出貨", 1745, "出貨"],
+      ["Amzi", "6月出貨", 940, "出貨"],
+      ["Amzi", "水壺", 300, "入機"],
+      ["Amzi", "狸貓", 400, "出貨"],
+      ["Amzi", "臘腸狗", 300, "出貨"],
+      ["Amzi", "18cm紅兔", 200, "出貨"],
+      ["Amzi", "瀨尿蝦", 200, "出貨"],
+      ["Amzi", "熱狗", 250, "出貨"],
+      ["Dennis", "骷髏盆栽", 0, "出貨"],
+      ["Amzi", "狗仔袋", 250, "出貨"],
+      ["Amzi", "露營熊", 300, "出貨"],
+      ["Amzi", "浴衣熊", 300, "出貨"],
+      ["Amzi", "浴衣熊", 300, "出貨"],
+      ["Amzi", "浣熊", 300, "出貨"],
+      ["Amzi", "紅燈籠", 200, "入機"],
+      ["Amzi", "聖誕高地狗", 300, "出貨"],
+      ["Amzi", "紅色兔", 350, "出貨"],
+      ["Amzi", "石像鬼", 350, "出貨"],
+      ["Dennis", "31cm灰色花耳兔", 350, "入機"],
+      ["Dennis", "Library 綠絲帶兔", 580, "出貨"],
+      ["Dennis", "臘腸狗", 300, "出貨"],
+      ["Dennis", "水母蟹", 280, "出貨"],
+      ["Dennis", "蟲", 280, "入機"],
+      ["Dennis", "20cm 企鵝", 258, "出貨"],
+      ["Dennis", "淺粉紅色兔", 258, "入機"],
+      ["Dennis", "粉紅色兔", 258, "入機"],
+      ["Dennis", "中蛇", 258, "出貨"],
+      ["Dennis", "月亮", 258, "入機"],
+      ["Dennis", "豬袋", 258, "出貨"],
+      ["Dennis", "紅色心人", 258, "入機"],
+      ["Amzi", "太空兔", 290, "出貨"],
+      ["Amzi", "灰絲帶兔", 530, "入機"],
+      ["Amzi", "粉絲帶兔", 530, "入機"],
+      ["Amzi", "黑白狗", 210, "出貨"],
+      ["Amzi", "黑白狗", 210, "入機"],
+      ["Amzi", "獅子", 230, "出貨"],
+      ["Amzi", "大象", 230, "入機"],
+      ["Amzi", "金毛狗", 230, "出貨"],
+      ["Amzi", "盆栽", 290, "出貨"],
+      ["Amzi", "金標狗", 290, "出貨"],
+      ["Dennis", "水母蟹", 280, "入機"],
+      ["Dennis", "灰兔", 280, "出貨"],
+      ["Dennis", "石像鬼", 320, "出貨"],
+      ["Dennis", "大象", 280, "出貨"],
+      ["Dennis", "獅子", 300, "出貨"],
+      ["Dennis", "鹿", 250, "出貨"]
+    ];
+
+    function importLichengExcelData() {
+      if (!confirm("確定要匯入《麗城夾 new.xlsx》全部 129 筆真實貨物明細、各月兌現與舊帳嗎？\n（會自動建立「麗城夾（標機＋海濱迷你機）」並同步至雲端）")) return;
+
+      const goodsList = LICHENG_RAW_GOODS.map((row, idx) => ({
+        id: "g_lc_" + (idx + 1),
+        owner: row[0],
+        name: row[1],
+        qty: 1,
+        cost: row[2],
+        status: row[3],
+        date: "2026-11-10"
+      }));
+
+      const activeStockCount = goodsList.filter(g => g.status === "入機" || g.status === "貨存").length;
+      const costAmzi = goodsList.filter(g => g.owner === "Amzi").reduce((acc, g) => acc + g.cost, 0) + 3000;
+      const costDennis = goodsList.filter(g => g.owner === "Dennis").reduce((acc, g) => acc + g.cost, 0);
+
+      const lichengLocation = {
+        id: "loc_licheng",
+        name: "麗城夾（標機＋海濱迷你機）",
+        unredeemedCoins: 0,
+        unredeemedCash: 0,
+        totalRedeemedCash: 36480,
+        legacyCashAmzi: 33680,
+        legacyCashDennis: 37450,
+        costAmzi: costAmzi,
+        costDennis: costDennis,
+        costShared: 0,
+        stockCount: activeStockCount,
+        goodsList: goodsList,
+        monthlyStats: {
+          "2026-03": { countedCoins: 0, redeemedCoins: 0, redeemedCash5050: 0, legacyCashAmzi: 15630, legacyCashDennis: 18680 },
+          "2026-04": { countedCoins: 0, redeemedCoins: 0, redeemedCash5050: 0, legacyCashAmzi: 7110, legacyCashDennis: 7910 },
+          "2026-05": { countedCoins: 0, redeemedCoins: 0, redeemedCash5050: 0, legacyCashAmzi: 2410, legacyCashDennis: 2350 },
+          "2026-06": { countedCoins: 0, redeemedCoins: 0, redeemedCash5050: 0, legacyCashAmzi: 6470, legacyCashDennis: 6460 },
+          "2026-07": { countedCoins: 0, redeemedCoins: 0, redeemedCash5050: 0, legacyCashAmzi: 2050, legacyCashDennis: 2050 },
+          "2026-08": { countedCoins: 0, redeemedCoins: 0, redeemedCash5050: 15770, legacyCashAmzi: 0, legacyCashDennis: 0 },
+          "2026-09": { countedCoins: 0, redeemedCoins: 0, redeemedCash5050: 10310, legacyCashAmzi: 0, legacyCashDennis: 0 },
+          "2026-10": { countedCoins: 0, redeemedCoins: 0, redeemedCash5050: 7420, legacyCashAmzi: 10, legacyCashDennis: 0 },
+          "2026-11": { countedCoins: 0, redeemedCoins: 0, redeemedCash5050: 2980, legacyCashAmzi: 0, legacyCashDennis: 0 }
+        },
+        machines: [
+          { id: "m_lc_std", name: "麗城標機", isFourInOne: false, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } },
+          { id: "m_lc_mini", name: "海濱迷你機（四合一）", isFourInOne: true, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } }
+        ]
+      };
+
+      appState.locations["loc_licheng"] = lichengLocation;
+      appState.currentLocationId = "loc_licheng";
+      addLog("📥 已匯入《麗城夾 new.xlsx》129筆貨物（每隻獨立）、Amzi 2月租金$3,000及3-11月全數收入");
+      saveState();
+      switchTab("dashboard");
+      showToast("✅ 已成功匯入《麗城夾 new.xlsx》全部真實帳目並同步雲端！");
     }
 
     function loadLocalBackup() {
@@ -684,6 +888,19 @@
         btnD.className = "px-3 py-1.5 rounded-lg font-bold bg-white text-blue-950 shadow";
         btnA.className = "px-3 py-1.5 rounded-lg font-bold text-blue-200";
       }
+    }
+
+    function setGoodsFilter(mode) {
+      goodsFilterMode = mode;
+      ["ACTIVE", "ALL", "SHIPPED"].forEach(m => {
+        const btn = document.getElementById("filter-" + m);
+        if (m === mode) {
+          btn.className = "px-2.5 py-1 rounded-lg font-bold bg-blue-900 text-white";
+        } else {
+          btn.className = "px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600";
+        }
+      });
+      renderAll();
     }
 
     function switchTab(tab) {
@@ -921,7 +1138,7 @@
         loc.goodsList.unshift({
           id: "g_" + Date.now(),
           name,
-          qty,
+          qty: qty > 0 ? qty : 1,
           cost,
           status,
           owner,
@@ -932,7 +1149,7 @@
       addLog(`[${status}] ${name} (${qty}隻) · 擁有人:${owner} · 成本:$${cost}`);
 
       document.getElementById("stockNoteInput").value = "";
-      document.getElementById("stockQtyInput").value = "";
+      document.getElementById("stockQtyInput").value = "1";
       document.getElementById("stockCostInput").value = "";
       saveState();
       showToast(`✅ 已儲存「${name}」（${status} · ${owner}）`);
@@ -978,7 +1195,7 @@
         qtyInput.value = "";
       } else {
         availableGoods.forEach(g => {
-          goodsSelect.add(new Option(`【${g.status}】${g.name} · 剩 ${g.qty} 隻 (擁有人:${g.owner})`, g.id));
+          goodsSelect.add(new Option(`【${g.status}】${g.name} · ${g.qty} 隻 ($${g.cost || 0} · ${g.owner})`, g.id));
         });
         qtyInput.value = availableGoods[0].qty;
       }
@@ -1035,7 +1252,7 @@
         id: "g_" + Date.now(),
         name: sourceItem.name,
         qty: moveQty,
-        cost: 0,
+        cost: sourceItem.cost || 0,
         status: "貨存",
         owner: sourceItem.owner,
         date: getTodayStr()
@@ -1204,10 +1421,15 @@
       }
       onCoinMachineChange();
 
-      const gList = loc.goodsList || [];
-      document.getElementById("goodsListCount").textContent = `共 ${gList.length} 項`;
+      const rawGoodsList = loc.goodsList || [];
+      const filteredGoods = rawGoodsList.filter(g => {
+        if (goodsFilterMode === "ACTIVE") return g.status === "入機" || g.status === "貨存";
+        if (goodsFilterMode === "SHIPPED") return g.status === "出貨";
+        return true;
+      });
+      document.getElementById("goodsListCount").textContent = `顯示 ${filteredGoods.length} / 總共 ${rawGoodsList.length} 項`;
       const gContainer = document.getElementById("goodsListContainer");
-      gContainer.innerHTML = gList.map(g => {
+      gContainer.innerHTML = filteredGoods.map(g => {
         const statusBadge = g.status === "入機"
           ? "bg-emerald-100 text-emerald-800"
           : (g.status === "貨存" ? "bg-blue-100 text-blue-800" : "bg-slate-200 text-slate-700");
@@ -1224,7 +1446,7 @@
               </div>
             </div>
             <div class="flex justify-between items-center text-[11px] text-slate-500">
-              <span>墊付成本: $${g.cost || 0} · ${g.date || ""}</span>
+              <span>價錢(成本): $${g.cost || 0} · ${g.date || ""}</span>
               <div class="flex gap-1">
                 <button onclick="cycleGoodsStatus('${g.id}', '入機')" class="px-2 py-0.5 rounded border ${g.status === '入機' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white border-slate-300'}">入機</button>
                 <button onclick="cycleGoodsStatus('${g.id}', '貨存')" class="px-2 py-0.5 rounded border ${g.status === '貨存' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-slate-300'}">貨存</button>
@@ -1232,7 +1454,7 @@
               </div>
             </div>
           </div>`;
-      }).join("") || `<div class="py-4 text-center text-xs text-slate-400">尚無貨物紀錄，請由上方表單新增</div>`;
+      }).join("") || `<div class="py-4 text-center text-xs text-slate-400">此篩選下尚無貨物紀錄</div>`;
 
       const logsDiv = document.getElementById("recentLogs");
       logsDiv.innerHTML = (appState.logs || []).slice(0, 15).map(log => `
