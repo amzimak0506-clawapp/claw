@@ -126,8 +126,8 @@
       <!-- 最近紀錄 -->
       <div class="card">
         <div class="flex justify-between items-center mb-2">
-          <h2 class="font-bold text-slate-800 text-sm">🕒 最近操作紀錄（自動雲端儲存）</h2>
-          <span class="text-xs text-emerald-600 font-semibold">已即時同步</span>
+          <h2 class="font-bold text-slate-800 text-sm">🕒 最近操作紀錄</h2>
+          <span id="lastCloudWriteTime" class="text-xs text-slate-400">等待寫入驗證</span>
         </div>
         <div id="recentLogs" class="divide-y divide-slate-100 text-xs"></div>
       </div>
@@ -324,7 +324,7 @@
         <div id="goodsListContainer" class="divide-y divide-slate-100 space-y-2"></div>
       </div>
 
-      <!-- 跨店調貨（從存貨 List 選擇具體貨品調動） -->
+      <!-- 跨店調貨 -->
       <div class="card border-2 border-teal-200 bg-teal-50/30">
         <h2 class="font-bold text-base text-teal-900 mb-1">🚚 跨店調貨（從存貨 List 選擇貨品移動）</h2>
         <p class="text-xs text-teal-800 mb-3">選擇調出分店的貨存項目後，兩邊總庫存自動加減；該項目會從原分店 List 移除並出現在調入分店 List。</p>
@@ -386,16 +386,20 @@
     <!-- 5. 獨立設定與危險操作頁面 -->
     <section id="tab-danger" class="hidden">
       <div class="card">
-        <h2 class="font-bold text-base text-slate-800 mb-2">ℹ️ 雲端自動儲存與拆帳說明</h2>
-        <div class="text-xs text-slate-600 space-y-1.5">
-          <p>• <strong>自動儲存機制</strong>：每次按下「確認儲存 / 新增 / 調貨 / 改名」即自動同步至雲端資料庫（<span class="font-mono font-bold text-blue-900">dennis-amzi-5b413</span>），無需手動存檔。</p>
-          <p>• <strong>拆帳規則</strong>：一般兌幣實收現金先各分 50%，加上各自補錄的 100% 獨立舊帳，再扣除各自墊付成本。</p>
+        <h2 class="font-bold text-base text-slate-800 mb-2">📡 雲端連線診斷與手動同步</h2>
+        <div id="cloudDiagnosticBox" class="text-xs text-slate-600 space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200 mb-3">
+          <p>• 資料庫路徑：<span class="font-mono font-bold text-blue-900">ledgers/DENNIS_AMZI_MAIN</span></p>
+          <p>• 登入狀態：<span id="diagAuthText" class="font-bold">檢查中...</span></p>
+          <p>• 最後伺服器確認：<span id="diagWriteText" class="font-bold">尚未寫入</span></p>
         </div>
+        <button onclick="forcePushToCloud()" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl text-xs shadow">
+          🔄 立即強制將本機資料推送至雲端伺服器
+        </button>
       </div>
 
       <div class="card border-2 border-rose-200 bg-rose-50/30">
         <h2 class="font-bold text-base text-rose-700 mb-1">⚠️ 危險操作區</h2>
-        <p class="text-xs text-slate-600 mb-4">如需重新開帳，可一鍵清空所有場地、貨物清單、點幣紀錄、舊帳與台主成本，全部數目歸零重新開始（此操作無法復原）。</p>
+        <p class="text-xs text-slate-600 mb-4">如需重新開帳，可一鍵清空所有場地、貨物清單、點幣紀錄、舊帳與台主成本，全部數目歸零重新開始。</p>
         <button onclick="resetAllData()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl text-sm shadow">
           全部數目歸零重新開始
         </button>
@@ -427,6 +431,7 @@
     };
 
     const DOC_PATH = "ledgers/DENNIS_AMZI_MAIN";
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v2";
     let db = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
     let selectedSlot = "左上";
@@ -434,10 +439,7 @@
 
     function getTodayStr() {
       const d = new Date();
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${y}-${m}-${day}`;
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     }
 
     function getMonthKey(dateStr) {
@@ -461,6 +463,7 @@
 
     function getDefaultState() {
       return {
+        updatedAt: Date.now(),
         currentLocationId: "loc_1",
         locations: {
           loc_1: {
@@ -487,16 +490,48 @@
       };
     }
 
-    let appState = getDefaultState();
+    function loadLocalBackup() {
+      try {
+        const raw = localStorage.getItem(LOCAL_BACKUP_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.locations) return parsed;
+        }
+      } catch (e) {}
+      return getDefaultState();
+    }
 
-    function showToast(msg) {
+    let appState = loadLocalBackup();
+
+    function normalizeState(data) {
+      if (!data || !data.locations || Object.keys(data.locations).length === 0) {
+        return getDefaultState();
+      }
+      if (!data.locations[data.currentLocationId]) {
+        data.currentLocationId = Object.keys(data.locations)[0];
+      }
+      Object.values(data.locations).forEach(l => {
+        if (typeof l.costAmzi !== "number") l.costAmzi = 0;
+        if (typeof l.costDennis !== "number") l.costDennis = 0;
+        if (typeof l.costShared !== "number") l.costShared = l.totalCost || 0;
+        if (typeof l.legacyCashAmzi !== "number") l.legacyCashAmzi = 0;
+        if (typeof l.legacyCashDennis !== "number") l.legacyCashDennis = 0;
+        if (!Array.isArray(l.goodsList)) l.goodsList = [];
+        if (!l.monthlyStats || typeof l.monthlyStats !== "object") l.monthlyStats = {};
+      });
+      return data;
+    }
+
+    appState = normalizeState(appState);
+
+    function showToast(msg, isError) {
       const el = document.getElementById("toastBanner");
       el.textContent = msg;
-      el.classList.remove("hidden");
+      el.className = `fixed top-28 inset-x-4 max-w-lg mx-auto z-40 ${isError ? "bg-rose-600" : "bg-emerald-600"} text-white text-center text-sm font-bold py-2.5 px-4 rounded-xl shadow-lg`;
       clearTimeout(window._toastTimer);
       window._toastTimer = setTimeout(() => {
         el.classList.add("hidden");
-      }, 2400);
+      }, isError ? 5000 : 2500);
     }
 
     function initCloud() {
@@ -506,45 +541,45 @@
       document.getElementById("legacyDateInput").value = today;
       document.getElementById("stockOwnerSelect").value = currentOperator;
       document.getElementById("legacyOwnerSelect").value = currentOperator;
+      renderAll();
 
       try {
         firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
         firebase.auth().signInAnonymously()
-          .then(() => {
-            setSyncUI(true, "雲端已同步 · 自動儲存中");
-            db.doc(DOC_PATH).onSnapshot((doc) => {
+          .then((cred) => {
+            document.getElementById("diagAuthText").textContent = "已匿名登入 (" + cred.user.uid.slice(0, 6) + "...)";
+            setSyncUI(true, "已連上雲端 · 正在檢查資料...");
+
+            // 監聽來自雲端伺服器的真實資料（忽略本機未確認快取）
+            db.doc(DOC_PATH).onSnapshot({ includeMetadataChanges: true }, (doc) => {
+              if (doc.metadata.fromCache) return;
               if (doc.exists) {
-                appState = doc.data();
-                if (!appState.locations || Object.keys(appState.locations).length === 0) {
-                  appState = getDefaultState();
+                const cloudData = doc.data();
+                if (cloudData && cloudData.locations) {
+                  appState = normalizeState(cloudData);
+                  localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
+                  setSyncUI(true, "雲端已同步（伺服器已確認）");
+                  renderAll();
+                } else {
+                  // 若雲端只有 init: ok，立刻把本機完整結構寫上去
+                  pushStateToFirestore(true);
                 }
-                if (!appState.locations[appState.currentLocationId]) {
-                  appState.currentLocationId = Object.keys(appState.locations)[0];
-                }
-                Object.values(appState.locations).forEach(l => {
-                  if (typeof l.costAmzi !== "number") l.costAmzi = 0;
-                  if (typeof l.costDennis !== "number") l.costDennis = 0;
-                  if (typeof l.costShared !== "number") l.costShared = l.totalCost || 0;
-                  if (typeof l.legacyCashAmzi !== "number") l.legacyCashAmzi = 0;
-                  if (typeof l.legacyCashDennis !== "number") l.legacyCashDennis = 0;
-                  if (!Array.isArray(l.goodsList)) l.goodsList = [];
-                  if (!l.monthlyStats || typeof l.monthlyStats !== "object") l.monthlyStats = {};
-                });
               } else {
-                appState = getDefaultState();
-                saveState();
+                pushStateToFirestore(true);
               }
-              renderAll();
             }, (err) => {
-              setSyncUI(false, "讀取權限受阻：" + err.code);
+              setSyncUI(false, "雲端讀取失敗：" + err.code);
+              showToast("⚠️ 雲端讀取被拒：" + err.code + "（請檢查 Firestore 規則是否已發佈）", true);
             });
           })
           .catch((err) => {
-            setSyncUI(false, "匿名登入未開啟：" + err.code);
+            document.getElementById("diagAuthText").textContent = "登入失敗：" + err.code;
+            setSyncUI(false, "匿名登入失敗：" + err.code);
+            showToast("⚠️ 匿名登入失敗：" + err.code, true);
           });
       } catch (e) {
-        setSyncUI(false, "初始化異常");
+        setSyncUI(false, "初始化異常：" + e.message);
       }
     }
 
@@ -555,11 +590,35 @@
       label.textContent = text;
     }
 
+    function pushStateToFirestore(silent) {
+      if (!db) return;
+      appState.updatedAt = Date.now();
+      const payload = JSON.parse(JSON.stringify(appState));
+      db.doc(DOC_PATH).set(payload)
+        .then(() => {
+          const t = new Date();
+          const ts = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}:${String(t.getSeconds()).padStart(2, "0")}`;
+          setSyncUI(true, "雲端已同步 · 最後寫入 " + ts);
+          document.getElementById("diagWriteText").textContent = "成功寫入伺服器 (" + ts + ")";
+          document.getElementById("lastCloudWriteTime").textContent = "☁️ 雲端已存 " + ts;
+          if (!silent) showToast("☁️ 已成功寫入 Firebase 雲端伺服器！");
+        })
+        .catch((err) => {
+          setSyncUI(false, "雲端寫入被拒：" + err.code);
+          document.getElementById("diagWriteText").textContent = "寫入被拒：" + err.code;
+          showToast("❌ 雲端寫入失敗：" + err.code + "（目前僅存於本機）", true);
+        });
+    }
+
+    function forcePushToCloud() {
+      pushStateToFirestore(false);
+    }
+
     function saveState() {
+      appState.updatedAt = Date.now();
+      localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
       renderAll();
-      if (db) {
-        db.doc(DOC_PATH).set(appState).catch(err => alert("雲端儲存失敗：" + err.message));
-      }
+      pushStateToFirestore(true);
     }
 
     function setOperator(name) {
@@ -607,7 +666,7 @@
       loc.name = newName.trim();
       addLog(`場地改名：「${oldName}」➔「${loc.name}」`);
       saveState();
-      showToast("✅ 場地名稱已自動儲存");
+      showToast("✅ 場地名稱已更新");
     }
 
     function addNewLocation() {
@@ -635,7 +694,7 @@
       appState.currentLocationId = id;
       addLog(`新增場地「${name.trim()}」`);
       saveState();
-      showToast("✅ 新場地已建立並自動儲存");
+      showToast("✅ 新場地已建立");
     }
 
     function addNewMachine() {
@@ -652,7 +711,7 @@
       });
       addLog(`在「${loc.name}」新增${isFour ? "四合一迷你機" : "機台"}：${name.trim()}`);
       saveState();
-      showToast("✅ 新機台已自動儲存");
+      showToast("✅ 新機台已新增");
     }
 
     function renameMachine(machineId) {
@@ -665,7 +724,7 @@
       m.name = newName.trim();
       addLog(`機台改名：「${oldName}」➔「${m.name}」`);
       saveState();
-      showToast("✅ 機台名稱已自動儲存");
+      showToast("✅ 機台名稱已更新");
     }
 
     function onCoinMachineChange() {
@@ -727,7 +786,7 @@
       document.getElementById("coinCountInput").value = "";
       document.getElementById("coinNoteInput").value = "";
       saveState();
-      showToast(`✅ 已自動儲存 ${targetLabel} +${count} 機`);
+      showToast(`✅ 已儲存 ${targetLabel} +${count} 機`);
     }
 
     function redeemAndReset() {
@@ -756,10 +815,9 @@
 
       addLog(`[${dateVal}] 場主兌幣 ${coins} 機，實收 HK$${cash}（50/50各得 $${(cash / 2).toFixed(1)}，機數已歸零）`);
       saveState();
-      showToast(`✅ 兌幣 HK$${cash} 已自動儲存並歸零機數`);
+      showToast(`✅ 兌幣 HK$${cash} 已入帳並歸零機數`);
     }
 
-    // 補錄各台主舊帳（100% 歸屬該台主，非 50/50 分帳）
     function recordLegacyAccount() {
       const loc = appState.locations[appState.currentLocationId];
       const dateVal = document.getElementById("legacyDateInput").value || getTodayStr();
@@ -832,7 +890,7 @@
       document.getElementById("stockQtyInput").value = "";
       document.getElementById("stockCostInput").value = "";
       saveState();
-      showToast(`✅ 已自動儲存「${name}」（${status} · ${owner}）`);
+      showToast(`✅ 已儲存「${name}」（${status} · ${owner}）`);
     }
 
     function cycleGoodsStatus(goodsId, newStatus) {
@@ -860,7 +918,6 @@
       saveState();
     }
 
-    // 跨店調貨：更新調出分店的存貨 List 下拉選單
     function updateTransferGoodsDropdown() {
       const fromId = document.getElementById("transferFromSelect").value;
       const fromLoc = appState.locations[fromId];
@@ -893,7 +950,6 @@
       }
     }
 
-    // 執行跨店調貨：從調出分店 List 移除（或減數），並在調入分店 List 出現
     function transferStock() {
       const fromId = document.getElementById("transferFromSelect").value;
       const toId = document.getElementById("transferToSelect").value;
@@ -920,18 +976,15 @@
         return;
       }
 
-      // 1. 扣減兩邊分店總庫存
       fromLoc.stockCount = Math.max(0, (fromLoc.stockCount || 0) - moveQty);
       toLoc.stockCount = (toLoc.stockCount || 0) + moveQty;
 
-      // 2. 處理調出分店貨物 List（全數調走則直接從 List 消失；部分調走則扣減原數量）
       if (moveQty === sourceItem.qty) {
         fromLoc.goodsList.splice(itemIdx, 1);
       } else {
         sourceItem.qty -= moveQty;
       }
 
-      // 3. 在調入分店貨物 List 新增出現
       toLoc.goodsList = toLoc.goodsList || [];
       toLoc.goodsList.unshift({
         id: "g_" + Date.now(),
@@ -1043,7 +1096,6 @@
       const netAmzi = halfRedeemed + legA - cAmzi - (cShared / 2);
       const netDennis = halfRedeemed + legD - cDennis - (cShared / 2);
 
-      // 總覽頁數據
       document.getElementById("statCoins").textContent = `${loc.unredeemedCoins || 0} 機`;
       document.getElementById("statCoinCash").textContent = `約 HK$ ${loc.unredeemedCash || 0}`;
       document.getElementById("statRedeemed").textContent = `$${redeemed5050 + legA + legD}`;
@@ -1057,14 +1109,12 @@
       document.getElementById("statCostTotal").textContent = `$${totalLocCost}`;
       document.getElementById("statCostShared").textContent = `$${cShared}`;
 
-      // 點幣頁同場總和看板、兌幣預設值與該月總覽
       document.getElementById("coinPageTotalCount").textContent = `${loc.unredeemedCoins || 0} 機`;
       document.getElementById("coinPageTotalCash").textContent = `HK$ ${loc.unredeemedCash || 0}`;
       document.getElementById("redeemCoinInput").value = loc.unredeemedCoins || 0;
       document.getElementById("redeemCashInput").value = loc.unredeemedCash || 0;
       document.getElementById("coinPageMonthlySummary").innerHTML = renderMonthlyHtml(loc);
 
-      // 渲染機台列表
       const mContainer = document.getElementById("machineListContainer");
       const coinMSelect = document.getElementById("coinMachineSelect");
       const prevMId = coinMSelect.value;
@@ -1109,7 +1159,6 @@
       }
       onCoinMachineChange();
 
-      // 渲染貨物 List
       const gList = loc.goodsList || [];
       document.getElementById("goodsListCount").textContent = `共 ${gList.length} 項`;
       const gContainer = document.getElementById("goodsListContainer");
@@ -1140,7 +1189,6 @@
           </div>`;
       }).join("") || `<div class="py-4 text-center text-xs text-slate-400">尚無貨物紀錄，請由上方表單新增</div>`;
 
-      // 渲染紀錄
       const logsDiv = document.getElementById("recentLogs");
       logsDiv.innerHTML = (appState.logs || []).slice(0, 15).map(log => `
         <div class="py-2 flex justify-between items-start gap-2">
@@ -1152,7 +1200,6 @@
         </div>
       `).join("") || `<div class="py-4 text-center text-slate-400">尚無紀錄，目前全部數目為 0</div>`;
 
-      // 渲染全線總結算（支援點入各店展開各月幣數兌幣總覽）
       let grandRedeemed5050 = 0;
       let grandLegAmzi = 0;
       let grandLegDennis = 0;
