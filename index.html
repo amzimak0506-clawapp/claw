@@ -222,7 +222,7 @@
         </button>
       </div>
 
-      <!-- 本場該月幣數兌幣總覽與 Record List（含修改／刪除鍵） -->
+      <!-- 本場該月幣數兌幣總覽與 Record List -->
       <div class="card">
         <div class="flex justify-between items-center mb-2">
           <h2 class="font-bold text-base text-slate-800">📅 本場各月機數與兌幣入帳 Record List</h2>
@@ -353,16 +353,33 @@
       </div>
     </section>
 
-    <!-- 5. 獨立設定與重置頁面 -->
+    <!-- 5. 獨立設定與重置、備份頁面 -->
     <section id="tab-danger" class="hidden">
-      <!-- 重新匯入真實 Excel 資料 -->
+      <!-- 數據安全與備份還原區（新增！） -->
+      <div class="card border-2 border-indigo-300 bg-indigo-50/40">
+        <h2 class="font-bold text-base text-indigo-900 mb-1">💾 資料本地備份與還原（保障絕不遺失）</h2>
+        <p class="text-xs text-indigo-800 mb-3">
+          隨時可以把手動輸入的最新資料下載成備份檔。就算日後 App 改動或重裝，也能一秒還原！
+        </p>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="exportJsonBackup()" class="bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-2.5 rounded-xl text-xs shadow">
+            📤 備份匯出資料 (JSON)
+          </button>
+          <label class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl text-xs shadow text-center cursor-pointer flex items-center justify-center">
+            📥 匯入本地備份
+            <input type="file" id="importJsonFile" accept=".json" onchange="importJsonBackup(event)" class="hidden" />
+          </label>
+        </div>
+      </div>
+
+      <!-- 智能增量匯入 Excel（不會覆蓋手動資料） -->
       <div class="card border-2 border-emerald-300 bg-emerald-50/40">
-        <h2 class="font-bold text-base text-emerald-900 mb-1">📥 重新匯入《麗城夾 new.xlsx》全部 129 筆真實帳目</h2>
+        <h2 class="font-bold text-base text-emerald-900 mb-1">📥 智能對應匯入《麗城夾 new.xlsx》</h2>
         <p class="text-xs text-emerald-800 mb-3">
-          保留所有 129 筆貨物明細、各月舊帳紀錄與 50/50 兌現資料。
+          智慧合併 Excel 數據，<strong>不會覆蓋</strong>你後來手動輸入的其他資料。
         </p>
         <button onclick="importLichengExcelData()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow">
-          📥 一鍵匯入《麗城夾 new.xlsx》真實帳目並同步雲端
+          📥 智能匯入 Excel 帳目並同步雲端
         </button>
       </div>
 
@@ -417,7 +434,7 @@
     };
 
     const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v8";
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v9";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
     let selectedSlot = "左上";
@@ -567,16 +584,6 @@
       return dateStr.slice(0, 7);
     }
 
-    function ensureMonthlyBucket(loc, monthKey) {
-      loc.monthlyStats = loc.monthlyStats || {};
-      if (!loc.monthlyStats[monthKey]) {
-        loc.monthlyStats[monthKey] = {
-          records: []
-        };
-      }
-      return loc.monthlyStats[monthKey];
-    }
-
     function getDefaultState() {
       return {
         updatedAt: Date.now(),
@@ -603,57 +610,85 @@
       };
     }
 
-    function importLichengExcelData() {
-      if (!confirm("確定要匯入/重置《麗城夾 new.xlsx》全部真實帳目嗎？")) return;
+    function exportJsonBackup() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+      const dlAnchor = document.createElement('a');
+      dlAnchor.setAttribute("href", dataStr);
+      dlAnchor.setAttribute("download", `claw_ledger_backup_${getTodayStr()}.json`);
+      document.body.appendChild(dlAnchor);
+      dlAnchor.click();
+      dlAnchor.remove();
+      showToast("✅ 本地備份 JSON 檔案已下載保存！");
+    }
 
-      const goodsList = LICHENG_RAW_GOODS.map((row, idx) => ({
-        id: "g_lc_" + (idx + 1),
-        owner: row[0],
-        name: row[1],
-        qty: 1,
-        cost: row[2],
-        status: row[3],
-        date: "2026-11-10"
-      }));
-
-      const activeStockCount = goodsList.filter(g => g.status === "入機" || g.status === "貨存").length;
-      const costAmzi = goodsList.filter(g => g.owner === "Amzi").reduce((acc, g) => acc + g.cost, 0) + 3000;
-      const costDennis = goodsList.filter(g => g.owner === "Dennis").reduce((acc, g) => acc + g.cost, 0);
-
-      const lichengLocation = {
-        id: "loc_licheng",
-        name: "麗城夾（標機＋海濱迷你機）",
-        unredeemedCoins: 0,
-        unredeemedCash: 0,
-        totalRedeemedCash: 36480,
-        costAmzi: costAmzi,
-        costDennis: costDennis,
-        costShared: 0,
-        stockCount: activeStockCount,
-        goodsList: goodsList,
-        monthlyStats: {
-          "2026-03": { records: [{ id: "r_31", type: "legacy", owner: "Amzi", cash: 15630, date: "2026-03-15" }, { id: "r_32", type: "legacy", owner: "Dennis", cash: 18680, date: "2026-03-15" }] },
-          "2026-04": { records: [{ id: "r_41", type: "legacy", owner: "Amzi", cash: 7110, date: "2026-04-30" }, { id: "r_42", type: "legacy", owner: "Dennis", cash: 7910, date: "2026-04-30" }] },
-          "2026-05": { records: [{ id: "r_51", type: "legacy", owner: "Amzi", cash: 2410, date: "2026-05-29" }, { id: "r_52", type: "legacy", owner: "Dennis", cash: 2350, date: "2026-05-29" }] },
-          "2026-06": { records: [{ id: "r_61", type: "legacy", owner: "Amzi", cash: 6470, date: "2026-06-30" }, { id: "r_62", type: "legacy", owner: "Dennis", cash: 6460, date: "2026-06-30" }] },
-          "2026-07": { records: [{ id: "r_71", type: "legacy", owner: "Amzi", cash: 2050, date: "2026-07-13" }, { id: "r_72", type: "legacy", owner: "Dennis", cash: 2050, date: "2026-07-13" }] },
-          "2026-08": { records: [{ id: "r_81", type: "redeem", coins: 0, cash: 15770, date: "2026-08-07" }, { id: "r_82", type: "redeem", coins: 0, cash: 9000, date: "2026-08-23" }] },
-          "2026-09": { records: [{ id: "r_91", type: "redeem", coins: 0, cash: 6190, date: "2026-09-08" }, { id: "r_92", type: "redeem", coins: 0, cash: 4120, date: "2026-09-12" }] },
-          "2026-10": { records: [{ id: "r_101", type: "redeem", coins: 0, cash: 2420, date: "2026-10-07" }, { id: "r_102", type: "legacy", owner: "Amzi", cash: 10, date: "2026-10-07" }, { id: "r_103", type: "redeem", coins: 0, cash: 5000, date: "2026-10-12" }] },
-          "2026-11": { records: [{ id: "r_111", type: "redeem", coins: 0, cash: 2980, date: "2026-11-10" }] }
-        },
-        machines: [
-          { id: "m_lc_std", name: "麗城標機", isFourInOne: false, panelTotal: 0, lastRedeemedPanel: 0, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }, slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } },
-          { id: "m_lc_mini", name: "海濱迷你機（四合一）", isFourInOne: true, panelTotal: 0, lastRedeemedPanel: 0, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }, slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } }
-        ]
+    function importJsonBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (parsed && parsed.locations) {
+            appState = normalizeState(parsed);
+            saveState();
+            showToast("✅ 成功還原本地備份資料！");
+          } else {
+            alert("備份檔案格式不正確！");
+          }
+        } catch (err) {
+          alert("解析備份檔案失敗：" + err.message);
+        }
       };
+      reader.readAsText(file);
+    }
 
-      appState.locations["loc_licheng"] = lichengLocation;
+    function importLichengExcelData() {
+      let loc = appState.locations["loc_licheng"];
+      if (!loc) {
+        loc = {
+          id: "loc_licheng",
+          name: "麗城夾（標機＋海濱迷你機）",
+          unredeemedCoins: 0,
+          unredeemedCash: 0,
+          totalRedeemedCash: 0,
+          costAmzi: 0,
+          costDennis: 0,
+          costShared: 0,
+          stockCount: 0,
+          goodsList: [],
+          monthlyStats: {},
+          machines: [
+            { id: "m_lc_std", name: "麗城標機", isFourInOne: false, panelTotal: 0, lastRedeemedPanel: 0, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }, slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } },
+            { id: "m_lc_mini", name: "海濱迷你機（四合一）", isFourInOne: true, panelTotal: 0, lastRedeemedPanel: 0, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }, slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } }
+          ]
+        };
+        appState.locations["loc_licheng"] = loc;
+      }
+
+      // Smart merge goods (avoid duplicates if already imported, append new ones)
+      const existingNames = new Set((loc.goodsList || []).map(g => g.name + "_" + g.cost));
+      let addedCount = 0;
+      LICHENG_RAW_GOODS.forEach((row, idx) => {
+        const key = row[1] + "_" + row[2];
+        if (!existingNames.has(key)) {
+          loc.goodsList.push({
+            id: "g_lc_smart_" + Date.now() + "_" + idx,
+            owner: row[0],
+            name: row[1],
+            qty: 1,
+            cost: row[2],
+            status: row[3],
+            date: "2026-11-10"
+          });
+          addedCount++;
+        }
+      });
+
       appState.currentLocationId = "loc_licheng";
-      addLog("📥 匯入《麗城夾 new.xlsx》全部 129筆貨物與各月帳目");
+      addLog(`智能匯入 Excel 帳目 (新增 ${addedCount} 筆)`);
       saveState();
       switchTab("dashboard");
-      showToast("✅ 匯入成功！");
+      showToast(`✅ 智能匯入完成！成功同步（新增 ${addedCount} 筆，未覆蓋手動資料）`);
     }
 
     function loadLocalBackup() {
@@ -682,7 +717,6 @@
         if (typeof l.costShared !== "number") l.costShared = l.totalCost || 0;
         if (!Array.isArray(l.goodsList)) l.goodsList = [];
         if (!l.monthlyStats || typeof l.monthlyStats !== "object") l.monthlyStats = {};
-        // Migrate old legacyCashAmzi / monthly legacyStats format to records array
         Object.keys(l.monthlyStats).forEach(mk => {
           let bucket = l.monthlyStats[mk];
           if (!bucket.records) {
@@ -698,7 +732,6 @@
             }
           }
         });
-        // Ensure machines have panel fields
         (l.machines || []).forEach(m => {
           if (typeof m.panelTotal !== "number") m.panelTotal = m.coins || 0;
           if (typeof m.lastRedeemedPanel !== "number") m.lastRedeemedPanel = 0;
@@ -863,9 +896,8 @@
           }
         });
         loc.unredeemedCoins = totalUnred;
-        loc.unredeemedCash = totalUnred * 5; // default rate $5
+        loc.unredeemedCash = totalUnred * 5;
 
-        // Calculate total redeemed cash from monthly records
         let totalRedeem = 0;
         Object.values(loc.monthlyStats || {}).forEach(bucket => {
           (bucket.records || []).forEach(r => {
@@ -873,6 +905,15 @@
           });
         });
         loc.totalRedeemedCash = totalRedeem;
+
+        // Calculate total stock count from goodsList
+        let activeCount = 0;
+        (loc.goodsList || []).forEach(g => {
+          if (g.status === "入機" || g.status === "貨存") {
+            activeCount += (g.qty || 1);
+          }
+        });
+        loc.stockCount = activeCount;
       });
     }
 
@@ -1103,7 +1144,6 @@
 
       if (!confirm(`💡 確定要執行場主兌幣結算嗎？\n\n• 實收現金：HK$ ${cash}\n• 結算機數：${coins} 機\n• 50/50 拆帳：每人分得 $${(cash / 2).toFixed(1)}\n• 動作：本場所有機台未兌數將會歸零重新起算。`)) return;
 
-      // Update baseline lastRedeemedPanel and slotLast to current panelTotal/slots
       loc.machines.forEach(m => {
         if (m.isFourInOne) {
           ["左上", "右上", "左下", "右下"].forEach(slot => {
@@ -1129,6 +1169,14 @@
       showToast(`✅ 兌幣 HK$${cash} 已入帳並歸零機數`);
     }
 
+    function ensureMonthlyBucket(loc, monthKey) {
+      loc.monthlyStats = loc.monthlyStats || {};
+      if (!loc.monthlyStats[monthKey]) {
+        loc.monthlyStats[monthKey] = { records: [] };
+      }
+      return loc.monthlyStats[monthKey];
+    }
+
     function deleteRecord(monthKey, recordId) {
       if (!confirm("確定要刪除這筆入帳紀錄嗎？")) return;
       const loc = appState.locations[appState.currentLocationId];
@@ -1137,7 +1185,7 @@
         bucket.records = bucket.records.filter(r => r.id !== recordId);
         if (bucket.records.length === 0) delete loc.monthlyStats[monthKey];
       }
-      addLog(`刪除 ${monthKey} 的兌幣/舊帳紀錄`);
+      addLog(`刪除 ${monthKey} 的兌幣紀錄`);
       saveState();
       showToast("✅ 紀錄已刪除");
     }
@@ -1148,25 +1196,14 @@
       const r = (bucket && bucket.records || []).find(item => item.id === recordId);
       if (!r) return;
 
-      if (r.type === "redeem") {
-        const newCash = prompt("請修改實收現金金額 (HK$)：", r.cash);
-        if (newCash === null) return;
-        const val = parseFloat(newCash);
-        if (isNaN(val) || val < 0) {
-          alert("金額無效！");
-          return;
-        }
-        r.cash = val;
-      } else {
-        const newCash = prompt("請修改舊帳金額 (HK$)：", r.cash);
-        if (newCash === null) return;
-        const val = parseFloat(newCash);
-        if (isNaN(val) || val < 0) {
-          alert("金額無效！");
-          return;
-        }
-        r.cash = val;
+      const newCash = prompt("請修改金額 (HK$)：", r.cash);
+      if (newCash === null) return;
+      const val = parseFloat(newCash);
+      if (isNaN(val) || val < 0) {
+        alert("金額無效！");
+        return;
       }
+      r.cash = val;
       addLog(`修改 ${monthKey} 紀錄金額`);
       saveState();
       showToast("✅ 紀錄已更新");
@@ -1184,12 +1221,6 @@
         if (owner === "Amzi") loc.costAmzi = (loc.costAmzi || 0) + cost;
         else if (owner === "Dennis") loc.costDennis = (loc.costDennis || 0) + cost;
         else loc.costShared = (loc.costShared || 0) + cost;
-      }
-
-      if (status === "貨存" || status === "入機") {
-        loc.stockCount = (loc.stockCount || 0) + qty;
-      } else if (status === "出貨") {
-        loc.stockCount = Math.max(0, (loc.stockCount || 0) - qty);
       }
 
       if (status !== "雜費") {
@@ -1225,12 +1256,6 @@
       if (!item || item.status === newStatus) return;
 
       const oldStatus = item.status;
-      if ((oldStatus === "貨存" || oldStatus === "入機") && newStatus === "出貨") {
-        loc.stockCount = Math.max(0, (loc.stockCount || 0) - (item.qty || 0));
-      } else if (oldStatus === "出貨" && (newStatus === "貨存" || newStatus === "入機")) {
-        loc.stockCount = (loc.stockCount || 0) + (item.qty || 0);
-      }
-
       item.status = newStatus;
       addLog(`貨物狀態變更：「${item.name}」(${item.qty}隻) ${oldStatus} ➔ ${newStatus}`);
       saveState();
@@ -1302,9 +1327,6 @@
         return;
       }
 
-      fromLoc.stockCount = Math.max(0, (fromLoc.stockCount || 0) - moveQty);
-      toLoc.stockCount = (toLoc.stockCount || 0) + moveQty;
-
       if (moveQty === sourceItem.qty) {
         fromLoc.goodsList.splice(itemIdx, 1);
       } else {
@@ -1359,7 +1381,7 @@
       const stats = loc.monthlyStats || {};
       const months = Object.keys(stats).sort().reverse();
       if (months.length === 0) {
-        return `<div class="py-3 text-center text-slate-400">尚無各月兌幣或舊帳紀錄</div>`;
+        return `<div class="py-3 text-center text-slate-400">尚無各月兌幣紀錄</div>`;
       }
       return months.map(m => {
         const bucket = stats[m];
@@ -1427,7 +1449,6 @@
       const redeemed5050 = loc.totalRedeemedCash || 0;
       const halfRedeemed = redeemed5050 / 2;
 
-      // Calculate total legacy cash for Amzi & Dennis across all months in this location
       let locLegAmzi = 0;
       let locLegDennis = 0;
       Object.values(loc.monthlyStats || {}).forEach(bucket => {
