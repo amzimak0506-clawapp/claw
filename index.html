@@ -385,9 +385,9 @@
     <!-- 5. 獨立設定與危險操作頁面 -->
     <section id="tab-danger" class="hidden">
       <div class="card">
-        <h2 class="font-bold text-base text-slate-800 mb-2">📡 雲端連線診斷與手動同步（HTTPS REST API 直連）</h2>
+        <h2 class="font-bold text-base text-slate-800 mb-2">📡 雲端連線診斷與手動同步（直連 default 資料庫）</h2>
         <div id="cloudDiagnosticBox" class="text-xs text-slate-600 space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200 mb-3">
-          <p>• 資料庫路徑：<span class="font-mono font-bold text-blue-900">ledgers/DENNIS_AMZI_MAIN</span></p>
+          <p>• 資料庫實例：<span class="font-mono font-bold text-blue-900">default / ledgers / DENNIS_AMZI_MAIN</span></p>
           <p>• 登入狀態：<span id="diagAuthText" class="font-bold">檢查中...</span></p>
           <p>• 最後伺服器確認：<span id="diagWriteText" class="font-bold">正在自動同步...</span></p>
         </div>
@@ -434,8 +434,9 @@
       measurementId: "G-RPZDMHX5C1"
     };
 
-    const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/ledgers/DENNIS_AMZI_MAIN`;
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v5";
+    // 關鍵修正：直接對準你專案裡已建立的無括號 "default" 資料庫實例！
+    const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v6";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
     let selectedSlot = "左上";
@@ -554,7 +555,6 @@
       return headers;
     }
 
-    // 使用純標準 HTTPS fetch 直接讀取 Firestore REST API
     async function pullFromCloud(silent) {
       try {
         const headers = await getAuthHeaders();
@@ -588,7 +588,6 @@
             return;
           }
         }
-        // 若檔案裡只有舊的 init: ok，立刻把完整資料推送上去
         await pushToCloud(true);
       } catch (err) {
         setSyncUI(false, "網絡連線異常：" + err.message);
@@ -596,7 +595,6 @@
       }
     }
 
-    // 使用純標準 HTTPS PATCH 直接寫入 Firestore REST API
     async function pushToCloud(silent) {
       try {
         appState.updatedAt = Date.now();
@@ -649,7 +647,6 @@
           authUser = cred.user;
           document.getElementById("diagAuthText").textContent = "已匿名登入 (" + authUser.uid.slice(0, 6) + "...)";
           await pullFromCloud(true);
-          // 每 5 秒透過標準 HTTPS 自動檢查合夥人是否有新紀錄
           setInterval(() => {
             if (document.visibilityState === "visible") {
               pullFromCloud(true);
