@@ -355,7 +355,7 @@
 
     <!-- 5. 獨立設定與重置、備份頁面 -->
     <section id="tab-danger" class="hidden">
-      <!-- 數據安全與備份還原區（新增！） -->
+      <!-- 數據安全與備份還原區 -->
       <div class="card border-2 border-indigo-300 bg-indigo-50/40">
         <h2 class="font-bold text-base text-indigo-900 mb-1">💾 資料本地備份與還原（保障絕不遺失）</h2>
         <p class="text-xs text-indigo-800 mb-3">
@@ -372,11 +372,11 @@
         </div>
       </div>
 
-      <!-- 智能增量匯入 Excel（不會覆蓋手動資料） -->
+      <!-- 智能匯入 Excel -->
       <div class="card border-2 border-emerald-300 bg-emerald-50/40">
         <h2 class="font-bold text-base text-emerald-900 mb-1">📥 智能對應匯入《麗城夾 new.xlsx》</h2>
         <p class="text-xs text-emerald-800 mb-3">
-          智慧合併 Excel 數據，<strong>不會覆蓋</strong>你後來手動輸入的其他資料。
+          完整載入 129 筆貨物、雙機台設定與各月舊帳，<strong>不會覆蓋</strong>你後來手動輸入的其他資料。
         </p>
         <button onclick="importLichengExcelData()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow">
           📥 智能匯入 Excel 帳目並同步雲端
@@ -434,7 +434,7 @@
     };
 
     const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v9";
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v10";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
     let selectedSlot = "左上";
@@ -574,6 +574,18 @@
       ["Dennis", "鹿", 250, "出貨"]
     ];
 
+    const LICHENG_LEGACY_RECORDS = {
+      "2026-03": [{ id: "r_31", type: "legacy", owner: "Amzi", cash: 15630, date: "2026-03-15" }, { id: "r_32", type: "legacy", owner: "Dennis", cash: 18680, date: "2026-03-15" }],
+      "2026-04": [{ id: "r_41", type: "legacy", owner: "Amzi", cash: 7110, date: "2026-04-30" }, { id: "r_42", type: "legacy", owner: "Dennis", cash: 7910, date: "2026-04-30" }],
+      "2026-05": [{ id: "r_51", type: "legacy", owner: "Amzi", cash: 2410, date: "2026-05-29" }, { id: "r_52", type: "legacy", owner: "Dennis", cash: 2350, date: "2026-05-29" }],
+      "2026-06": [{ id: "r_61", type: "legacy", owner: "Amzi", cash: 6470, date: "2026-06-30" }, { id: "r_62", type: "legacy", owner: "Dennis", cash: 6460, date: "2026-06-30" }],
+      "2026-07": [{ id: "r_71", type: "legacy", owner: "Amzi", cash: 2050, date: "2026-07-13" }, { id: "r_72", type: "legacy", owner: "Dennis", cash: 2050, date: "2026-07-13" }],
+      "2026-08": [{ id: "r_81", type: "redeem", coins: 0, cash: 15770, date: "2026-08-07" }, { id: "r_82", type: "redeem", coins: 0, cash: 9000, date: "2026-08-23" }],
+      "2026-09": [{ id: "r_91", type: "redeem", coins: 0, cash: 6190, date: "2026-09-08" }, { id: "r_92", type: "redeem", coins: 0, cash: 4120, date: "2026-09-12" }],
+      "2026-10": [{ id: "r_101", type: "redeem", coins: 0, cash: 2420, date: "2026-10-07" }, { id: "r_102", type: "legacy", owner: "Amzi", cash: 10, date: "2026-10-07" }, { id: "r_103", type: "redeem", coins: 0, cash: 5000, date: "2026-10-12" }],
+      "2026-11": [{ id: "r_111", type: "redeem", coins: 0, cash: 2980, date: "2026-11-10" }]
+    };
+
     function getTodayStr() {
       const d = new Date();
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -651,7 +663,7 @@
           unredeemedCoins: 0,
           unredeemedCash: 0,
           totalRedeemedCash: 0,
-          costAmzi: 0,
+          costAmzi: 3000,
           costDennis: 0,
           costShared: 0,
           stockCount: 0,
@@ -665,7 +677,15 @@
         appState.locations["loc_licheng"] = loc;
       }
 
-      // Smart merge goods (avoid duplicates if already imported, append new ones)
+      // Ensure machines exist
+      if (!loc.machines || loc.machines.length === 0) {
+        loc.machines = [
+          { id: "m_lc_std", name: "麗城標機", isFourInOne: false, panelTotal: 0, lastRedeemedPanel: 0, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }, slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } },
+          { id: "m_lc_mini", name: "海濱迷你機（四合一）", isFourInOne: true, panelTotal: 0, lastRedeemedPanel: 0, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }, slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } }
+        ];
+      }
+
+      // Smart merge goods
       const existingNames = new Set((loc.goodsList || []).map(g => g.name + "_" + g.cost));
       let addedCount = 0;
       LICHENG_RAW_GOODS.forEach((row, idx) => {
@@ -684,11 +704,34 @@
         }
       });
 
+      // Merge legacy monthly stats records if missing
+      loc.monthlyStats = loc.monthlyStats || {};
+      Object.keys(LICHENG_LEGACY_RECORDS).forEach(mk => {
+        if (!loc.monthlyStats[mk]) {
+          loc.monthlyStats[mk] = { records: JSON.parse(JSON.stringify(LICHENG_LEGACY_RECORDS[mk])) };
+        } else {
+          loc.monthlyStats[mk].records = loc.monthlyStats[mk].records || [];
+          // Add missing legacy items
+          LICHENG_LEGACY_RECORDS[mk].forEach(defRec => {
+            const exists = loc.monthlyStats[mk].records.some(r => r.cash === defRec.cash && r.type === defRec.type && r.date === defRec.date);
+            if (!exists) {
+              loc.monthlyStats[mk].records.push(JSON.parse(JSON.stringify(defRec)));
+            }
+          });
+        }
+      });
+
+      // Recalculate cost & stock
+      let amziGoodsCost = loc.goodsList.filter(g => g.owner === "Amzi").reduce((acc, g) => acc + (g.cost || 0), 0);
+      let dennisGoodsCost = loc.goodsList.filter(g => g.owner === "Dennis").reduce((acc, g) => acc + (g.cost || 0), 0);
+      if (loc.costAmzi < amziGoodsCost + 3000) loc.costAmzi = amziGoodsCost + 3000;
+      if (loc.costDennis < dennisGoodsCost) loc.costDennis = dennisGoodsCost;
+
       appState.currentLocationId = "loc_licheng";
       addLog(`智能匯入 Excel 帳目 (新增 ${addedCount} 筆)`);
       saveState();
       switchTab("dashboard");
-      showToast(`✅ 智能匯入完成！成功同步（新增 ${addedCount} 筆，未覆蓋手動資料）`);
+      showToast(`✅ 智能匯入完成！成功載入機台與帳目（新增 ${addedCount} 筆貨物）`);
     }
 
     function loadLocalBackup() {
@@ -906,7 +949,6 @@
         });
         loc.totalRedeemedCash = totalRedeem;
 
-        // Calculate total stock count from goodsList
         let activeCount = 0;
         (loc.goodsList || []).forEach(g => {
           if (g.status === "入機" || g.status === "貨存") {
