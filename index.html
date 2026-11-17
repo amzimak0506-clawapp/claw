@@ -53,15 +53,18 @@
         </div>
       </div>
 
-      <!-- 地點選擇與改名列 -->
+      <!-- 地點選擇與改名、刪除場地列 -->
       <div class="mt-3 flex items-center gap-1.5">
         <select id="locationSelect" onchange="switchLocation(this.value)" class="flex-1 bg-blue-900 text-white border border-blue-700 rounded-xl px-3 py-2 text-sm font-semibold focus:outline-none">
         </select>
         <button onclick="renameCurrentLocation()" class="bg-blue-800 hover:bg-blue-700 text-blue-100 border border-blue-600 px-2.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap">
-          ✏️ 改名
+          ✏️改名
+        </button>
+        <button onclick="deleteCurrentLocation()" class="bg-rose-900/80 hover:bg-rose-900 text-rose-100 border border-rose-700 px-2 py-2 rounded-xl text-xs font-bold whitespace-nowrap">
+          🗑️刪場
         </button>
         <button onclick="addNewLocation()" class="bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap">
-          ＋ 新場地
+          ＋新場地
         </button>
       </div>
     </div>
@@ -89,7 +92,7 @@
         </div>
       </div>
 
-      <!-- 台主獨立成本與舊帳計算卡片 -->
+      <!-- 台主獨立損益與庫存 -->
       <div class="card border border-slate-200">
         <div class="flex justify-between items-center mb-2">
           <span class="text-sm font-bold text-slate-800">💳 本場台主獨立損益與庫存</span>
@@ -113,11 +116,11 @@
         </div>
       </div>
 
-      <!-- 機台管理與改名 -->
+      <!-- 機台管理與刪除機台 -->
       <div class="card">
         <div class="flex justify-between items-center mb-3">
-          <h2 class="font-bold text-slate-800 text-sm">🎰 本場機台清單（可改名 / 四合一）</h2>
-          <button onclick="addNewMachine()" class="bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg font-bold">＋ 新增機台</button>
+          <h2 class="font-bold text-slate-800 text-sm">🎰 本場機台清單（可改名/刪除/四合一）</h2>
+          <button onclick="addNewMachine()" class="bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg font-bold">＋新增機台</button>
         </div>
         <div id="machineListContainer" class="space-y-2.5"></div>
       </div>
@@ -146,9 +149,10 @@
         </div>
       </div>
 
-      <!-- 點幣表單 -->
+      <!-- 巡機點幣（面板累計數值輸入） -->
       <div class="card">
-        <h2 class="font-bold text-base text-blue-950 mb-3">🪙 巡機點幣（儲存後留在原頁）</h2>
+        <h2 class="font-bold text-base text-blue-950 mb-1">🪙 巡機點幣（輸入機台當前「面板累計數值」）</h2>
+        <p class="text-xs text-slate-500 mb-3">系統會自動對比上次點數，計算本次新增機數並加入未兌總和。</p>
         <div class="space-y-3">
           <div class="grid grid-cols-2 gap-3">
             <div>
@@ -173,8 +177,8 @@
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">機數</label>
-              <input type="number" id="coinCountInput" placeholder="例如 24" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
+              <label class="block text-xs font-bold text-slate-600 mb-1">面板當前累計數值</label>
+              <input type="number" id="coinCountInput" placeholder="例如機台顯示 350" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
             </div>
             <div>
               <label class="block text-xs font-bold text-slate-600 mb-1">每幣面值 (HK$)</label>
@@ -196,7 +200,7 @@
       <!-- 場主兌幣歸零（50/50 拆帳） -->
       <div class="card border-2 border-amber-200 bg-amber-50/40">
         <h2 class="font-bold text-base text-amber-900 mb-1">💰 場主兌幣結算（50/50 拆帳並歸零機數）</h2>
-        <p class="text-xs text-amber-800 mb-3">與場主對數收現後按此鍵，系統會將實收現金計入 50/50 收益，並把本場未兌機數歸零。</p>
+        <p class="text-xs text-amber-800 mb-3">💡 <strong>提示</strong>：與場主對數收現後按此鍵，系統會將實收現金計入當月 50/50 收益，並自動將本場未兌機數歸零重新計算。</p>
         <div class="space-y-3 mb-3">
           <div>
             <label class="block text-xs font-bold text-slate-600 mb-1">場主兌幣日期</label>
@@ -218,49 +222,11 @@
         </button>
       </div>
 
-      <!-- 各台主舊帳輸入（非 50/50 分帳） -->
-      <div class="card border-2 border-purple-200 bg-purple-50/30">
-        <h2 class="font-bold text-base text-purple-950 mb-1">📜 各台主舊帳補錄（非 50/50 獨立入帳）</h2>
-        <p class="text-xs text-purple-800 mb-3">用於補錄過往非 50/50 拆帳的舊數，金額會 100% 獨立計入指定台主名下，並同步列入該月兌幣總覽。</p>
-        <div class="space-y-3 mb-3">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">舊帳日期（決定所屬月份）</label>
-              <input type="date" id="legacyDateInput" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white" />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">歸屬台主（100% 計入）</label>
-              <select id="legacyOwnerSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white">
-                <option value="Amzi">Amzi</option>
-                <option value="Dennis">Dennis</option>
-              </select>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">舊帳機數（選填）</label>
-              <input type="number" id="legacyCoinInput" placeholder="例如 50" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">該台主實收金額 (HK$)</label>
-              <input type="number" id="legacyCashInput" placeholder="輸入金額" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
-            </div>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1">舊帳說明（選填）</label>
-            <input type="text" id="legacyNoteInput" placeholder="例如：10月舊帳結算" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
-          </div>
-        </div>
-        <button onclick="recordLegacyAccount()" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-3 rounded-xl shadow">
-          儲存台主獨立舊帳
-        </button>
-      </div>
-
-      <!-- 本場該月幣數兌幣總覽 -->
+      <!-- 本場該月幣數兌幣總覽與 Record List（含修改／刪除鍵） -->
       <div class="card">
         <div class="flex justify-between items-center mb-2">
-          <h2 class="font-bold text-base text-slate-800">📅 本場各月機數與兌幣總覽</h2>
-          <span class="text-xs text-slate-400">自動按月統計</span>
+          <h2 class="font-bold text-base text-slate-800">📅 本場各月機數與兌幣入帳 Record List</h2>
+          <span class="text-xs text-slate-400">點擊紀錄可修改/刪除</span>
         </div>
         <div id="coinPageMonthlySummary" class="divide-y divide-slate-100 text-xs"></div>
       </div>
@@ -314,10 +280,10 @@
         </div>
       </div>
 
-      <!-- 貨物 List（含篩選） -->
+      <!-- 貨物 List（展開式檢視） -->
       <div class="card">
         <div class="flex justify-between items-center mb-2">
-          <h2 class="font-bold text-base text-slate-800">📋 本場貨物 List（可切換狀態）</h2>
+          <h2 class="font-bold text-base text-slate-800">📋 本場貨物 List（展開式詳細檢視）</h2>
           <span id="goodsListCount" class="text-xs text-slate-500">共 0 項</span>
         </div>
         <div class="flex gap-1.5 mb-2 text-xs">
@@ -325,7 +291,7 @@
           <button onclick="setGoodsFilter('ALL')" id="filter-ALL" class="px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600">全部明細</button>
           <button onclick="setGoodsFilter('SHIPPED')" id="filter-SHIPPED" class="px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600">已出貨</button>
         </div>
-        <div id="goodsListContainer" class="divide-y divide-slate-100 space-y-2"></div>
+        <div id="goodsListContainer" class="space-y-2"></div>
       </div>
 
       <!-- 跨店調貨 -->
@@ -349,7 +315,7 @@
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-600 mb-1">調動數量（隻）</label>
-            <input type="number" id="transferQtyInput" placeholder="自動帶入該批全部數量，亦可手動改少" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+            <input type="number" id="transferQtyInput" placeholder="自動帶入該批全部數量" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
           </div>
           <button onclick="transferStock()" class="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold py-3 rounded-xl shadow">
             確認跨店調貨（同步更新兩邊 List）
@@ -387,13 +353,13 @@
       </div>
     </section>
 
-    <!-- 5. 獨立設定、Excel 匯入與危險操作頁面 -->
+    <!-- 5. 獨立設定與重置頁面 -->
     <section id="tab-danger" class="hidden">
-      <!-- 一鍵匯入《麗城夾 new.xlsx》真實資料 -->
+      <!-- 重新匯入真實 Excel 資料 -->
       <div class="card border-2 border-emerald-300 bg-emerald-50/40">
-        <h2 class="font-bold text-base text-emerald-900 mb-1">📥 一鍵匯入《麗城夾 new.xlsx》全部 129 筆真實帳目</h2>
+        <h2 class="font-bold text-base text-emerald-900 mb-1">📥 重新匯入《麗城夾 new.xlsx》全部 129 筆真實帳目</h2>
         <p class="text-xs text-emerald-800 mb-3">
-          已完整載入你發來的原始 Excel 全部數據：包含 <strong>129 筆獨立貨物明細</strong>（每隻獨立一項，含名稱、價錢、入機/貨存/出貨狀態及擁有人）、Amzi 2月租金 $3,000、3–7月各自舊帳以及 8–11月 50/50 兌現紀錄。
+          保留所有 129 筆貨物明細、各月舊帳紀錄與 50/50 兌現資料。
         </p>
         <button onclick="importLichengExcelData()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow">
           📥 一鍵匯入《麗城夾 new.xlsx》真實帳目並同步雲端
@@ -401,7 +367,7 @@
       </div>
 
       <div class="card">
-        <h2 class="font-bold text-base text-slate-800 mb-2">📡 雲端連線診斷與手動同步（直連 default 資料庫）</h2>
+        <h2 class="font-bold text-base text-slate-800 mb-2">📡 雲端連線診斷與手動同步</h2>
         <div id="cloudDiagnosticBox" class="text-xs text-slate-600 space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200 mb-3">
           <p>• 資料庫實例：<span class="font-mono font-bold text-blue-900">default / ledgers / DENNIS_AMZI_MAIN</span></p>
           <p>• 登入狀態：<span id="diagAuthText" class="font-bold">檢查中...</span></p>
@@ -428,7 +394,7 @@
 
   </main>
 
-  <!-- 底部導航欄（5 個分頁） -->
+  <!-- 底部導航欄 -->
   <nav class="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-30">
     <div class="max-w-lg mx-auto grid grid-cols-5 gap-0.5 p-1 text-center text-[11px]">
       <button onclick="switchTab('dashboard')" id="nav-dashboard" class="tab-active py-2.5 rounded-xl">📊 總覽</button>
@@ -451,67 +417,14 @@
     };
 
     const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v7";
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v8";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
     let selectedSlot = "左上";
     let expandedSettlementLocIds = {};
+    let expandedGoodsIds = {};
     let goodsFilterMode = "ACTIVE";
 
-    function getTodayStr() {
-      const d = new Date();
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    }
-
-    function getMonthKey(dateStr) {
-      if (!dateStr || dateStr.length < 7) return getTodayStr().slice(0, 7);
-      return dateStr.slice(0, 7);
-    }
-
-    function ensureMonthlyBucket(loc, monthKey) {
-      loc.monthlyStats = loc.monthlyStats || {};
-      if (!loc.monthlyStats[monthKey]) {
-        loc.monthlyStats[monthKey] = {
-          countedCoins: 0,
-          redeemedCoins: 0,
-          redeemedCash5050: 0,
-          legacyCashAmzi: 0,
-          legacyCashDennis: 0
-        };
-      }
-      return loc.monthlyStats[monthKey];
-    }
-
-    function getDefaultState() {
-      return {
-        updatedAt: Date.now(),
-        currentLocationId: "loc_1",
-        locations: {
-          loc_1: {
-            id: "loc_1",
-            name: "1號場地（預設）",
-            unredeemedCoins: 0,
-            unredeemedCash: 0,
-            totalRedeemedCash: 0,
-            legacyCashAmzi: 0,
-            legacyCashDennis: 0,
-            costAmzi: 0,
-            costDennis: 0,
-            costShared: 0,
-            stockCount: 0,
-            goodsList: [],
-            monthlyStats: {},
-            machines: [
-              { id: "m_1", name: "1號標準機", isFourInOne: false, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } },
-              { id: "m_2", name: "2號四合一迷你機", isFourInOne: true, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } }
-            ]
-          }
-        },
-        logs: []
-      };
-    }
-
-    // 原始《麗城夾 new.xlsx》129 筆貨物明細（均為 1 隻，含名稱、價錢、狀態、擁有人）
     const LICHENG_RAW_GOODS = [
       ["Dennis", "2月出貨", 6780, "出貨"],
       ["Dennis", "3月出貨", 4120, "出貨"],
@@ -644,8 +557,54 @@
       ["Dennis", "鹿", 250, "出貨"]
     ];
 
+    function getTodayStr() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+
+    function getMonthKey(dateStr) {
+      if (!dateStr || dateStr.length < 7) return getTodayStr().slice(0, 7);
+      return dateStr.slice(0, 7);
+    }
+
+    function ensureMonthlyBucket(loc, monthKey) {
+      loc.monthlyStats = loc.monthlyStats || {};
+      if (!loc.monthlyStats[monthKey]) {
+        loc.monthlyStats[monthKey] = {
+          records: []
+        };
+      }
+      return loc.monthlyStats[monthKey];
+    }
+
+    function getDefaultState() {
+      return {
+        updatedAt: Date.now(),
+        currentLocationId: "loc_1",
+        locations: {
+          loc_1: {
+            id: "loc_1",
+            name: "1號場地（預設）",
+            unredeemedCoins: 0,
+            unredeemedCash: 0,
+            totalRedeemedCash: 0,
+            costAmzi: 0,
+            costDennis: 0,
+            costShared: 0,
+            stockCount: 0,
+            goodsList: [],
+            monthlyStats: {},
+            machines: [
+              { id: "m_1", name: "1號標準機", isFourInOne: false, panelTotal: 0, lastRedeemedPanel: 0, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }, slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } }
+            ]
+          }
+        },
+        logs: []
+      };
+    }
+
     function importLichengExcelData() {
-      if (!confirm("確定要匯入《麗城夾 new.xlsx》全部 129 筆真實貨物明細、各月兌現與舊帳嗎？\n（會自動建立「麗城夾（標機＋海濱迷你機）」並同步至雲端）")) return;
+      if (!confirm("確定要匯入/重置《麗城夾 new.xlsx》全部真實帳目嗎？")) return;
 
       const goodsList = LICHENG_RAW_GOODS.map((row, idx) => ({
         id: "g_lc_" + (idx + 1),
@@ -667,36 +626,34 @@
         unredeemedCoins: 0,
         unredeemedCash: 0,
         totalRedeemedCash: 36480,
-        legacyCashAmzi: 33680,
-        legacyCashDennis: 37450,
         costAmzi: costAmzi,
         costDennis: costDennis,
         costShared: 0,
         stockCount: activeStockCount,
         goodsList: goodsList,
         monthlyStats: {
-          "2026-03": { countedCoins: 0, redeemedCoins: 0, redeemedCash5050: 0, legacyCashAmzi: 15630, legacyCashDennis: 18680 },
-          "2026-04": { countedCoins: 0, redeemedCoins: 0, redeemedCash5050: 0, legacyCashAmzi: 7110, legacyCashDennis: 7910 },
-          "2026-05": { countedCoins: 0, redeemedCoins: 0, redeemedCash5050: 0, legacyCashAmzi: 2410, legacyCashDennis: 2350 },
-          "2026-06": { countedCoins: 0, redeemedCoins: 0, redeemedCash5050: 0, legacyCashAmzi: 6470, legacyCashDennis: 6460 },
-          "2026-07": { countedCoins: 0, redeemedCoins: 0, redeemedCash5050: 0, legacyCashAmzi: 2050, legacyCashDennis: 2050 },
-          "2026-08": { countedCoins: 0, redeemedCoins: 0, redeemedCash5050: 15770, legacyCashAmzi: 0, legacyCashDennis: 0 },
-          "2026-09": { countedCoins: 0, redeemedCoins: 0, redeemedCash5050: 10310, legacyCashAmzi: 0, legacyCashDennis: 0 },
-          "2026-10": { countedCoins: 0, redeemedCoins: 0, redeemedCash5050: 7420, legacyCashAmzi: 10, legacyCashDennis: 0 },
-          "2026-11": { countedCoins: 0, redeemedCoins: 0, redeemedCash5050: 2980, legacyCashAmzi: 0, legacyCashDennis: 0 }
+          "2026-03": { records: [{ id: "r_31", type: "legacy", owner: "Amzi", cash: 15630, date: "2026-03-15" }, { id: "r_32", type: "legacy", owner: "Dennis", cash: 18680, date: "2026-03-15" }] },
+          "2026-04": { records: [{ id: "r_41", type: "legacy", owner: "Amzi", cash: 7110, date: "2026-04-30" }, { id: "r_42", type: "legacy", owner: "Dennis", cash: 7910, date: "2026-04-30" }] },
+          "2026-05": { records: [{ id: "r_51", type: "legacy", owner: "Amzi", cash: 2410, date: "2026-05-29" }, { id: "r_52", type: "legacy", owner: "Dennis", cash: 2350, date: "2026-05-29" }] },
+          "2026-06": { records: [{ id: "r_61", type: "legacy", owner: "Amzi", cash: 6470, date: "2026-06-30" }, { id: "r_62", type: "legacy", owner: "Dennis", cash: 6460, date: "2026-06-30" }] },
+          "2026-07": { records: [{ id: "r_71", type: "legacy", owner: "Amzi", cash: 2050, date: "2026-07-13" }, { id: "r_72", type: "legacy", owner: "Dennis", cash: 2050, date: "2026-07-13" }] },
+          "2026-08": { records: [{ id: "r_81", type: "redeem", coins: 0, cash: 15770, date: "2026-08-07" }, { id: "r_82", type: "redeem", coins: 0, cash: 9000, date: "2026-08-23" }] },
+          "2026-09": { records: [{ id: "r_91", type: "redeem", coins: 0, cash: 6190, date: "2026-09-08" }, { id: "r_92", type: "redeem", coins: 0, cash: 4120, date: "2026-09-12" }] },
+          "2026-10": { records: [{ id: "r_101", type: "redeem", coins: 0, cash: 2420, date: "2026-10-07" }, { id: "r_102", type: "legacy", owner: "Amzi", cash: 10, date: "2026-10-07" }, { id: "r_103", type: "redeem", coins: 0, cash: 5000, date: "2026-10-12" }] },
+          "2026-11": { records: [{ id: "r_111", type: "redeem", coins: 0, cash: 2980, date: "2026-11-10" }] }
         },
         machines: [
-          { id: "m_lc_std", name: "麗城標機", isFourInOne: false, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } },
-          { id: "m_lc_mini", name: "海濱迷你機（四合一）", isFourInOne: true, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } }
+          { id: "m_lc_std", name: "麗城標機", isFourInOne: false, panelTotal: 0, lastRedeemedPanel: 0, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }, slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } },
+          { id: "m_lc_mini", name: "海濱迷你機（四合一）", isFourInOne: true, panelTotal: 0, lastRedeemedPanel: 0, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }, slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } }
         ]
       };
 
       appState.locations["loc_licheng"] = lichengLocation;
       appState.currentLocationId = "loc_licheng";
-      addLog("📥 已匯入《麗城夾 new.xlsx》129筆貨物（每隻獨立）、Amzi 2月租金$3,000及3-11月全數收入");
+      addLog("📥 匯入《麗城夾 new.xlsx》全部 129筆貨物與各月帳目");
       saveState();
       switchTab("dashboard");
-      showToast("✅ 已成功匯入《麗城夾 new.xlsx》全部真實帳目並同步雲端！");
+      showToast("✅ 匯入成功！");
     }
 
     function loadLocalBackup() {
@@ -723,10 +680,31 @@
         if (typeof l.costAmzi !== "number") l.costAmzi = 0;
         if (typeof l.costDennis !== "number") l.costDennis = 0;
         if (typeof l.costShared !== "number") l.costShared = l.totalCost || 0;
-        if (typeof l.legacyCashAmzi !== "number") l.legacyCashAmzi = 0;
-        if (typeof l.legacyCashDennis !== "number") l.legacyCashDennis = 0;
         if (!Array.isArray(l.goodsList)) l.goodsList = [];
         if (!l.monthlyStats || typeof l.monthlyStats !== "object") l.monthlyStats = {};
+        // Migrate old legacyCashAmzi / monthly legacyStats format to records array
+        Object.keys(l.monthlyStats).forEach(mk => {
+          let bucket = l.monthlyStats[mk];
+          if (!bucket.records) {
+            bucket.records = [];
+            if (bucket.redeemedCash5050 > 0) {
+              bucket.records.push({ id: "r_" + Math.random(), type: "redeem", coins: bucket.redeemedCoins || 0, cash: bucket.redeemedCash5050, date: mk + "-01" });
+            }
+            if (bucket.legacyCashAmzi > 0) {
+              bucket.records.push({ id: "r_" + Math.random(), type: "legacy", owner: "Amzi", cash: bucket.legacyCashAmzi, date: mk + "-01" });
+            }
+            if (bucket.legacyCashDennis > 0) {
+              bucket.records.push({ id: "r_" + Math.random(), type: "legacy", owner: "Dennis", cash: bucket.legacyCashDennis, date: mk + "-01" });
+            }
+          }
+        });
+        // Ensure machines have panel fields
+        (l.machines || []).forEach(m => {
+          if (typeof m.panelTotal !== "number") m.panelTotal = m.coins || 0;
+          if (typeof m.lastRedeemedPanel !== "number") m.lastRedeemedPanel = 0;
+          if (!m.slots) m.slots = { "左上": 0, "右上": 0, "左下": 0, "右下": 0 };
+          if (!m.slotLast) m.slotLast = { "左上": 0, "右上": 0, "左下": 0, "右下": 0 };
+        });
       });
       return data;
     }
@@ -771,7 +749,6 @@
           const errJson = await res.json().catch(() => ({}));
           const msg = (errJson.error && errJson.error.message) || `HTTP ${res.status}`;
           setSyncUI(false, "讀取被拒：" + msg);
-          document.getElementById("diagWriteText").textContent = "讀取錯誤：" + msg;
           return;
         }
         const docJson = await res.json();
@@ -787,7 +764,7 @@
             const t = new Date();
             const ts = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}:${String(t.getSeconds()).padStart(2, "0")}`;
             setSyncUI(true, "雲端已同步（HTTPS 直連 " + ts + "）");
-            document.getElementById("diagWriteText").textContent = "HTTPS 直連同步正常 (" + ts + ")";
+            document.getElementById("diagWriteText").textContent = "正常 (" + ts + ")";
             if (!silent) showToast("☁️ 已從雲端同步最新帳目！");
             return;
           }
@@ -795,7 +772,6 @@
         await pushToCloud(true);
       } catch (err) {
         setSyncUI(false, "網絡連線異常：" + err.message);
-        document.getElementById("diagWriteText").textContent = "連線異常：" + err.message;
       }
     }
 
@@ -819,19 +795,17 @@
           const errJson = await res.json().catch(() => ({}));
           const msg = (errJson.error && errJson.error.message) || `HTTP ${res.status}`;
           setSyncUI(false, "寫入被拒：" + msg);
-          document.getElementById("diagWriteText").textContent = "寫入被拒：" + msg;
           showToast("❌ 雲端寫入失敗：" + msg, true);
           return;
         }
         const t = new Date();
         const ts = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}:${String(t.getSeconds()).padStart(2, "0")}`;
         setSyncUI(true, "雲端已同步 · 最後寫入 " + ts);
-        document.getElementById("diagWriteText").textContent = "成功寫入伺服器 (" + ts + ")";
+        document.getElementById("diagWriteText").textContent = "成功寫入 (" + ts + ")";
         document.getElementById("lastCloudWriteTime").textContent = "☁️ 雲端已存 " + ts;
         if (!silent) showToast("☁️ 已成功寫入 Firebase 雲端伺服器！");
       } catch (err) {
-        setSyncUI(false, "寫入網絡異常：" + err.message);
-        document.getElementById("diagWriteText").textContent = "網絡異常：" + err.message;
+        setSyncUI(false, "寫入異常：" + err.message);
         showToast("❌ 網絡異常（已存本機）：" + err.message, true);
       }
     }
@@ -840,9 +814,7 @@
       const today = getTodayStr();
       document.getElementById("coinDateInput").value = today;
       document.getElementById("redeemDateInput").value = today;
-      document.getElementById("legacyDateInput").value = today;
       document.getElementById("stockOwnerSelect").value = currentOperator;
-      document.getElementById("legacyOwnerSelect").value = currentOperator;
       renderAll();
 
       firebase.initializeApp(firebaseConfig);
@@ -852,29 +824,62 @@
           document.getElementById("diagAuthText").textContent = "已匿名登入 (" + authUser.uid.slice(0, 6) + "...)";
           await pullFromCloud(true);
           setInterval(() => {
-            if (document.visibilityState === "visible") {
-              pullFromCloud(true);
-            }
+            if (document.visibilityState === "visible") pullFromCloud(true);
           }, 5000);
         })
         .catch((err) => {
           document.getElementById("diagAuthText").textContent = "登入失敗：" + err.code;
-          setSyncUI(false, "匿名登入失敗：" + err.code);
+          setSyncUI(false, "登入失敗：" + err.code);
         });
     }
 
     function saveState() {
       appState.updatedAt = Date.now();
       localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
+      recalculateLocationTotals();
       renderAll();
       pushToCloud(true);
+    }
+
+    function recalculateLocationTotals() {
+      Object.values(appState.locations).forEach(loc => {
+        let totalUnred = 0;
+        (loc.machines || []).forEach(m => {
+          if (m.isFourInOne) {
+            let mSum = 0;
+            ["左上", "右上", "左下", "右下"].forEach(slot => {
+              const current = m.slots[slot] || 0;
+              const last = m.slotLast[slot] || 0;
+              mSum += Math.max(0, current - last);
+            });
+            m.coins = mSum;
+            totalUnred += mSum;
+          } else {
+            const current = m.panelTotal || 0;
+            const last = m.lastRedeemedPanel || 0;
+            const diff = Math.max(0, current - last);
+            m.coins = diff;
+            totalUnred += diff;
+          }
+        });
+        loc.unredeemedCoins = totalUnred;
+        loc.unredeemedCash = totalUnred * 5; // default rate $5
+
+        // Calculate total redeemed cash from monthly records
+        let totalRedeem = 0;
+        Object.values(loc.monthlyStats || {}).forEach(bucket => {
+          (bucket.records || []).forEach(r => {
+            if (r.type === "redeem") totalRedeem += (r.cash || 0);
+          });
+        });
+        loc.totalRedeemedCash = totalRedeem;
+      });
     }
 
     function setOperator(name) {
       currentOperator = name;
       localStorage.setItem("claw_operator", name);
       document.getElementById("stockOwnerSelect").value = name;
-      document.getElementById("legacyOwnerSelect").value = name;
       renderOperatorUI();
     }
 
@@ -931,6 +936,22 @@
       showToast("✅ 場地名稱已更新");
     }
 
+    function deleteCurrentLocation() {
+      const locIds = Object.keys(appState.locations);
+      if (locIds.length <= 1) {
+        alert("必須至少保留一個場地，無法刪除！");
+        return;
+      }
+      const loc = appState.locations[appState.currentLocationId];
+      if (!confirm(`⚠️ 確定要刪除場地「${loc.name}」嗎？\n\n此操作會刪除該場地所有機台與貨物紀錄，且無法復原！`)) return;
+
+      delete appState.locations[appState.currentLocationId];
+      appState.currentLocationId = Object.keys(appState.locations)[0];
+      addLog(`刪除場地「${loc.name}」`);
+      saveState();
+      showToast("✅ 場地已刪除");
+    }
+
     function addNewLocation() {
       const name = prompt("請輸入新場地名稱（例如：麗城店 / 荃灣店）：");
       if (!name || !name.trim()) return;
@@ -941,8 +962,6 @@
         unredeemedCoins: 0,
         unredeemedCash: 0,
         totalRedeemedCash: 0,
-        legacyCashAmzi: 0,
-        legacyCashDennis: 0,
         costAmzi: 0,
         costDennis: 0,
         costShared: 0,
@@ -950,7 +969,7 @@
         goodsList: [],
         monthlyStats: {},
         machines: [
-          { id: "m_" + Date.now(), name: "1號機", isFourInOne: false, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } }
+          { id: "m_" + Date.now(), name: "1號機", isFourInOne: false, panelTotal: 0, lastRedeemedPanel: 0, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }, slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } }
         ]
       };
       appState.currentLocationId = id;
@@ -968,8 +987,11 @@
         id: "m_" + Date.now(),
         name: name.trim(),
         isFourInOne: isFour,
+        panelTotal: 0,
+        lastRedeemedPanel: 0,
         coins: 0,
-        slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }
+        slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 },
+        slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }
       });
       addLog(`在「${loc.name}」新增${isFour ? "四合一迷你機" : "機台"}：${name.trim()}`);
       saveState();
@@ -989,6 +1011,18 @@
       showToast("✅ 機台名稱已更新");
     }
 
+    function deleteMachine(machineId) {
+      const loc = appState.locations[appState.currentLocationId];
+      const m = loc.machines.find(item => item.id === machineId);
+      if (!m) return;
+      if (!confirm(`⚠️ 確定要刪除機台「${m.name}」嗎？`)) return;
+
+      loc.machines = loc.machines.filter(item => item.id !== machineId);
+      addLog(`刪除機台「${m.name}」`);
+      saveState();
+      showToast("✅ 機台已刪除");
+    }
+
     function onCoinMachineChange() {
       const loc = appState.locations[appState.currentLocationId];
       const mId = document.getElementById("coinMachineSelect").value;
@@ -997,8 +1031,10 @@
       if (machine && machine.isFourInOne) {
         wrapper.classList.remove("hidden");
         selectSlot(selectedSlot);
+        document.getElementById("coinCountInput").value = machine.slots[selectedSlot] || 0;
       } else {
         wrapper.classList.add("hidden");
+        document.getElementById("coinCountInput").value = machine ? (machine.panelTotal || 0) : 0;
       }
     }
 
@@ -1012,6 +1048,12 @@
           btn.className = "slot-btn border border-slate-300 bg-white text-slate-700 rounded-xl py-2 text-xs font-bold";
         }
       });
+      const loc = appState.locations[appState.currentLocationId];
+      const mId = document.getElementById("coinMachineSelect").value;
+      const machine = loc.machines.find(m => m.id === mId);
+      if (machine && machine.isFourInOne) {
+        document.getElementById("coinCountInput").value = machine.slots[slot] || 0;
+      }
     }
 
     function recordCoins() {
@@ -1020,35 +1062,31 @@
       const monthKey = getMonthKey(dateVal);
       const mId = document.getElementById("coinMachineSelect").value;
       const machine = loc.machines.find(m => m.id === mId);
-      const count = parseInt(document.getElementById("coinCountInput").value, 10);
+      const panelVal = parseInt(document.getElementById("coinCountInput").value, 10);
       const rate = parseFloat(document.getElementById("coinRateInput").value) || 5;
       const note = document.getElementById("coinNoteInput").value.trim();
 
-      if (!machine || isNaN(count) || count <= 0) {
-        alert("請輸入有效的機數！");
+      if (!machine || isNaN(panelVal) || panelVal < 0) {
+        alert("請輸入有效的面板累計數值！");
         return;
       }
 
       if (machine.isFourInOne) {
-        machine.slots[selectedSlot] = (machine.slots[selectedSlot] || 0) + count;
-        machine.coins = (machine.coins || 0) + count;
+        const oldVal = machine.slots[selectedSlot] || 0;
+        const diff = Math.max(0, panelVal - oldVal);
+        machine.slots[selectedSlot] = panelVal;
+        addLog(`[${dateVal}] 點幣 ${machine.name} [${selectedSlot}] 面板改為 ${panelVal} (新增 +${diff}) ${note ? "· " + note : ""}`);
       } else {
-        machine.coins = (machine.coins || 0) + count;
+        const oldVal = machine.panelTotal || 0;
+        const diff = Math.max(0, panelVal - oldVal);
+        machine.panelTotal = panelVal;
+        addLog(`[${dateVal}] 點幣 ${machine.name} 面板改為 ${panelVal} (新增 +${diff}) ${note ? "· " + note : ""}`);
       }
-
-      loc.unredeemedCoins = (loc.unredeemedCoins || 0) + count;
-      loc.unredeemedCash = (loc.unredeemedCash || 0) + (count * rate);
-
-      const mBucket = ensureMonthlyBucket(loc, monthKey);
-      mBucket.countedCoins = (mBucket.countedCoins || 0) + count;
-
-      const targetLabel = machine.isFourInOne ? `${machine.name} [${selectedSlot}]` : machine.name;
-      addLog(`[${dateVal}] 點幣 +${count} 機（${targetLabel}，面值$${rate}）${note ? " · " + note : ""}`);
 
       document.getElementById("coinCountInput").value = "";
       document.getElementById("coinNoteInput").value = "";
       saveState();
-      showToast(`✅ 已儲存 ${targetLabel} +${count} 機`);
+      showToast(`✅ 機台累計讀數已更新`);
     }
 
     function redeemAndReset() {
@@ -1063,54 +1101,75 @@
         return;
       }
 
-      loc.totalRedeemedCash = (loc.totalRedeemedCash || 0) + cash;
-      loc.unredeemedCoins = 0;
-      loc.unredeemedCash = 0;
+      if (!confirm(`💡 確定要執行場主兌幣結算嗎？\n\n• 實收現金：HK$ ${cash}\n• 結算機數：${coins} 機\n• 50/50 拆帳：每人分得 $${(cash / 2).toFixed(1)}\n• 動作：本場所有機台未兌數將會歸零重新起算。`)) return;
+
+      // Update baseline lastRedeemedPanel and slotLast to current panelTotal/slots
       loc.machines.forEach(m => {
-        m.coins = 0;
-        m.slots = { "左上": 0, "右上": 0, "左下": 0, "右下": 0 };
+        if (m.isFourInOne) {
+          ["左上", "右上", "左下", "右下"].forEach(slot => {
+            m.slotLast[slot] = m.slots[slot] || 0;
+          });
+        } else {
+          m.lastRedeemedPanel = m.panelTotal || 0;
+        }
       });
 
       const mBucket = ensureMonthlyBucket(loc, monthKey);
-      mBucket.redeemedCoins = (mBucket.redeemedCoins || 0) + coins;
-      mBucket.redeemedCash5050 = (mBucket.redeemedCash5050 || 0) + cash;
+      mBucket.records = mBucket.records || [];
+      mBucket.records.push({
+        id: "r_" + Date.now(),
+        type: "redeem",
+        coins: coins,
+        cash: cash,
+        date: dateVal
+      });
 
       addLog(`[${dateVal}] 場主兌幣 ${coins} 機，實收 HK$${cash}（50/50各得 $${(cash / 2).toFixed(1)}，機數已歸零）`);
       saveState();
       showToast(`✅ 兌幣 HK$${cash} 已入帳並歸零機數`);
     }
 
-    function recordLegacyAccount() {
+    function deleteRecord(monthKey, recordId) {
+      if (!confirm("確定要刪除這筆入帳紀錄嗎？")) return;
       const loc = appState.locations[appState.currentLocationId];
-      const dateVal = document.getElementById("legacyDateInput").value || getTodayStr();
-      const monthKey = getMonthKey(dateVal);
-      const owner = document.getElementById("legacyOwnerSelect").value;
-      const coins = parseInt(document.getElementById("legacyCoinInput").value, 10) || 0;
-      const cash = parseFloat(document.getElementById("legacyCashInput").value);
-      const note = document.getElementById("legacyNoteInput").value.trim();
-
-      if (isNaN(cash) || cash <= 0) {
-        alert("請輸入有效的舊帳金額！");
-        return;
+      const bucket = loc.monthlyStats[monthKey];
+      if (bucket && bucket.records) {
+        bucket.records = bucket.records.filter(r => r.id !== recordId);
+        if (bucket.records.length === 0) delete loc.monthlyStats[monthKey];
       }
-
-      const mBucket = ensureMonthlyBucket(loc, monthKey);
-      mBucket.redeemedCoins = (mBucket.redeemedCoins || 0) + coins;
-
-      if (owner === "Amzi") {
-        loc.legacyCashAmzi = (loc.legacyCashAmzi || 0) + cash;
-        mBucket.legacyCashAmzi = (mBucket.legacyCashAmzi || 0) + cash;
-      } else {
-        loc.legacyCashDennis = (loc.legacyCashDennis || 0) + cash;
-        mBucket.legacyCashDennis = (mBucket.legacyCashDennis || 0) + cash;
-      }
-
-      addLog(`[${dateVal}] 舊帳入帳：${owner} 實收 HK$${cash}${coins > 0 ? ` (${coins}機)` : ""}${note ? " · " + note : ""}`);
-      document.getElementById("legacyCoinInput").value = "";
-      document.getElementById("legacyCashInput").value = "";
-      document.getElementById("legacyNoteInput").value = "";
+      addLog(`刪除 ${monthKey} 的兌幣/舊帳紀錄`);
       saveState();
-      showToast(`✅ 已將舊帳 HK$${cash} 計入 ${owner} 名下`);
+      showToast("✅ 紀錄已刪除");
+    }
+
+    function editRecord(monthKey, recordId) {
+      const loc = appState.locations[appState.currentLocationId];
+      const bucket = loc.monthlyStats[monthKey];
+      const r = (bucket && bucket.records || []).find(item => item.id === recordId);
+      if (!r) return;
+
+      if (r.type === "redeem") {
+        const newCash = prompt("請修改實收現金金額 (HK$)：", r.cash);
+        if (newCash === null) return;
+        const val = parseFloat(newCash);
+        if (isNaN(val) || val < 0) {
+          alert("金額無效！");
+          return;
+        }
+        r.cash = val;
+      } else {
+        const newCash = prompt("請修改舊帳金額 (HK$)：", r.cash);
+        if (newCash === null) return;
+        const val = parseFloat(newCash);
+        if (isNaN(val) || val < 0) {
+          alert("金額無效！");
+          return;
+        }
+        r.cash = val;
+      }
+      addLog(`修改 ${monthKey} 紀錄金額`);
+      saveState();
+      showToast("✅ 紀錄已更新");
     }
 
     function recordGoodsItem() {
@@ -1118,7 +1177,7 @@
       const status = document.getElementById("stockStatusSelect").value;
       const owner = document.getElementById("stockOwnerSelect").value;
       const name = document.getElementById("stockNoteInput").value.trim() || (status === "雜費" ? "場租/雜費" : "未命名貨物");
-      const qty = parseInt(document.getElementById("stockQtyInput").value, 10) || 0;
+      const qty = parseInt(document.getElementById("stockQtyInput").value, 10) || 1;
       const cost = parseFloat(document.getElementById("stockCostInput").value) || 0;
 
       if (cost > 0) {
@@ -1152,7 +1211,12 @@
       document.getElementById("stockQtyInput").value = "1";
       document.getElementById("stockCostInput").value = "";
       saveState();
-      showToast(`✅ 已儲存「${name}」（${status} · ${owner}）`);
+      showToast(`✅ 已新增「${name}」`);
+    }
+
+    function toggleGoodsExpand(goodsId) {
+      expandedGoodsIds[goodsId] = !expandedGoodsIds[goodsId];
+      renderAll();
     }
 
     function cycleGoodsStatus(goodsId, newStatus) {
@@ -1170,7 +1234,7 @@
       item.status = newStatus;
       addLog(`貨物狀態變更：「${item.name}」(${item.qty}隻) ${oldStatus} ➔ ${newStatus}`);
       saveState();
-      showToast(`✅ 「${item.name}」已切換為【${newStatus}】`);
+      showToast(`✅ 已切換為【${newStatus}】`);
     }
 
     function deleteGoodsItem(goodsId) {
@@ -1223,7 +1287,7 @@
         return;
       }
       if (!gId) {
-        alert("調出分店目前沒有可選擇的存貨項目！");
+        alert("請選擇要調動的貨物！");
         return;
       }
 
@@ -1269,11 +1333,11 @@
     }
 
     function resetAllData() {
-      if (!confirm("確定要清空所有場地帳目、貨物 List、舊帳與紀錄，全部數目歸零重新開始嗎？")) return;
+      if (!confirm("確定要清空所有場地帳目、貨物 List 與紀錄，全部數目歸零重新開始嗎？")) return;
       appState = getDefaultState();
       saveState();
       switchTab("dashboard");
-      showToast("✅ 全部數目已歸零重新開始");
+      showToast("✅ 全部數目已歸零");
     }
 
     function addLog(text) {
@@ -1291,30 +1355,44 @@
       if (appState.logs.length > 100) appState.logs.length = 100;
     }
 
-    function renderMonthlyHtml(loc) {
+    function renderMonthlyHtml(loc, locId) {
       const stats = loc.monthlyStats || {};
       const months = Object.keys(stats).sort().reverse();
       if (months.length === 0) {
-        return `<div class="py-3 text-center text-slate-400">尚無各月點幣或兌幣紀錄</div>`;
+        return `<div class="py-3 text-center text-slate-400">尚無各月兌幣或舊帳紀錄</div>`;
       }
       return months.map(m => {
-        const s = stats[m];
-        const totalCash = (s.redeemedCash5050 || 0) + (s.legacyCashAmzi || 0) + (s.legacyCashDennis || 0);
+        const bucket = stats[m];
+        const records = bucket.records || [];
+        let monthTotal = 0;
+        const recHtml = records.map(r => {
+          monthTotal += (r.cash || 0);
+          const title = r.type === "redeem" ? `💰 兌現 $${r.cash} (${r.coins || 0}機)` : `📜 舊帳 (${r.owner}) $${r.cash}`;
+          return `
+            <div class="flex justify-between items-center py-1.5 pl-2 border-b border-slate-100 last:border-b-0 text-[11px]">
+              <div>
+                <span class="font-bold text-slate-700">${title}</span>
+                <span class="text-slate-400 ml-1.5">${r.date || ""}</span>
+              </div>
+              <div class="flex gap-1.5">
+                <button onclick="editRecord('${m}', '${r.id}')" class="text-blue-600 font-semibold px-1.5 py-0.5 bg-blue-50 rounded">✏️修改</button>
+                <button onclick="deleteRecord('${m}', '${r.id}')" class="text-rose-500 font-semibold px-1.5 py-0.5 bg-rose-50 rounded">刪除</button>
+              </div>
+            </div>`;
+        }).join("") || `<div class="text-slate-400 py-1 pl-2">無明細紀錄</div>`;
+
         return `
-          <div class="py-2.5 flex justify-between items-center">
-            <div>
-              <div class="font-bold text-slate-800">🗓️ ${m} 月份</div>
-              <div class="text-[11px] text-slate-500">點幣累計 ${s.countedCoins || 0} 機 · 已兌 ${s.redeemedCoins || 0} 機</div>
-              <div class="text-[11px] text-purple-700">50/50兌現 $${s.redeemedCash5050 || 0} · 舊帳(A:$${s.legacyCashAmzi || 0} / D:$${s.legacyCashDennis || 0})</div>
+          <div class="py-2">
+            <div class="flex justify-between items-center font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded">
+              <span>🗓️ ${m} 月份 (總計 $${monthTotal})</span>
             </div>
-            <div class="text-right">
-              <div class="font-bold text-emerald-700">月總兌現 $${totalCash}</div>
-            </div>
+            <div class="mt-1 space-y-1">${recHtml}</div>
           </div>`;
       }).join("");
     }
 
     function renderAll() {
+      recalculateLocationTotals();
       renderOperatorUI();
       const locIds = Object.keys(appState.locations);
       const locSelect = document.getElementById("locationSelect");
@@ -1348,26 +1426,37 @@
       const loc = appState.locations[appState.currentLocationId];
       const redeemed5050 = loc.totalRedeemedCash || 0;
       const halfRedeemed = redeemed5050 / 2;
-      const legA = loc.legacyCashAmzi || 0;
-      const legD = loc.legacyCashDennis || 0;
+
+      // Calculate total legacy cash for Amzi & Dennis across all months in this location
+      let locLegAmzi = 0;
+      let locLegDennis = 0;
+      Object.values(loc.monthlyStats || {}).forEach(bucket => {
+        (bucket.records || []).forEach(r => {
+          if (r.type === "legacy") {
+            if (r.owner === "Amzi") locLegAmzi += (r.cash || 0);
+            if (r.owner === "Dennis") locLegDennis += (r.cash || 0);
+          }
+        });
+      });
+
       const cAmzi = loc.costAmzi || 0;
       const cDennis = loc.costDennis || 0;
       const cShared = loc.costShared || 0;
       const totalLocCost = cAmzi + cDennis + cShared;
 
-      const netAmzi = halfRedeemed + legA - cAmzi - (cShared / 2);
-      const netDennis = halfRedeemed + legD - cDennis - (cShared / 2);
+      const netAmzi = halfRedeemed + locLegAmzi - cAmzi - (cShared / 2);
+      const netDennis = halfRedeemed + locLegDennis - cDennis - (cShared / 2);
 
       document.getElementById("statCoins").textContent = `${loc.unredeemedCoins || 0} 機`;
       document.getElementById("statCoinCash").textContent = `約 HK$ ${loc.unredeemedCash || 0}`;
-      document.getElementById("statRedeemed").textContent = `$${redeemed5050 + legA + legD}`;
+      document.getElementById("statRedeemed").textContent = `$${redeemed5050 + locLegAmzi + locLegDennis}`;
       document.getElementById("statHalfRedeemed").textContent = `50/50對分每人: $${halfRedeemed.toFixed(1)}`;
       document.getElementById("statStock").textContent = `庫存 ${loc.stockCount || 0} 隻`;
 
       document.getElementById("statNetAmzi").textContent = `$${netAmzi.toFixed(1)}`;
-      document.getElementById("statDetailAmzi").textContent = `舊帳 $${legA} · 成本 $${cAmzi}`;
+      document.getElementById("statDetailAmzi").textContent = `舊帳 $${locLegAmzi} · 成本 $${cAmzi}`;
       document.getElementById("statNetDennis").textContent = `$${netDennis.toFixed(1)}`;
-      document.getElementById("statDetailDennis").textContent = `舊帳 $${legD} · 成本 $${cDennis}`;
+      document.getElementById("statDetailDennis").textContent = `舊帳 $${locLegDennis} · 成本 $${cDennis}`;
       document.getElementById("statCostTotal").textContent = `$${totalLocCost}`;
       document.getElementById("statCostShared").textContent = `$${cShared}`;
 
@@ -1375,7 +1464,7 @@
       document.getElementById("coinPageTotalCash").textContent = `HK$ ${loc.unredeemedCash || 0}`;
       document.getElementById("redeemCoinInput").value = loc.unredeemedCoins || 0;
       document.getElementById("redeemCashInput").value = loc.unredeemedCash || 0;
-      document.getElementById("coinPageMonthlySummary").innerHTML = renderMonthlyHtml(loc);
+      document.getElementById("coinPageMonthlySummary").innerHTML = renderMonthlyHtml(loc, appState.currentLocationId);
 
       const mContainer = document.getElementById("machineListContainer");
       const coinMSelect = document.getElementById("coinMachineSelect");
@@ -1394,21 +1483,23 @@
               <div class="flex items-center gap-1.5">
                 <span>${m.name} <span class="text-indigo-600">[四合一]</span></span>
                 <button onclick="renameMachine('${m.id}')" class="text-[11px] bg-white border border-slate-300 px-1.5 py-0.5 rounded text-slate-600">✏️改名</button>
+                <button onclick="deleteMachine('${m.id}')" class="text-[11px] bg-rose-50 border border-rose-200 text-rose-600 px-1.5 py-0.5 rounded">🗑️刪除</button>
               </div>
-              <span class="text-blue-800">共 ${m.coins || 0} 機</span>
+              <span class="text-blue-800">未兌 ${m.coins || 0} 機</span>
             </div>
             <div class="grid grid-cols-2 gap-1.5 text-center text-xs">
-              <div class="bg-white py-1 rounded border border-slate-200">左上: <strong>${s["左上"] || 0}</strong></div>
-              <div class="bg-white py-1 rounded border border-slate-200">右上: <strong>${s["右上"] || 0}</strong></div>
-              <div class="bg-white py-1 rounded border border-slate-200">左下: <strong>${s["左下"] || 0}</strong></div>
-              <div class="bg-white py-1 rounded border border-slate-200">右下: <strong>${s["右下"] || 0}</strong></div>
+              <div class="bg-white py-1 rounded border border-slate-200">左上讀數: <strong>${s["左上"] || 0}</strong></div>
+              <div class="bg-white py-1 rounded border border-slate-200">右上讀數: <strong>${s["右上"] || 0}</strong></div>
+              <div class="bg-white py-1 rounded border border-slate-200">左下讀數: <strong>${s["左下"] || 0}</strong></div>
+              <div class="bg-white py-1 rounded border border-slate-200">右下讀數: <strong>${s["右下"] || 0}</strong></div>
             </div>`;
         } else {
           div.innerHTML = `
             <div class="flex justify-between items-center text-xs">
               <div class="flex items-center gap-1.5">
-                <span class="font-bold text-slate-800">${m.name}</span>
+                <span class="font-bold text-slate-800">${m.name} (面板讀數:${m.panelTotal || 0})</span>
                 <button onclick="renameMachine('${m.id}')" class="text-[11px] bg-white border border-slate-300 px-1.5 py-0.5 rounded text-slate-600">✏️改名</button>
+                <button onclick="deleteMachine('${m.id}')" class="text-[11px] bg-rose-50 border border-rose-200 text-rose-600 px-1.5 py-0.5 rounded">🗑️刪除</button>
               </div>
               <span class="font-bold text-blue-800">未兌：${m.coins || 0} 機</span>
             </div>`;
@@ -1433,26 +1524,41 @@
         const statusBadge = g.status === "入機"
           ? "bg-emerald-100 text-emerald-800"
           : (g.status === "貨存" ? "bg-blue-100 text-blue-800" : "bg-slate-200 text-slate-700");
+        const isExp = !!expandedGoodsIds[g.id];
         return `
-          <div class="pt-2.5 pb-1 flex flex-col gap-1.5 text-xs">
-            <div class="flex justify-between items-center">
-              <div class="font-bold text-slate-800">
-                <span class="px-1.5 py-0.5 rounded ${statusBadge} mr-1">${g.status}</span>
-                ${g.name} <span class="text-slate-500 font-normal">(${g.qty}隻)</span>
+          <div class="card !mb-2 border border-slate-200">
+            <div class="flex justify-between items-center cursor-pointer" onclick="toggleGoodsExpand('${g.id}')">
+              <div class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                <span class="px-1.5 py-0.5 rounded ${statusBadge}">${g.status}</span>
+                <span>${g.name} (${g.qty}隻)</span>
               </div>
-              <div class="flex items-center gap-2">
-                <span class="font-semibold text-indigo-700">擁有人: ${g.owner}</span>
-                <button onclick="deleteGoodsItem('${g.id}')" class="text-rose-500 text-[11px]">刪除</button>
-              </div>
-            </div>
-            <div class="flex justify-between items-center text-[11px] text-slate-500">
-              <span>價錢(成本): $${g.cost || 0} · ${g.date || ""}</span>
-              <div class="flex gap-1">
-                <button onclick="cycleGoodsStatus('${g.id}', '入機')" class="px-2 py-0.5 rounded border ${g.status === '入機' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white border-slate-300'}">入機</button>
-                <button onclick="cycleGoodsStatus('${g.id}', '貨存')" class="px-2 py-0.5 rounded border ${g.status === '貨存' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-slate-300'}">貨存</button>
-                <button onclick="cycleGoodsStatus('${g.id}', '出貨')" class="px-2 py-0.5 rounded border ${g.status === '出貨' ? 'bg-slate-700 text-white border-slate-700' : 'bg-white border-slate-300'}">出貨</button>
+              <div class="text-[11px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 font-bold">
+                ${isExp ? "▲ 收起" : "▼ 詳情"}
               </div>
             </div>
+            ${isExp ? `
+              <div class="mt-3 pt-3 border-t border-slate-100 text-xs space-y-2">
+                <div class="flex justify-between">
+                  <span class="text-slate-500">擁有人/墊付人：</span>
+                  <strong class="text-indigo-700">${g.owner}</strong>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-500">墊付成本價錢：</span>
+                  <strong>$${g.cost || 0}</strong>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-500">建檔日期：</span>
+                  <span>${g.date || ""}</span>
+                </div>
+                <div class="flex justify-between items-center pt-2 border-t border-slate-100">
+                  <div class="flex gap-1">
+                    <button onclick="cycleGoodsStatus('${g.id}', '入機')" class="px-2 py-1 rounded border text-xs ${g.status === '入機' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white border-slate-300'}">入機</button>
+                    <button onclick="cycleGoodsStatus('${g.id}', '貨存')" class="px-2 py-1 rounded border text-xs ${g.status === '貨存' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-slate-300'}">貨存</button>
+                    <button onclick="cycleGoodsStatus('${g.id}', '出貨')" class="px-2 py-1 rounded border text-xs ${g.status === '出貨' ? 'bg-slate-700 text-white border-slate-700' : 'bg-white border-slate-300'}">出貨</button>
+                  </div>
+                  <button onclick="deleteGoodsItem('${g.id}')" class="text-rose-500 text-xs font-bold px-2 py-1 bg-rose-50 rounded">刪除</button>
+                </div>
+              </div>` : ""}
           </div>`;
       }).join("") || `<div class="py-4 text-center text-xs text-slate-400">此篩選下尚無貨物紀錄</div>`;
 
@@ -1465,7 +1571,7 @@
           </div>
           <span class="text-slate-400 whitespace-nowrap">${log.time}</span>
         </div>
-      `).join("") || `<div class="py-4 text-center text-slate-400">尚無紀錄，目前全部數目為 0</div>`;
+      `).join("") || `<div class="py-4 text-center text-slate-400">尚無紀錄</div>`;
 
       let grandRedeemed5050 = 0;
       let grandLegAmzi = 0;
@@ -1480,8 +1586,16 @@
       locIds.forEach(id => {
         const l = appState.locations[id];
         const r = l.totalRedeemedCash || 0;
-        const la = l.legacyCashAmzi || 0;
-        const ld = l.legacyCashDennis || 0;
+        let la = 0, ld = 0;
+        Object.values(l.monthlyStats || {}).forEach(bucket => {
+          (bucket.records || []).forEach(rec => {
+            if (rec.type === "legacy") {
+              if (rec.owner === "Amzi") la += (rec.cash || 0);
+              if (rec.owner === "Dennis") ld += (rec.cash || 0);
+            }
+          });
+        });
+
         const ca = l.costAmzi || 0;
         const cd = l.costDennis || 0;
         const cs = l.costShared || 0;
@@ -1511,7 +1625,7 @@
               <div class="text-slate-500">50/50各半: $${(r / 2).toFixed(1)}</div>
             </div>
           </div>
-          ${isExpanded ? `<div class="mt-2 pl-3 pr-2 py-1 bg-slate-50 rounded-xl border border-slate-200 divide-y divide-slate-200">${renderMonthlyHtml(l)}</div>` : ""}
+          ${isExpanded ? `<div class="mt-2 pl-3 pr-2 py-1 bg-slate-50 rounded-xl border border-slate-200 divide-y divide-slate-200">${renderMonthlyHtml(l, id)}</div>` : ""}
         `;
         summaryDiv.appendChild(wrapper);
       });
