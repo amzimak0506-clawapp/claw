@@ -431,7 +431,7 @@
     };
 
     const DOC_PATH = "ledgers/DENNIS_AMZI_MAIN";
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v3";
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v4";
     let db = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
     let selectedSlot = "左上";
@@ -546,10 +546,10 @@
       try {
         firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
-        // 關鍵修正：強制使用 HTTP 長輪詢，穿透香港流動網絡/路由器對 WebChannel 的阻擋
+        // 關鍵修正：必須同時關閉 AutoDetect 才能單獨啟用 ForceLongPolling
         db.settings({
           experimentalForceLongPolling: true,
-          merge: true
+          experimentalAutoDetectLongPolling: false
         });
 
         firebase.auth().signInAnonymously()
