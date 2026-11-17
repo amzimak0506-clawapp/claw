@@ -86,31 +86,31 @@
         <div class="card !mb-0 border-l-4 border-emerald-600">
           <div class="text-xs text-slate-500">本場累計已兌現金</div>
           <div id="statRedeemed" class="text-2xl font-extrabold text-emerald-700 mt-1">$0</div>
-          <div id="statHalfRedeemed" class="text-xs text-emerald-600 mt-0.5">每人分得 50%: $0</div>
+          <div id="statHalfRedeemed" class="text-xs text-emerald-600 mt-0.5">50%對分每人: $0</div>
         </div>
       </div>
 
-      <!-- 台主獨立成本計算卡片 -->
+      <!-- 台主獨立成本與舊帳計算卡片 -->
       <div class="card border border-slate-200">
         <div class="flex justify-between items-center mb-2">
-          <span class="text-sm font-bold text-slate-800">💳 本場台主獨立成本與庫存</span>
+          <span class="text-sm font-bold text-slate-800">💳 本場台主獨立損益與庫存</span>
           <span id="statStock" class="text-sm font-extrabold text-indigo-700">庫存 0 隻</span>
         </div>
         <div class="grid grid-cols-2 gap-2.5 mt-2">
           <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-2.5">
-            <div class="text-xs text-blue-800 font-semibold">Amzi 墊付成本</div>
-            <div id="statCostAmzi" class="text-lg font-extrabold text-blue-950 mt-0.5">$0</div>
-            <div id="statNetAmzi" class="text-[11px] text-slate-600 mt-0.5">兌現50%扣成本: $0</div>
+            <div class="text-xs text-blue-800 font-semibold">Amzi 淨利（含專屬舊帳）</div>
+            <div id="statNetAmzi" class="text-lg font-extrabold text-blue-950 mt-0.5">$0</div>
+            <div id="statDetailAmzi" class="text-[11px] text-slate-600 mt-0.5">舊帳 $0 · 成本 $0</div>
           </div>
           <div class="bg-purple-50/70 border border-purple-100 rounded-xl p-2.5">
-            <div class="text-xs text-purple-800 font-semibold">Dennis 墊付成本</div>
-            <div id="statCostDennis" class="text-lg font-extrabold text-purple-950 mt-0.5">$0</div>
-            <div id="statNetDennis" class="text-[11px] text-slate-600 mt-0.5">兌現50%扣成本: $0</div>
+            <div class="text-xs text-purple-800 font-semibold">Dennis 淨利（含專屬舊帳）</div>
+            <div id="statNetDennis" class="text-lg font-extrabold text-purple-950 mt-0.5">$0</div>
+            <div id="statDetailDennis" class="text-[11px] text-slate-600 mt-0.5">舊帳 $0 · 成本 $0</div>
           </div>
         </div>
         <div class="text-xs text-slate-500 mt-2 pt-2 border-t border-slate-100 flex justify-between">
-          <span>本場總成本：<strong id="statCostTotal" class="text-slate-700">$0</strong></span>
-          <span>共同/未指定成本：<strong id="statCostShared" class="text-slate-700">$0</strong></span>
+          <span>本場總墊付成本：<strong id="statCostTotal" class="text-slate-700">$0</strong></span>
+          <span>共同成本：<strong id="statCostShared" class="text-slate-700">$0</strong></span>
         </div>
       </div>
 
@@ -126,8 +126,8 @@
       <!-- 最近紀錄 -->
       <div class="card">
         <div class="flex justify-between items-center mb-2">
-          <h2 class="font-bold text-slate-800 text-sm">🕒 最近操作紀錄</h2>
-          <span class="text-xs text-slate-400">即時同步</span>
+          <h2 class="font-bold text-slate-800 text-sm">🕒 最近操作紀錄（自動雲端儲存）</h2>
+          <span class="text-xs text-emerald-600 font-semibold">已即時同步</span>
         </div>
         <div id="recentLogs" class="divide-y divide-slate-100 text-xs"></div>
       </div>
@@ -149,7 +149,7 @@
 
       <!-- 點幣表單 -->
       <div class="card">
-        <h2 class="font-bold text-base text-blue-950 mb-3">🪙 巡機點幣（儲存後留在原頁方便連續輸入）</h2>
+        <h2 class="font-bold text-base text-blue-950 mb-3">🪙 巡機點幣（儲存後留在原頁）</h2>
         <div class="space-y-3">
           <div class="grid grid-cols-2 gap-3">
             <div>
@@ -194,10 +194,10 @@
         </div>
       </div>
 
-      <!-- 場主兌幣歸零 -->
+      <!-- 場主兌幣歸零（50/50 拆帳） -->
       <div class="card border-2 border-amber-200 bg-amber-50/40">
-        <h2 class="font-bold text-base text-amber-900 mb-1">💰 場主兌幣結算（自動歸零同場未兌機數）</h2>
-        <p class="text-xs text-amber-800 mb-3">與場主對數收現後按此鍵，系統會將實收現金計入收益（50/50 拆帳），並把本場未兌機數歸零。</p>
+        <h2 class="font-bold text-base text-amber-900 mb-1">💰 場主兌幣結算（50/50 拆帳並歸零機數）</h2>
+        <p class="text-xs text-amber-800 mb-3">與場主對數收現後按此鍵，系統會將實收現金計入 50/50 收益，並把本場未兌機數歸零。</p>
         <div class="space-y-3 mb-3">
           <div>
             <label class="block text-xs font-bold text-slate-600 mb-1">場主兌幣日期</label>
@@ -217,6 +217,53 @@
         <button onclick="redeemAndReset()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl shadow">
           確認兌幣入帳並歸零機數
         </button>
+      </div>
+
+      <!-- 各台主舊帳輸入（非 50/50 分帳） -->
+      <div class="card border-2 border-purple-200 bg-purple-50/30">
+        <h2 class="font-bold text-base text-purple-950 mb-1">📜 各台主舊帳補錄（非 50/50 獨立入帳）</h2>
+        <p class="text-xs text-purple-800 mb-3">用於補錄過往非 50/50 拆帳的舊數，金額會 100% 獨立計入指定台主名下，並同步列入該月兌幣總覽。</p>
+        <div class="space-y-3 mb-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">舊帳日期（決定所屬月份）</label>
+              <input type="date" id="legacyDateInput" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">歸屬台主（100% 計入）</label>
+              <select id="legacyOwnerSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white">
+                <option value="Amzi">Amzi</option>
+                <option value="Dennis">Dennis</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">舊帳機數（選填）</label>
+              <input type="number" id="legacyCoinInput" placeholder="例如 50" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">該台主實收金額 (HK$)</label>
+              <input type="number" id="legacyCashInput" placeholder="輸入金額" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">舊帳說明（選填）</label>
+            <input type="text" id="legacyNoteInput" placeholder="例如：10月舊帳結算" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+          </div>
+        </div>
+        <button onclick="recordLegacyAccount()" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-3 rounded-xl shadow">
+          儲存台主獨立舊帳
+        </button>
+      </div>
+
+      <!-- 本場該月幣數兌幣總覽 -->
+      <div class="card">
+        <div class="flex justify-between items-center mb-2">
+          <h2 class="font-bold text-base text-slate-800">📅 本場各月機數與兌幣總覽</h2>
+          <span class="text-xs text-slate-400">自動按月統計</span>
+        </div>
+        <div id="coinPageMonthlySummary" class="divide-y divide-slate-100 text-xs"></div>
       </div>
     </section>
 
@@ -277,14 +324,15 @@
         <div id="goodsListContainer" class="divide-y divide-slate-100 space-y-2"></div>
       </div>
 
-      <!-- 跨店調貨 -->
-      <div class="card border border-teal-200 bg-teal-50/30">
-        <h2 class="font-bold text-base text-teal-900 mb-3">🚚 跨店調貨（自動加減兩邊庫存）</h2>
+      <!-- 跨店調貨（從存貨 List 選擇具體貨品調動） -->
+      <div class="card border-2 border-teal-200 bg-teal-50/30">
+        <h2 class="font-bold text-base text-teal-900 mb-1">🚚 跨店調貨（從存貨 List 選擇貨品移動）</h2>
+        <p class="text-xs text-teal-800 mb-3">選擇調出分店的貨存項目後，兩邊總庫存自動加減；該項目會從原分店 List 移除並出現在調入分店 List。</p>
         <div class="space-y-3">
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-bold text-slate-600 mb-1">調出分店</label>
-              <select id="transferFromSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white"></select>
+              <select id="transferFromSelect" onchange="updateTransferGoodsDropdown()" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white"></select>
             </div>
             <div>
               <label class="block text-xs font-bold text-slate-600 mb-1">調入分店</label>
@@ -292,11 +340,15 @@
             </div>
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1">調動公仔數量（隻）</label>
-            <input type="number" id="transferQtyInput" placeholder="輸入數量" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+            <label class="block text-xs font-bold text-slate-600 mb-1">選擇調出分店的存貨 List 項目</label>
+            <select id="transferGoodsSelect" onchange="onTransferGoodsSelectChange()" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">調動數量（隻）</label>
+            <input type="number" id="transferQtyInput" placeholder="自動帶入該批全部數量，亦可手動改少" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
           </div>
           <button onclick="transferStock()" class="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold py-3 rounded-xl shadow">
-            確認跨店調貨
+            確認跨店調貨（同步更新兩邊 List）
           </button>
         </div>
       </div>
@@ -305,26 +357,28 @@
     <!-- 4. 全場總結算分頁 -->
     <section id="tab-settlement" class="hidden">
       <div class="card bg-gradient-to-br from-slate-900 to-blue-950 text-white">
-        <div class="text-xs text-blue-300">全線分店合併結算（每次兌幣先各分 50%，再扣各自獨立成本）</div>
-        <div id="allTotalRedeemed" class="text-2xl font-extrabold mt-1">總兌現 $0</div>
-        <div class="text-xs text-blue-200 mt-0.5">每人分得兌幣現金 (50%)：<strong id="allHalfRedeemed" class="text-white">$0</strong></div>
+        <div class="text-xs text-blue-300">全線分店合併結算（50/50 兌現對分 ＋ 各自舊帳 - 各自獨立成本）</div>
+        <div id="allTotalRedeemed" class="text-2xl font-extrabold mt-1">全線總兌現 $0</div>
+        <div class="text-xs text-blue-200 mt-0.5">50/50 兌現每人分得：<strong id="allHalfRedeemed" class="text-white">$0</strong></div>
 
         <div class="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-blue-800 text-xs">
           <div class="bg-blue-900/50 p-2.5 rounded-xl">
             <div class="text-blue-200 font-bold">Amzi 應佔淨利潤</div>
             <div id="amziShare" class="text-xl font-extrabold text-emerald-400 mt-1">$0</div>
-            <div id="amziCalcDetail" class="text-[11px] text-blue-300 mt-1">50%兌現 $0 - 成本 $0</div>
+            <div id="amziCalcDetail" class="text-[11px] text-blue-300 mt-1">50%兌現 $0 + 舊帳 $0 - 成本 $0</div>
           </div>
           <div class="bg-blue-900/50 p-2.5 rounded-xl">
             <div class="text-blue-200 font-bold">Dennis 應佔淨利潤</div>
             <div id="dennisShare" class="text-xl font-extrabold text-emerald-400 mt-1">$0</div>
-            <div id="dennisCalcDetail" class="text-[11px] text-blue-300 mt-1">50%兌現 $0 - 成本 $0</div>
+            <div id="dennisCalcDetail" class="text-[11px] text-blue-300 mt-1">50%兌現 $0 + 舊帳 $0 - 成本 $0</div>
           </div>
         </div>
       </div>
 
       <div class="card">
-        <h2 class="font-bold text-sm text-slate-800 mb-2">📊 各分店帳目與獨立成本明細</h2>
+        <div class="flex justify-between items-center mb-2">
+          <h2 class="font-bold text-sm text-slate-800">📊 各分店帳目明細（點擊店名查看各月機數兌幣總覽）</h2>
+        </div>
         <div id="allLocationsSummary" class="divide-y divide-slate-100 text-xs"></div>
       </div>
     </section>
@@ -332,17 +386,16 @@
     <!-- 5. 獨立設定與危險操作頁面 -->
     <section id="tab-danger" class="hidden">
       <div class="card">
-        <h2 class="font-bold text-base text-slate-800 mb-2">ℹ️ 系統資訊</h2>
+        <h2 class="font-bold text-base text-slate-800 mb-2">ℹ️ 雲端自動儲存與拆帳說明</h2>
         <div class="text-xs text-slate-600 space-y-1.5">
-          <p>• 雲端資料庫：<span class="font-mono font-bold text-blue-900">dennis-amzi-5b413</span></p>
-          <p>• 拆帳規則：每次場主兌幣實收現金先各分 50%，再各自扣除台主獨立墊付成本。</p>
-          <p>• 每幣預設面值：HK$ 5</p>
+          <p>• <strong>自動儲存機制</strong>：每次按下「確認儲存 / 新增 / 調貨 / 改名」即自動同步至雲端資料庫（<span class="font-mono font-bold text-blue-900">dennis-amzi-5b413</span>），無需手動存檔。</p>
+          <p>• <strong>拆帳規則</strong>：一般兌幣實收現金先各分 50%，加上各自補錄的 100% 獨立舊帳，再扣除各自墊付成本。</p>
         </div>
       </div>
 
       <div class="card border-2 border-rose-200 bg-rose-50/30">
         <h2 class="font-bold text-base text-rose-700 mb-1">⚠️ 危險操作區</h2>
-        <p class="text-xs text-slate-600 mb-4">如需重新開帳，可一鍵清空所有場地、貨物清單、點幣紀錄與台主成本，全部數目歸零重新開始（此操作無法復原）。</p>
+        <p class="text-xs text-slate-600 mb-4">如需重新開帳，可一鍵清空所有場地、貨物清單、點幣紀錄、舊帳與台主成本，全部數目歸零重新開始（此操作無法復原）。</p>
         <button onclick="resetAllData()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl text-sm shadow">
           全部數目歸零重新開始
         </button>
@@ -377,6 +430,7 @@
     let db = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
     let selectedSlot = "左上";
+    let expandedSettlementLocIds = {};
 
     function getTodayStr() {
       const d = new Date();
@@ -384,6 +438,25 @@
       const m = String(d.getMonth() + 1).padStart(2, "0");
       const day = String(d.getDate()).padStart(2, "0");
       return `${y}-${m}-${day}`;
+    }
+
+    function getMonthKey(dateStr) {
+      if (!dateStr || dateStr.length < 7) return getTodayStr().slice(0, 7);
+      return dateStr.slice(0, 7);
+    }
+
+    function ensureMonthlyBucket(loc, monthKey) {
+      loc.monthlyStats = loc.monthlyStats || {};
+      if (!loc.monthlyStats[monthKey]) {
+        loc.monthlyStats[monthKey] = {
+          countedCoins: 0,
+          redeemedCoins: 0,
+          redeemedCash5050: 0,
+          legacyCashAmzi: 0,
+          legacyCashDennis: 0
+        };
+      }
+      return loc.monthlyStats[monthKey];
     }
 
     function getDefaultState() {
@@ -396,11 +469,14 @@
             unredeemedCoins: 0,
             unredeemedCash: 0,
             totalRedeemedCash: 0,
+            legacyCashAmzi: 0,
+            legacyCashDennis: 0,
             costAmzi: 0,
             costDennis: 0,
             costShared: 0,
             stockCount: 0,
             goodsList: [],
+            monthlyStats: {},
             machines: [
               { id: "m_1", name: "1號標準機", isFourInOne: false, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } },
               { id: "m_2", name: "2號四合一迷你機", isFourInOne: true, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } }
@@ -420,20 +496,23 @@
       clearTimeout(window._toastTimer);
       window._toastTimer = setTimeout(() => {
         el.classList.add("hidden");
-      }, 2200);
+      }, 2400);
     }
 
     function initCloud() {
-      document.getElementById("coinDateInput").value = getTodayStr();
-      document.getElementById("redeemDateInput").value = getTodayStr();
+      const today = getTodayStr();
+      document.getElementById("coinDateInput").value = today;
+      document.getElementById("redeemDateInput").value = today;
+      document.getElementById("legacyDateInput").value = today;
       document.getElementById("stockOwnerSelect").value = currentOperator;
+      document.getElementById("legacyOwnerSelect").value = currentOperator;
 
       try {
         firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
         firebase.auth().signInAnonymously()
           .then(() => {
-            setSyncUI(true, "雲端已同步 · DENNIS & AMZI");
+            setSyncUI(true, "雲端已同步 · 自動儲存中");
             db.doc(DOC_PATH).onSnapshot((doc) => {
               if (doc.exists) {
                 appState = doc.data();
@@ -443,12 +522,14 @@
                 if (!appState.locations[appState.currentLocationId]) {
                   appState.currentLocationId = Object.keys(appState.locations)[0];
                 }
-                // 向下相容舊資料欄位
                 Object.values(appState.locations).forEach(l => {
                   if (typeof l.costAmzi !== "number") l.costAmzi = 0;
                   if (typeof l.costDennis !== "number") l.costDennis = 0;
                   if (typeof l.costShared !== "number") l.costShared = l.totalCost || 0;
+                  if (typeof l.legacyCashAmzi !== "number") l.legacyCashAmzi = 0;
+                  if (typeof l.legacyCashDennis !== "number") l.legacyCashDennis = 0;
                   if (!Array.isArray(l.goodsList)) l.goodsList = [];
+                  if (!l.monthlyStats || typeof l.monthlyStats !== "object") l.monthlyStats = {};
                 });
               } else {
                 appState = getDefaultState();
@@ -485,6 +566,7 @@
       currentOperator = name;
       localStorage.setItem("claw_operator", name);
       document.getElementById("stockOwnerSelect").value = name;
+      document.getElementById("legacyOwnerSelect").value = name;
       renderOperatorUI();
     }
 
@@ -525,7 +607,7 @@
       loc.name = newName.trim();
       addLog(`場地改名：「${oldName}」➔「${loc.name}」`);
       saveState();
-      showToast("✅ 場地名稱已更新");
+      showToast("✅ 場地名稱已自動儲存");
     }
 
     function addNewLocation() {
@@ -538,11 +620,14 @@
         unredeemedCoins: 0,
         unredeemedCash: 0,
         totalRedeemedCash: 0,
+        legacyCashAmzi: 0,
+        legacyCashDennis: 0,
         costAmzi: 0,
         costDennis: 0,
         costShared: 0,
         stockCount: 0,
         goodsList: [],
+        monthlyStats: {},
         machines: [
           { id: "m_" + Date.now(), name: "1號機", isFourInOne: false, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } }
         ]
@@ -550,6 +635,7 @@
       appState.currentLocationId = id;
       addLog(`新增場地「${name.trim()}」`);
       saveState();
+      showToast("✅ 新場地已建立並自動儲存");
     }
 
     function addNewMachine() {
@@ -566,6 +652,7 @@
       });
       addLog(`在「${loc.name}」新增${isFour ? "四合一迷你機" : "機台"}：${name.trim()}`);
       saveState();
+      showToast("✅ 新機台已自動儲存");
     }
 
     function renameMachine(machineId) {
@@ -578,7 +665,7 @@
       m.name = newName.trim();
       addLog(`機台改名：「${oldName}」➔「${m.name}」`);
       saveState();
-      showToast("✅ 機台名稱已更新");
+      showToast("✅ 機台名稱已自動儲存");
     }
 
     function onCoinMachineChange() {
@@ -606,10 +693,10 @@
       });
     }
 
-    // 儲存點幣後停留在原頁面，不跳回總覽
     function recordCoins() {
       const loc = appState.locations[appState.currentLocationId];
       const dateVal = document.getElementById("coinDateInput").value || getTodayStr();
+      const monthKey = getMonthKey(dateVal);
       const mId = document.getElementById("coinMachineSelect").value;
       const machine = loc.machines.find(m => m.id === mId);
       const count = parseInt(document.getElementById("coinCountInput").value, 10);
@@ -631,20 +718,23 @@
       loc.unredeemedCoins = (loc.unredeemedCoins || 0) + count;
       loc.unredeemedCash = (loc.unredeemedCash || 0) + (count * rate);
 
+      const mBucket = ensureMonthlyBucket(loc, monthKey);
+      mBucket.countedCoins = (mBucket.countedCoins || 0) + count;
+
       const targetLabel = machine.isFourInOne ? `${machine.name} [${selectedSlot}]` : machine.name;
       addLog(`[${dateVal}] 點幣 +${count} 機（${targetLabel}，面值$${rate}）${note ? " · " + note : ""}`);
 
       document.getElementById("coinCountInput").value = "";
       document.getElementById("coinNoteInput").value = "";
       saveState();
-      showToast(`✅ 已儲存 ${targetLabel} +${count} 機（同場累計 ${loc.unredeemedCoins} 機）`);
+      showToast(`✅ 已自動儲存 ${targetLabel} +${count} 機`);
     }
 
-    // 場主兌幣歸零後亦停留在原頁面
     function redeemAndReset() {
       const loc = appState.locations[appState.currentLocationId];
       const dateVal = document.getElementById("redeemDateInput").value || getTodayStr();
-      const coins = parseInt(document.getElementById("redeemCoinInput").value, 10);
+      const monthKey = getMonthKey(dateVal);
+      const coins = parseInt(document.getElementById("redeemCoinInput").value, 10) || 0;
       const cash = parseFloat(document.getElementById("redeemCashInput").value);
 
       if (isNaN(cash) || cash < 0) {
@@ -660,12 +750,49 @@
         m.slots = { "左上": 0, "右上": 0, "左下": 0, "右下": 0 };
       });
 
-      addLog(`[${dateVal}] 場主兌幣 ${isNaN(coins) ? 0 : coins} 機，實收 HK$${cash}（各分50%: $${(cash / 2).toFixed(1)}，未兌機數已歸零）`);
+      const mBucket = ensureMonthlyBucket(loc, monthKey);
+      mBucket.redeemedCoins = (mBucket.redeemedCoins || 0) + coins;
+      mBucket.redeemedCash5050 = (mBucket.redeemedCash5050 || 0) + cash;
+
+      addLog(`[${dateVal}] 場主兌幣 ${coins} 機，實收 HK$${cash}（50/50各得 $${(cash / 2).toFixed(1)}，機數已歸零）`);
       saveState();
-      showToast(`✅ 兌幣 HK$${cash} 已入帳並歸零同場機數`);
+      showToast(`✅ 兌幣 HK$${cash} 已自動儲存並歸零機數`);
     }
 
-    // 新增貨物 List 與台主獨立成本
+    // 補錄各台主舊帳（100% 歸屬該台主，非 50/50 分帳）
+    function recordLegacyAccount() {
+      const loc = appState.locations[appState.currentLocationId];
+      const dateVal = document.getElementById("legacyDateInput").value || getTodayStr();
+      const monthKey = getMonthKey(dateVal);
+      const owner = document.getElementById("legacyOwnerSelect").value;
+      const coins = parseInt(document.getElementById("legacyCoinInput").value, 10) || 0;
+      const cash = parseFloat(document.getElementById("legacyCashInput").value);
+      const note = document.getElementById("legacyNoteInput").value.trim();
+
+      if (isNaN(cash) || cash <= 0) {
+        alert("請輸入有效的舊帳金額！");
+        return;
+      }
+
+      const mBucket = ensureMonthlyBucket(loc, monthKey);
+      mBucket.redeemedCoins = (mBucket.redeemedCoins || 0) + coins;
+
+      if (owner === "Amzi") {
+        loc.legacyCashAmzi = (loc.legacyCashAmzi || 0) + cash;
+        mBucket.legacyCashAmzi = (mBucket.legacyCashAmzi || 0) + cash;
+      } else {
+        loc.legacyCashDennis = (loc.legacyCashDennis || 0) + cash;
+        mBucket.legacyCashDennis = (mBucket.legacyCashDennis || 0) + cash;
+      }
+
+      addLog(`[${dateVal}] 舊帳入帳：${owner} 實收 HK$${cash}${coins > 0 ? ` (${coins}機)` : ""}${note ? " · " + note : ""}`);
+      document.getElementById("legacyCoinInput").value = "";
+      document.getElementById("legacyCashInput").value = "";
+      document.getElementById("legacyNoteInput").value = "";
+      saveState();
+      showToast(`✅ 已將舊帳 HK$${cash} 計入 ${owner} 名下`);
+    }
+
     function recordGoodsItem() {
       const loc = appState.locations[appState.currentLocationId];
       const status = document.getElementById("stockStatusSelect").value;
@@ -674,14 +801,12 @@
       const qty = parseInt(document.getElementById("stockQtyInput").value, 10) || 0;
       const cost = parseFloat(document.getElementById("stockCostInput").value) || 0;
 
-      // 計算台主獨立成本
       if (cost > 0) {
         if (owner === "Amzi") loc.costAmzi = (loc.costAmzi || 0) + cost;
         else if (owner === "Dennis") loc.costDennis = (loc.costDennis || 0) + cost;
         else loc.costShared = (loc.costShared || 0) + cost;
       }
 
-      // 計算庫存變化
       if (status === "貨存" || status === "入機") {
         loc.stockCount = (loc.stockCount || 0) + qty;
       } else if (status === "出貨") {
@@ -707,17 +832,15 @@
       document.getElementById("stockQtyInput").value = "";
       document.getElementById("stockCostInput").value = "";
       saveState();
-      showToast(`✅ 已新增「${name}」（${status} · ${owner}）`);
+      showToast(`✅ 已自動儲存「${name}」（${status} · ${owner}）`);
     }
 
-    // 切換貨物 List 中單項狀態（入機 / 貨存 / 出貨）
     function cycleGoodsStatus(goodsId, newStatus) {
       const loc = appState.locations[appState.currentLocationId];
       const item = (loc.goodsList || []).find(g => g.id === goodsId);
       if (!item || item.status === newStatus) return;
 
       const oldStatus = item.status;
-      // 若從貨存/入機轉為出貨，扣減本場庫存；若從出貨轉回貨存/入機，加回庫存
       if ((oldStatus === "貨存" || oldStatus === "入機") && newStatus === "出貨") {
         loc.stockCount = Math.max(0, (loc.stockCount || 0) - (item.qty || 0));
       } else if (oldStatus === "出貨" && (newStatus === "貨存" || newStatus === "入機")) {
@@ -727,43 +850,111 @@
       item.status = newStatus;
       addLog(`貨物狀態變更：「${item.name}」(${item.qty}隻) ${oldStatus} ➔ ${newStatus}`);
       saveState();
-      showToast(`✅ 「${item.name}」已改為【${newStatus}】`);
+      showToast(`✅ 「${item.name}」已切換為【${newStatus}】`);
     }
 
     function deleteGoodsItem(goodsId) {
-      if (!confirm("確定刪除此筆貨物紀錄嗎？（不會自動退回已計入的成本，如需歸零請至重置頁）")) return;
+      if (!confirm("確定刪除此筆貨物紀錄嗎？")) return;
       const loc = appState.locations[appState.currentLocationId];
       loc.goodsList = (loc.goodsList || []).filter(g => g.id !== goodsId);
       saveState();
     }
 
+    // 跨店調貨：更新調出分店的存貨 List 下拉選單
+    function updateTransferGoodsDropdown() {
+      const fromId = document.getElementById("transferFromSelect").value;
+      const fromLoc = appState.locations[fromId];
+      const goodsSelect = document.getElementById("transferGoodsSelect");
+      const qtyInput = document.getElementById("transferQtyInput");
+      goodsSelect.innerHTML = "";
+
+      if (!fromLoc) return;
+      const availableGoods = (fromLoc.goodsList || []).filter(g => (g.status === "貨存" || g.status === "入機") && (g.qty || 0) > 0);
+
+      if (availableGoods.length === 0) {
+        goodsSelect.add(new Option("（此分店目前無可調動存貨）", ""));
+        qtyInput.value = "";
+      } else {
+        availableGoods.forEach(g => {
+          goodsSelect.add(new Option(`【${g.status}】${g.name} · 剩 ${g.qty} 隻 (擁有人:${g.owner})`, g.id));
+        });
+        qtyInput.value = availableGoods[0].qty;
+      }
+    }
+
+    function onTransferGoodsSelectChange() {
+      const fromId = document.getElementById("transferFromSelect").value;
+      const fromLoc = appState.locations[fromId];
+      const gId = document.getElementById("transferGoodsSelect").value;
+      if (!fromLoc || !gId) return;
+      const item = (fromLoc.goodsList || []).find(g => g.id === gId);
+      if (item) {
+        document.getElementById("transferQtyInput").value = item.qty;
+      }
+    }
+
+    // 執行跨店調貨：從調出分店 List 移除（或減數），並在調入分店 List 出現
     function transferStock() {
       const fromId = document.getElementById("transferFromSelect").value;
       const toId = document.getElementById("transferToSelect").value;
-      const qty = parseInt(document.getElementById("transferQtyInput").value, 10);
+      const gId = document.getElementById("transferGoodsSelect").value;
+      const moveQty = parseInt(document.getElementById("transferQtyInput").value, 10);
 
       if (fromId === toId) {
         alert("調出與調入分店不能相同！");
         return;
       }
-      if (isNaN(qty) || qty <= 0) {
-        alert("請輸入有效的調動數量！");
+      if (!gId) {
+        alert("調出分店目前沒有可選擇的存貨項目！");
         return;
       }
 
       const fromLoc = appState.locations[fromId];
       const toLoc = appState.locations[toId];
-      fromLoc.stockCount = Math.max(0, (fromLoc.stockCount || 0) - qty);
-      toLoc.stockCount = (toLoc.stockCount || 0) + qty;
+      const itemIdx = (fromLoc.goodsList || []).findIndex(g => g.id === gId);
+      if (itemIdx === -1) return;
 
-      addLog(`跨店調貨：${fromLoc.name} ➔ ${toLoc.name}（${qty} 隻）`);
-      document.getElementById("transferQtyInput").value = "";
+      const sourceItem = fromLoc.goodsList[itemIdx];
+      if (isNaN(moveQty) || moveQty <= 0 || moveQty > sourceItem.qty) {
+        alert(`請輸入有效的調動數量（1 至 ${sourceItem.qty} 隻之間）！`);
+        return;
+      }
+
+      // 1. 扣減兩邊分店總庫存
+      fromLoc.stockCount = Math.max(0, (fromLoc.stockCount || 0) - moveQty);
+      toLoc.stockCount = (toLoc.stockCount || 0) + moveQty;
+
+      // 2. 處理調出分店貨物 List（全數調走則直接從 List 消失；部分調走則扣減原數量）
+      if (moveQty === sourceItem.qty) {
+        fromLoc.goodsList.splice(itemIdx, 1);
+      } else {
+        sourceItem.qty -= moveQty;
+      }
+
+      // 3. 在調入分店貨物 List 新增出現
+      toLoc.goodsList = toLoc.goodsList || [];
+      toLoc.goodsList.unshift({
+        id: "g_" + Date.now(),
+        name: sourceItem.name,
+        qty: moveQty,
+        cost: 0,
+        status: "貨存",
+        owner: sourceItem.owner,
+        date: getTodayStr()
+      });
+
+      addLog(`跨店調貨：「${sourceItem.name}」${moveQty} 隻由【${fromLoc.name}】移至【${toLoc.name}】`);
       saveState();
-      showToast(`✅ 已從 ${fromLoc.name} 調出 ${qty} 隻至 ${toLoc.name}`);
+      showToast(`✅ 已將「${sourceItem.name}」(${moveQty}隻) 移至 ${toLoc.name}`);
+    }
+
+    function toggleSettlementLocation(locId) {
+      expandedSettlementLocIds[locId] = !expandedSettlementLocIds[locId];
+      renderAll();
     }
 
     function resetAllData() {
-      if (!confirm("確定要清空所有場地帳目、貨物 List 與紀錄，全部數目歸零重新開始嗎？")) return;
+      if (!confirm("確定要清空所有場地帳目、貨物 List、舊帳與紀錄，全部數目歸零重新開始嗎？")) return;
       appState = getDefaultState();
       saveState();
       switchTab("dashboard");
@@ -785,12 +976,37 @@
       if (appState.logs.length > 100) appState.logs.length = 100;
     }
 
+    function renderMonthlyHtml(loc) {
+      const stats = loc.monthlyStats || {};
+      const months = Object.keys(stats).sort().reverse();
+      if (months.length === 0) {
+        return `<div class="py-3 text-center text-slate-400">尚無各月點幣或兌幣紀錄</div>`;
+      }
+      return months.map(m => {
+        const s = stats[m];
+        const totalCash = (s.redeemedCash5050 || 0) + (s.legacyCashAmzi || 0) + (s.legacyCashDennis || 0);
+        return `
+          <div class="py-2.5 flex justify-between items-center">
+            <div>
+              <div class="font-bold text-slate-800">🗓️ ${m} 月份</div>
+              <div class="text-[11px] text-slate-500">點幣累計 ${s.countedCoins || 0} 機 · 已兌 ${s.redeemedCoins || 0} 機</div>
+              <div class="text-[11px] text-purple-700">50/50兌現 $${s.redeemedCash5050 || 0} · 舊帳(A:$${s.legacyCashAmzi || 0} / D:$${s.legacyCashDennis || 0})</div>
+            </div>
+            <div class="text-right">
+              <div class="font-bold text-emerald-700">月總兌現 $${totalCash}</div>
+            </div>
+          </div>`;
+      }).join("");
+    }
+
     function renderAll() {
       renderOperatorUI();
       const locIds = Object.keys(appState.locations);
       const locSelect = document.getElementById("locationSelect");
       const fromSelect = document.getElementById("transferFromSelect");
       const toSelect = document.getElementById("transferToSelect");
+      const prevFromId = fromSelect.value;
+      const prevToId = toSelect.value;
 
       locSelect.innerHTML = "";
       fromSelect.innerHTML = "";
@@ -802,41 +1018,53 @@
         fromSelect.add(new Option(l.name, id));
         toSelect.add(new Option(l.name, id));
       });
-      if (locIds.length > 1) toSelect.selectedIndex = 1;
+
+      if (prevFromId && locIds.includes(prevFromId)) fromSelect.value = prevFromId;
+      else fromSelect.value = appState.currentLocationId;
+
+      if (prevToId && locIds.includes(prevToId)) toSelect.value = prevToId;
+      else if (locIds.length > 1) {
+        const otherId = locIds.find(id => id !== fromSelect.value);
+        if (otherId) toSelect.value = otherId;
+      }
+
+      updateTransferGoodsDropdown();
 
       const loc = appState.locations[appState.currentLocationId];
-      const redeemed = loc.totalRedeemedCash || 0;
-      const halfRedeemed = redeemed / 2;
+      const redeemed5050 = loc.totalRedeemedCash || 0;
+      const halfRedeemed = redeemed5050 / 2;
+      const legA = loc.legacyCashAmzi || 0;
+      const legD = loc.legacyCashDennis || 0;
       const cAmzi = loc.costAmzi || 0;
       const cDennis = loc.costDennis || 0;
       const cShared = loc.costShared || 0;
       const totalLocCost = cAmzi + cDennis + cShared;
 
-      // 本場每人淨得 = 50%兌現 - 各自獨立成本 - (共同成本/2)
-      const netAmzi = halfRedeemed - cAmzi - (cShared / 2);
-      const netDennis = halfRedeemed - cDennis - (cShared / 2);
+      const netAmzi = halfRedeemed + legA - cAmzi - (cShared / 2);
+      const netDennis = halfRedeemed + legD - cDennis - (cShared / 2);
 
       // 總覽頁數據
       document.getElementById("statCoins").textContent = `${loc.unredeemedCoins || 0} 機`;
       document.getElementById("statCoinCash").textContent = `約 HK$ ${loc.unredeemedCash || 0}`;
-      document.getElementById("statRedeemed").textContent = `$${redeemed}`;
-      document.getElementById("statHalfRedeemed").textContent = `每人分得 50%: $${halfRedeemed.toFixed(1)}`;
+      document.getElementById("statRedeemed").textContent = `$${redeemed5050 + legA + legD}`;
+      document.getElementById("statHalfRedeemed").textContent = `50/50對分每人: $${halfRedeemed.toFixed(1)}`;
       document.getElementById("statStock").textContent = `庫存 ${loc.stockCount || 0} 隻`;
 
-      document.getElementById("statCostAmzi").textContent = `$${cAmzi}`;
-      document.getElementById("statNetAmzi").textContent = `50%兌現扣成本: $${netAmzi.toFixed(1)}`;
-      document.getElementById("statCostDennis").textContent = `$${cDennis}`;
-      document.getElementById("statNetDennis").textContent = `50%兌現扣成本: $${netDennis.toFixed(1)}`;
+      document.getElementById("statNetAmzi").textContent = `$${netAmzi.toFixed(1)}`;
+      document.getElementById("statDetailAmzi").textContent = `舊帳 $${legA} · 成本 $${cAmzi}`;
+      document.getElementById("statNetDennis").textContent = `$${netDennis.toFixed(1)}`;
+      document.getElementById("statDetailDennis").textContent = `舊帳 $${legD} · 成本 $${cDennis}`;
       document.getElementById("statCostTotal").textContent = `$${totalLocCost}`;
       document.getElementById("statCostShared").textContent = `$${cShared}`;
 
-      // 點幣頁同場總和看板與兌幣預設值
+      // 點幣頁同場總和看板、兌幣預設值與該月總覽
       document.getElementById("coinPageTotalCount").textContent = `${loc.unredeemedCoins || 0} 機`;
       document.getElementById("coinPageTotalCash").textContent = `HK$ ${loc.unredeemedCash || 0}`;
       document.getElementById("redeemCoinInput").value = loc.unredeemedCoins || 0;
       document.getElementById("redeemCashInput").value = loc.unredeemedCash || 0;
+      document.getElementById("coinPageMonthlySummary").innerHTML = renderMonthlyHtml(loc);
 
-      // 渲染機台列表（附改名按鈕）
+      // 渲染機台列表
       const mContainer = document.getElementById("machineListContainer");
       const coinMSelect = document.getElementById("coinMachineSelect");
       const prevMId = coinMSelect.value;
@@ -924,8 +1152,10 @@
         </div>
       `).join("") || `<div class="py-4 text-center text-slate-400">尚無紀錄，目前全部數目為 0</div>`;
 
-      // 渲染全線總結算（每次兌幣先各分 50%，再扣各自獨立成本）
-      let grandRedeemed = 0;
+      // 渲染全線總結算（支援點入各店展開各月幣數兌幣總覽）
+      let grandRedeemed5050 = 0;
+      let grandLegAmzi = 0;
+      let grandLegDennis = 0;
       let grandCostAmzi = 0;
       let grandCostDennis = 0;
       let grandCostShared = 0;
@@ -936,40 +1166,52 @@
       locIds.forEach(id => {
         const l = appState.locations[id];
         const r = l.totalRedeemedCash || 0;
+        const la = l.legacyCashAmzi || 0;
+        const ld = l.legacyCashDennis || 0;
         const ca = l.costAmzi || 0;
         const cd = l.costDennis || 0;
         const cs = l.costShared || 0;
 
-        grandRedeemed += r;
+        grandRedeemed5050 += r;
+        grandLegAmzi += la;
+        grandLegDennis += ld;
         grandCostAmzi += ca;
         grandCostDennis += cd;
         grandCostShared += cs;
 
-        const row = document.createElement("div");
-        row.className = "py-2.5 flex justify-between items-center";
-        row.innerHTML = `
-          <div>
-            <div class="font-bold text-slate-800">${l.name}</div>
-            <div class="text-slate-500">庫存 ${l.stockCount || 0} 隻 · 未兌 ${l.unredeemedCoins || 0} 機</div>
-            <div class="text-[11px] text-slate-400">成本：Amzi $${ca} / Dennis $${cd} / 共同 $${cs}</div>
+        const isExpanded = !!expandedSettlementLocIds[id];
+        const wrapper = document.createElement("div");
+        wrapper.className = "py-2.5";
+        wrapper.innerHTML = `
+          <div onclick="toggleSettlementLocation('${id}')" class="flex justify-between items-center cursor-pointer active:bg-slate-50 rounded-lg p-1">
+            <div>
+              <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                <span>${l.name}</span>
+                <span class="text-[11px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">${isExpanded ? "▲ 收起月覽" : "▼ 點看各月總覽"}</span>
+              </div>
+              <div class="text-slate-500 mt-0.5">庫存 ${l.stockCount || 0} 隻 · 未兌 ${l.unredeemedCoins || 0} 機</div>
+              <div class="text-[11px] text-slate-400">舊帳：Amzi $${la} / Dennis $${ld} · 成本：A $${ca} / D $${cd}</div>
+            </div>
+            <div class="text-right">
+              <div class="font-bold text-emerald-700">總兌現 $${r + la + ld}</div>
+              <div class="text-slate-500">50/50各半: $${(r / 2).toFixed(1)}</div>
+            </div>
           </div>
-          <div class="text-right">
-            <div class="font-bold text-emerald-700">總兌現 $${r}</div>
-            <div class="text-slate-500">每人分50%: $${(r / 2).toFixed(1)}</div>
-          </div>`;
-        summaryDiv.appendChild(row);
+          ${isExpanded ? `<div class="mt-2 pl-3 pr-2 py-1 bg-slate-50 rounded-xl border border-slate-200 divide-y divide-slate-200">${renderMonthlyHtml(l)}</div>` : ""}
+        `;
+        summaryDiv.appendChild(wrapper);
       });
 
-      const grandHalf = grandRedeemed / 2;
-      const finalAmzi = grandHalf - grandCostAmzi - (grandCostShared / 2);
-      const finalDennis = grandHalf - grandCostDennis - (grandCostShared / 2);
+      const grandHalf = grandRedeemed5050 / 2;
+      const finalAmzi = grandHalf + grandLegAmzi - grandCostAmzi - (grandCostShared / 2);
+      const finalDennis = grandHalf + grandLegDennis - grandCostDennis - (grandCostShared / 2);
 
-      document.getElementById("allTotalRedeemed").textContent = `全線總兌現 $${grandRedeemed}`;
+      document.getElementById("allTotalRedeemed").textContent = `全線總兌現 $${grandRedeemed5050 + grandLegAmzi + grandLegDennis}`;
       document.getElementById("allHalfRedeemed").textContent = `$${grandHalf.toFixed(1)}`;
       document.getElementById("amziShare").textContent = `$${finalAmzi.toFixed(1)}`;
-      document.getElementById("amziCalcDetail").textContent = `50%兌現 $${grandHalf.toFixed(1)} - 成本 $${(grandCostAmzi + grandCostShared / 2).toFixed(1)}`;
+      document.getElementById("amziCalcDetail").textContent = `50%兌現 $${grandHalf.toFixed(1)} + 舊帳 $${grandLegAmzi} - 成本 $${(grandCostAmzi + grandCostShared / 2).toFixed(1)}`;
       document.getElementById("dennisShare").textContent = `$${finalDennis.toFixed(1)}`;
-      document.getElementById("dennisCalcDetail").textContent = `50%兌現 $${grandHalf.toFixed(1)} - 成本 $${(grandCostDennis + grandCostShared / 2).toFixed(1)}`;
+      document.getElementById("dennisCalcDetail").textContent = `50%兌現 $${grandHalf.toFixed(1)} + 舊帳 $${grandLegDennis} - 成本 $${(grandCostDennis + grandCostShared / 2).toFixed(1)}`;
     }
 
     initCloud();
