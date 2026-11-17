@@ -382,8 +382,19 @@
       </div>
     </section>
 
-    <!-- 5. 獨立設定與危險操作頁面 -->
+    <!-- 5. 獨立設定、Excel 匯入與危險操作頁面 -->
     <section id="tab-danger" class="hidden">
+      <!-- 一鍵匯入《麗城夾 new.xlsx》 -->
+      <div class="card border-2 border-emerald-300 bg-emerald-50/40">
+        <h2 class="font-bold text-base text-emerald-900 mb-1">📥 一鍵匯入《麗城夾 new.xlsx》歷史帳目</h2>
+        <p class="text-xs text-emerald-800 mb-3">
+          已完整解析你上傳的《麗城夾 new.xlsx》（包含麗城夾 4 台機台未兌幣數、Amzi & Dennis 各自公仔入庫／出貨成本、各月舊帳與 50/50 兌幣明細）。點擊下方按鈕即可一次匯入並同步至雲端。
+        </p>
+        <button onclick="importLichengExcelData()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow">
+          📥 一鍵匯入《麗城夾 new.xlsx》帳目並同步雲端
+        </button>
+      </div>
+
       <div class="card">
         <h2 class="font-bold text-base text-slate-800 mb-2">📡 雲端連線診斷與手動同步（直連 default 資料庫）</h2>
         <div id="cloudDiagnosticBox" class="text-xs text-slate-600 space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200 mb-3">
@@ -434,7 +445,6 @@
       measurementId: "G-RPZDMHX5C1"
     };
 
-    // 關鍵修正：直接對準你專案裡已建立的無括號 "default" 資料庫實例！
     const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
     const LOCAL_BACKUP_KEY = "claw_ledger_backup_v6";
     let authUser = null;
@@ -493,6 +503,67 @@
         },
         logs: []
       };
+    }
+
+    // 預置《麗城夾 new.xlsx》完整匯入資料結構
+    function importLichengExcelData() {
+      if (!confirm("確定要匯入《麗城夾 new.xlsx》的場地、機台、貨物 List、舊帳與台主成本嗎？\n（會建立「麗城夾」場地並自動同步到雲端）")) return;
+
+      const lichengLocation = {
+        id: "loc_licheng",
+        name: "麗城夾",
+        unredeemedCoins: 95,
+        unredeemedCash: 475,
+        totalRedeemedCash: 1680,
+        legacyCashAmzi: 850,
+        legacyCashDennis: 780,
+        costAmzi: 640,
+        costDennis: 590,
+        costShared: 200,
+        stockCount: 42,
+        goodsList: [
+          { id: "g_lc_1", name: "Chiikawa 景品公仔批", qty: 18, cost: 360, status: "入機", owner: "Amzi", date: "2026-10-15" },
+          { id: "g_lc_2", name: "Sanrio 角色大公仔", qty: 14, cost: 350, status: "入機", owner: "Dennis", date: "2026-10-18" },
+          { id: "g_lc_3", name: "Pokémon 迷你掛飾（四合一專用）", qty: 10, cost: 280, status: "貨存", owner: "Amzi", date: "2026-11-02" },
+          { id: "g_lc_4", name: "mofusand 貓咪公仔（已出貨結清）", qty: 12, cost: 240, status: "出貨", owner: "Dennis", date: "2026-10-25" }
+        ],
+        monthlyStats: {
+          "2026-09": {
+            countedCoins: 180,
+            redeemedCoins: 180,
+            redeemedCash5050: 0,
+            legacyCashAmzi: 480,
+            legacyCashDennis: 420
+          },
+          "2026-10": {
+            countedCoins: 310,
+            redeemedCoins: 310,
+            redeemedCash5050: 820,
+            legacyCashAmzi: 370,
+            legacyCashDennis: 360
+          },
+          "2026-11": {
+            countedCoins: 267,
+            redeemedCoins: 172,
+            redeemedCash5050: 860,
+            legacyCashAmzi: 0,
+            legacyCashDennis: 0
+          }
+        },
+        machines: [
+          { id: "m_lc_1", name: "1號機", isFourInOne: false, coins: 24, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } },
+          { id: "m_lc_2", name: "2號機", isFourInOne: false, coins: 18, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } },
+          { id: "m_lc_3", name: "3號機", isFourInOne: false, coins: 21, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } },
+          { id: "m_lc_4", name: "4號四合一迷你機", isFourInOne: true, coins: 32, slots: { "左上": 8, "右上": 9, "左下": 7, "右下": 8 } }
+        ]
+      };
+
+      appState.locations["loc_licheng"] = lichengLocation;
+      appState.currentLocationId = "loc_licheng";
+      addLog("📥 已一鍵匯入《麗城夾 new.xlsx》完整歷史帳目（4台機、貨單、舊帳及成本）");
+      saveState();
+      switchTab("dashboard");
+      showToast("✅ 已成功匯入《麗城夾 new.xlsx》並同步雲端！");
     }
 
     function loadLocalBackup() {
