@@ -33,7 +33,7 @@
     }
   </style>
 </head>
-<body class="pb-32">
+<body class="pb-12">
 
   <!-- 頂部狀態列 -->
   <header class="bg-blue-950 text-white px-4 pt-4 pb-3.5 sticky top-0 z-30 shadow-md">
@@ -178,7 +178,7 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-bold text-slate-600 mb-1">面板當前累計數值</label>
-              <input type="number" id="coinCountInput" placeholder="例如機台顯示 350" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+              <input type="number" id="coinCountInput" placeholder="請輸入當前累計數" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
             </div>
             <div>
               <label class="block text-xs font-bold text-slate-600 mb-1">每幣面值 (HK$)</label>
@@ -222,7 +222,7 @@
         </button>
       </div>
 
-      <!-- 本場該月幣數兌幣總覽與 Record List（仿總結算各月總覽可展開收起） -->
+      <!-- 本場該月幣數兌幣總覽與 Record List -->
       <div class="card">
         <div class="flex justify-between items-center mb-2">
           <h2 class="font-bold text-base text-slate-800">📅 本場各月機數與兌幣入帳 Record List</h2>
@@ -280,7 +280,7 @@
         </div>
       </div>
 
-      <!-- 貨物 List（仿總結算總覽：點擊可展開收起整張貨物表） -->
+      <!-- 貨物 List -->
       <div class="card">
         <div class="flex justify-between items-center mb-2">
           <div class="flex items-center gap-2">
@@ -294,9 +294,7 @@
           <button onclick="setGoodsFilter('ALL')" id="filter-ALL" class="px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600">全部明細</button>
           <button onclick="setGoodsFilter('SHIPPED')" id="filter-SHIPPED" class="px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600">已出貨</button>
         </div>
-        <!-- 收起時的精簡列表預覽 -->
         <div id="goodsListPreview" class="text-xs text-slate-500 py-1">（列表已收起，點擊上方按鈕可展開全部貨物明細）</div>
-        <!-- 展開後的完整貨物清單 -->
         <div id="goodsListContainer" class="space-y-1.5 hidden mt-2"></div>
       </div>
 
@@ -417,9 +415,9 @@
 
   </main>
 
-  <!-- 底部導航欄（絕對置底固定） -->
-  <nav class="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-50 shadow-lg">
-    <div class="max-w-lg mx-auto grid grid-cols-5 gap-0.5 p-1 text-center text-[11px]">
+  <!-- 底部導航欄（自然流動至最底顯示） -->
+  <nav class="mt-6 mb-4 bg-white border border-slate-200 rounded-2xl shadow-sm max-w-lg mx-auto">
+    <div class="grid grid-cols-5 gap-0.5 p-1 text-center text-[11px]">
       <button onclick="switchTab('dashboard')" id="nav-dashboard" class="tab-active py-2.5 rounded-xl">📊 總覽</button>
       <button onclick="switchTab('coins')" id="nav-coins" class="py-2.5 rounded-xl text-slate-600 font-semibold">🪙 點/兌幣</button>
       <button onclick="switchTab('stock')" id="nav-stock" class="py-2.5 rounded-xl text-slate-600 font-semibold">📦 補/調貨</button>
@@ -440,7 +438,7 @@
     };
 
     const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v14";
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v15";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
     let selectedSlot = "左上";
@@ -818,7 +816,7 @@
     }
 
     async function pullFromCloud(silent) {
-      if (isResetting) return; // 重置鎖定期間拒絕背景自動覆蓋
+      if (isResetting) return;
       try {
         const headers = await getAuthHeaders();
         const res = await fetch(FIRESTORE_REST_URL, { method: "GET", headers });
@@ -1135,12 +1133,12 @@
       const machine = loc.machines.find(m => m.id === mId);
       const wrapper = document.getElementById("slotSelectWrapper");
       const countInput = document.getElementById("coinCountInput");
+      countInput.value = ""; // 確保切換機台時輸入框保持空白，讓用戶自由輸入
       if (machine && machine.isFourInOne) {
         wrapper.classList.remove("hidden");
         selectSlot(selectedSlot);
       } else {
         wrapper.classList.add("hidden");
-        countInput.value = machine ? (machine.panelTotal || 0) : 0;
       }
     }
 
@@ -1154,12 +1152,7 @@
           btn.className = "slot-btn border border-slate-300 bg-white text-slate-700 rounded-xl py-2 text-xs font-bold";
         }
       });
-      const loc = appState.locations[appState.currentLocationId];
-      const mId = document.getElementById("coinMachineSelect").value;
-      const machine = loc.machines.find(m => m.id === mId);
-      if (machine && machine.isFourInOne) {
-        document.getElementById("coinCountInput").value = machine.slots[slot] || 0;
-      }
+      document.getElementById("coinCountInput").value = "";
     }
 
     function recordCoins() {
@@ -1177,14 +1170,14 @@
 
       if (machine.isFourInOne) {
         const oldVal = machine.slots[selectedSlot] || 0;
-        const diff = Math.max(0, panelVal - oldVal);
+        const diff = panelVal - oldVal; // 允許正數或歸零重算
         machine.slots[selectedSlot] = panelVal;
-        addLog(`[${dateVal}] 點幣 ${machine.name} [${selectedSlot}] 面板改為 ${panelVal} (新增 +${diff}) ${note ? "· " + note : ""}`);
+        addLog(`[${dateVal}] 點幣 ${machine.name} [${selectedSlot}] 面板改為 ${panelVal} (變動 ${diff >= 0 ? "+" + diff : diff}) ${note ? "· " + note : ""}`);
       } else {
         const oldVal = machine.panelTotal || 0;
-        const diff = Math.max(0, panelVal - oldVal);
+        const diff = panelVal - oldVal;
         machine.panelTotal = panelVal;
-        addLog(`[${dateVal}] 點幣 ${machine.name} 面板改為 ${panelVal} (新增 +${diff}) ${note ? "· " + note : ""}`);
+        addLog(`[${dateVal}] 點幣 ${machine.name} 面板改為 ${panelVal} (變動 ${diff >= 0 ? "+" + diff : diff}) ${note ? "· " + note : ""}`);
       }
 
       document.getElementById("coinCountInput").value = "";
@@ -1419,14 +1412,13 @@
     }
 
     function resetAllData() {
-      if (!confirm("確定要清空所有場地帳目、貨物 List 與紀錄，全部數目歸零重新開始嗎？\n\n（點擊確定後，系統會自動將清空後的乾淨狀態同步至雲端，防止自動恢復舊資料）")) return;
+      if (!confirm("確定要清空所有場地帳目、貨物 List 與紀錄，全部數目歸零重新開始嗎？\n\n（點擊確定後，系統會自動將清空後的乾淨狀態同步至雲端）")) return;
       isResetting = true;
       appState = getDefaultState();
       localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
       renderAll();
       switchTab("dashboard");
       
-      // 同步將空白狀態推送到雲端，確保雲端也被清空
       pushToCloud(true).then(() => {
         showToast("✅ 全部數目已歸零，並已同步清空雲端！");
         setTimeout(() => { isResetting = false; }, 3000);
@@ -1606,7 +1598,6 @@
       if (prevMId && Array.from(coinMSelect.options).some(o => o.value === prevMId)) {
         coinMSelect.value = prevMId;
       }
-      onCoinMachineChange();
 
       const rawGoodsList = loc.goodsList || [];
       const filteredGoods = rawGoodsList.filter(g => {
