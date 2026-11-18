@@ -280,10 +280,10 @@
         </div>
       </div>
 
-      <!-- 貨物 List（展開式檢視） -->
+      <!-- 貨物 List（展開收起式檢視） -->
       <div class="card">
         <div class="flex justify-between items-center mb-2">
-          <h2 class="font-bold text-base text-slate-800">📋 本場貨物 List（展開式詳細檢視）</h2>
+          <h2 class="font-bold text-base text-slate-800">📋 本場貨物 List（點擊可展開收起）</h2>
           <span id="goodsListCount" class="text-xs text-slate-500">共 0 項</span>
         </div>
         <div class="flex gap-1.5 mb-2 text-xs">
@@ -434,7 +434,7 @@
     };
 
     const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v10";
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v11";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
     let selectedSlot = "左上";
@@ -677,7 +677,6 @@
         appState.locations["loc_licheng"] = loc;
       }
 
-      // Ensure machines exist
       if (!loc.machines || loc.machines.length === 0) {
         loc.machines = [
           { id: "m_lc_std", name: "麗城標機", isFourInOne: false, panelTotal: 0, lastRedeemedPanel: 0, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }, slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } },
@@ -685,7 +684,6 @@
         ];
       }
 
-      // Smart merge goods
       const existingNames = new Set((loc.goodsList || []).map(g => g.name + "_" + g.cost));
       let addedCount = 0;
       LICHENG_RAW_GOODS.forEach((row, idx) => {
@@ -704,14 +702,12 @@
         }
       });
 
-      // Merge legacy monthly stats records if missing
       loc.monthlyStats = loc.monthlyStats || {};
       Object.keys(LICHENG_LEGACY_RECORDS).forEach(mk => {
         if (!loc.monthlyStats[mk]) {
           loc.monthlyStats[mk] = { records: JSON.parse(JSON.stringify(LICHENG_LEGACY_RECORDS[mk])) };
         } else {
           loc.monthlyStats[mk].records = loc.monthlyStats[mk].records || [];
-          // Add missing legacy items
           LICHENG_LEGACY_RECORDS[mk].forEach(defRec => {
             const exists = loc.monthlyStats[mk].records.some(r => r.cash === defRec.cash && r.type === defRec.type && r.date === defRec.date);
             if (!exists) {
@@ -721,7 +717,6 @@
         }
       });
 
-      // Recalculate cost & stock
       let amziGoodsCost = loc.goodsList.filter(g => g.owner === "Amzi").reduce((acc, g) => acc + (g.cost || 0), 0);
       let dennisGoodsCost = loc.goodsList.filter(g => g.owner === "Dennis").reduce((acc, g) => acc + (g.cost || 0), 0);
       if (loc.costAmzi < amziGoodsCost + 3000) loc.costAmzi = amziGoodsCost + 3000;
@@ -1316,6 +1311,7 @@
       const fromLoc = appState.locations[fromId];
       const goodsSelect = document.getElementById("transferGoodsSelect");
       const qtyInput = document.getElementById("transferQtyInput");
+      const prevSelectedGId = goodsSelect.value;
       goodsSelect.innerHTML = "";
 
       if (!fromLoc) return;
@@ -1328,7 +1324,13 @@
         availableGoods.forEach(g => {
           goodsSelect.add(new Option(`【${g.status}】${g.name} · ${g.qty} 隻 ($${g.cost || 0} · ${g.owner})`, g.id));
         });
-        qtyInput.value = availableGoods[0].qty;
+        // 保持之前選中的項目，若不存在才預設選第一個
+        if (prevSelectedGId && Array.from(goodsSelect.options).some(o => o.value === prevSelectedGId)) {
+          goodsSelect.value = prevSelectedGId;
+        } else {
+          goodsSelect.selectedIndex = 0;
+        }
+        onTransferGoodsSelectChange();
       }
     }
 
