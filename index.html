@@ -231,7 +231,7 @@
         </button>
       </div>
 
-      <!-- 本場該月幣數兌幣總覽與 Record List（預設全部收起） -->
+      <!-- 本場各月機數與兌幣入帳 Record List（預設收起，可點擊展開月覽） -->
       <div class="card">
         <div class="flex justify-between items-center mb-2">
           <h2 class="font-bold text-base text-slate-800">📅 本場各月機數與兌幣入帳 Record List</h2>
@@ -436,7 +436,7 @@
     };
 
     const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v16";
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v17";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
     let selectedSlot = "左上";
@@ -444,7 +444,7 @@
     let goodsFilterMode = "ACTIVE";
     let allGoodsExpanded = false;
     let allMonthlyExpanded = false;
-    let expandedMonthlyKeys = {}; // 預設全部收起 (false)
+    let expandedMonthlyKeys = {}; // 預設全部收起
     let isResetting = false;
 
     const LICHENG_RAW_GOODS = [
