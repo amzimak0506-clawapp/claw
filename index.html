@@ -193,10 +193,11 @@
 
       <!-- 2. 點幣 / 兌幣分頁 -->
       <section id="tab-coins" class="hidden">
+        <!-- 各場地獨立顯示的未兌機數看板 -->
         <div class="card bg-blue-900 text-white flex justify-between items-center">
           <div>
-            <div class="text-xs text-blue-200">同場未兌機數總和（直到場主兌幣歸零）</div>
-            <div id="coinPageTotalCount" class="text-2xl font-extrabold mt-0.5">0 機</div>
+            <div id="coinPageLocationLabel" class="text-xs text-blue-200">當前分店未兌機數總和</div>
+            <div id="coinPageTotalCount" class="text-2xl font-extrabold mt-0.5">0 幣</div>
           </div>
           <div class="text-right">
             <div class="text-xs text-blue-200">預計可兌現金</div>
@@ -455,7 +456,7 @@
     };
 
     const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v27";
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v29";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
     let currentView = "landing";
@@ -1042,7 +1043,8 @@
         });
       }
 
-      document.getElementById("coinPageTotalCount").textContent = `${simulatedUnred} 機`;
+      document.getElementById("coinPageLocationLabel").textContent = `【${loc.name}】未兌幣數總和`;
+      document.getElementById("coinPageTotalCount").textContent = `${simulatedUnred} 幣`;
       document.getElementById("coinPageTotalCash").textContent = `HK$ ${simulatedUnred * rate}`;
       document.getElementById("redeemCoinInput").value = simulatedUnred;
       document.getElementById("redeemCashInput").value = simulatedUnred * rate;
@@ -1310,7 +1312,6 @@
       if (appState.logs.length > 100) appState.logs.length = 100;
     }
 
-    // 渲染各月明細清單 (包含各台主收入記錄)
     function renderMonthlyHtml(loc, locId) {
       const stats = loc.monthlyStats || {};
       const months = Object.keys(stats).sort().reverse();
@@ -1327,7 +1328,7 @@
         const recHtml = records.map(r => {
           const isRedeem = r.type === "redeem";
           const title = isRedeem ? `💰 場主兌現入帳` : `💵 台主收入入帳 (${r.owner || '共同'})`;
-          const detailStr = isRedeem ? `兌幣機數：${r.coins || 0} 機 · 現金：HK$ ${r.cash}` : `擁有人：${r.owner} · 金額：HK$ ${r.cash}`;
+          const detailStr = isRedeem ? `兌幣數量：${r.coins || 0} 幣 · 現金：HK$ ${r.cash}` : `擁有人：${r.owner} · 金額：HK$ ${r.cash}`;
           return `
             <div class="flex justify-between items-center py-2 pl-2 pr-1 border-b border-slate-100 last:border-b-0 text-xs">
               <div>
@@ -1406,7 +1407,6 @@
       const dennisProfit = dennisInc - dennisTotalCost;
       const totalAllInc = amziInc + dennisInc;
 
-      // 總覽已兌現金只需顯示總數
       document.getElementById("statCoins").textContent = `${loc.unredeemedCoins || 0} 機`;
       document.getElementById("statCoinCash").textContent = `約 HK$ ${loc.unredeemedCash || 0}`;
       document.getElementById("statRedeemed").textContent = `$${totalAllInc}`;
@@ -1420,7 +1420,13 @@
       document.getElementById("statCostTotal").textContent = `$${amziTotalCost + dennisTotalCost}`;
       document.getElementById("statCostShared").textContent = `$0`;
 
-      // 點幣分頁的月覽
+      // 點/兌幣分頁：每個場地獨立顯示未兌幣數總和 (已改為「幣」)
+      document.getElementById("coinPageLocationLabel").textContent = `【${loc.name}】未兌幣數總和`;
+      document.getElementById("coinPageTotalCount").textContent = `${loc.unredeemedCoins || 0} 幣`;
+      document.getElementById("coinPageTotalCash").textContent = `HK$ ${loc.unredeemedCash || 0}`;
+      document.getElementById("redeemCoinInput").value = loc.unredeemedCoins || 0;
+      document.getElementById("redeemCashInput").value = loc.unredeemedCash || 0;
+
       document.getElementById("coinPageMonthlySummary").innerHTML = renderMonthlyHtml(loc, loc.id);
       document.getElementById("toggleCoinMonthlyBtn").textContent = coinPageMonthlyExpanded ? "▲ 收起月覽" : "▼ 展開月覽";
 
@@ -1457,7 +1463,7 @@
                 <button onclick="renameMachine('${m.id}')" class="text-[11px] bg-white border border-slate-300 px-1.5 py-0.5 rounded text-slate-600">✏️改名</button>
                 <button onclick="deleteMachine('${m.id}')" class="text-[11px] bg-rose-50 border border-rose-200 text-rose-600 px-1.5 py-0.5 rounded">🗑️刪除</button>
               </div>
-              <span class="text-blue-800">未兌 ${m.coins || 0} 機</span>
+              <span class="text-blue-800">未兌 ${m.coins || 0} 幣</span>
             </div>
             <div class="grid grid-cols-2 gap-1.5 text-center text-xs">
               <div class="bg-white py-1 rounded border border-slate-200">左上讀數: <strong>${s["左上"] || 0}</strong></div>
@@ -1473,7 +1479,7 @@
                 <button onclick="renameMachine('${m.id}')" class="text-[11px] bg-white border border-slate-300 px-1.5 py-0.5 rounded text-slate-600">✏️改名</button>
                 <button onclick="deleteMachine('${m.id}')" class="text-[11px] bg-rose-50 border border-rose-200 text-rose-600 px-1.5 py-0.5 rounded">🗑️刪除</button>
               </div>
-              <span class="font-bold text-blue-800">未兌：${m.coins || 0} 機</span>
+              <span class="font-bold text-blue-800">未兌：${m.coins || 0} 幣</span>
             </div>`;
         }
         mContainer.appendChild(div);
@@ -1553,7 +1559,7 @@
                 <span>${l.name}</span>
                 <span class="text-[11px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">${isExpanded ? "▲ 收起月覽" : "▼ 展開月覽"}</span>
               </div>
-              <div class="text-slate-500 mt-0.5">庫存 ${l.stockCount || 0} 隻 · 未兌 ${l.unredeemedCoins || 0} 機</div>
+              <div class="text-slate-500 mt-0.5">庫存 ${l.stockCount || 0} 隻 · 未兌 ${l.unredeemedCoins || 0} 幣</div>
             </div>
             <div class="text-right">
               <div class="font-bold text-emerald-700">Amzi利潤:$${amziProfit} / D利潤:$${dennisProfit}</div>
