@@ -456,7 +456,7 @@
     };
 
     const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v18";
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v19";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
     let expandedSettlementLocIds = {};
@@ -1237,11 +1237,6 @@
           return;
         }
 
-        const diffLt = lt - (machine.slots["左上"] || 0);
-        const diffRt = rt - (machine.slots["右上"] || 0);
-        const diffLb = lb - (machine.slots["左下"] || 0);
-        const diffRb = rb - (machine.slots["右下"] || 0);
-
         machine.slots["左上"] = lt;
         machine.slots["右上"] = rt;
         machine.slots["左下"] = lb;
@@ -1679,7 +1674,19 @@
       if (prevMId && Array.from(coinMSelect.options).some(o => o.value === prevMId)) {
         coinMSelect.value = prevMId;
       }
-      onCoinMachineChange();
+      
+      // Only update machine form inputs if user is NOT currently typing inside them
+      const activeEl = document.activeElement;
+      const isTypingInCoinForm = activeEl && (
+        activeEl.id === "coinCountInput" || 
+        activeEl.id === "slot-lt" || 
+        activeEl.id === "slot-rt" || 
+        activeEl.id === "slot-lb" || 
+        activeEl.id === "slot-rb"
+      );
+      if (!isTypingInCoinForm) {
+        onCoinMachineChange();
+      }
 
       const rawGoodsList = loc.goodsList || [];
       const filteredGoods = rawGoodsList.filter(g => {
