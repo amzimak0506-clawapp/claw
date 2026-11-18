@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>台主合夥雲端記帳 D&A雲端記帳</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <style>
@@ -35,414 +36,440 @@
 </head>
 <body class="pb-16">
 
-  <!-- 頂部狀態列與導航列（置頂版面） -->
-  <header class="bg-blue-950 text-white px-4 pt-4 pb-3 sticky top-0 z-30 shadow-md">
-    <div class="max-w-lg mx-auto">
-      <div class="flex items-center justify-between mb-2">
-        <div>
-          <h1 class="text-base font-bold tracking-wide">🕹️ 台主合夥雲端記帳 D&A雲端記帳</h1>
-          <div class="flex items-center gap-1.5 mt-0.5 text-[11px]">
-            <span id="syncDot" class="inline-block w-2 h-2 rounded-full bg-amber-400"></span>
-            <span id="syncStatus" class="text-blue-200">正在連線雲端...</span>
-          </div>
-        </div>
-        <!-- 操作人切換 -->
-        <div class="bg-blue-900/80 p-1 rounded-xl flex items-center text-xs border border-blue-700">
-          <button id="userAmzi" onclick="setOperator('Amzi')" class="px-2.5 py-1 rounded-lg font-bold transition">Amzi</button>
-          <button id="userDennis" onclick="setOperator('Dennis')" class="px-2.5 py-1 rounded-lg font-bold transition">Dennis</button>
+  <!-- 1. 帳戶首頁畫面 (Landing Page) -->
+  <div id="view-landing" class="max-w-lg mx-auto px-4 pt-8">
+    <div class="text-center mb-6">
+      <div class="text-4xl mb-2">🕹️</div>
+      <h1 class="text-xl font-extrabold text-blue-950">台主合夥雲端記帳 D&A雲端記帳</h1>
+      <p class="text-xs text-slate-500 mt-1">請選擇要進入的合夥帳戶或建立新項目</p>
+    </div>
+
+    <!-- 雲端同步狀態列 -->
+    <div class="card bg-blue-950 text-white mb-4 flex justify-between items-center py-3">
+      <div>
+        <div class="flex items-center gap-1.5 text-xs">
+          <span id="landingSyncDot" class="inline-block w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+          <span id="landingSyncStatus" class="font-bold text-blue-200">雲端連線中...</span>
         </div>
       </div>
+      <button onclick="pullFromCloud(false)" class="bg-blue-800 hover:bg-blue-700 text-xs px-3 py-1.5 rounded-xl font-bold">
+        🔄 雲端同步
+      </button>
+    </div>
 
-      <!-- 帳戶（合夥項目）與場地切換列 -->
-      <div class="bg-blue-900/90 border border-blue-700 rounded-xl p-2 mb-2 space-y-2">
-        <!-- 帳戶切換 -->
-        <div class="flex items-center gap-1.5">
-          <span class="text-[11px] text-blue-200 whitespace-nowrap font-bold">📂 選擇合夥帳戶：</span>
-          <select id="ledgerAccountSelect" onchange="switchLedgerAccount(this.value)" class="flex-1 bg-blue-950 text-white border border-blue-600 rounded-lg px-2 py-1 text-xs font-bold focus:outline-none"></select>
-          <button onclick="addNewLedgerAccount()" class="bg-indigo-700 hover:bg-indigo-600 text-white px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap">
-            ＋新帳戶
-          </button>
+    <div class="flex justify-between items-center mb-3">
+      <h2 class="font-bold text-sm text-slate-800">📂 您的所有合夥帳戶</h2>
+      <button onclick="addNewLedgerAccount()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs px-3 py-1.5 rounded-xl font-bold shadow">
+        ＋新增合夥帳戶
+      </button>
+    </div>
+
+    <div id="ledgerCardsContainer" class="space-y-3 mb-6"></div>
+
+    <div class="card border-2 border-indigo-200 bg-indigo-50/40">
+      <h3 class="font-bold text-sm text-indigo-900 mb-1">💾 資料備份與還原</h3>
+      <p class="text-xs text-slate-600 mb-3">隨時可以備份所有合夥帳戶資料，或透過 JSON 檔案還原。</p>
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="exportJsonBackup()" class="bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-2.5 rounded-xl text-xs shadow">
+          📤 備份所有帳戶 (JSON)
+        </button>
+        <label class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl text-xs shadow text-center cursor-pointer flex items-center justify-center">
+          📥 還原備份
+          <input type="file" id="importJsonFile" accept=".json" onchange="importJsonBackup(event)" class="hidden" />
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 帳戶內部管理主介面 (App Workspace) -->
+  <div id="view-workspace" class="hidden">
+    <!-- 頂部狀態列與導航列 -->
+    <header class="bg-blue-950 text-white px-4 pt-3 pb-3 sticky top-0 z-30 shadow-md">
+      <div class="max-w-lg mx-auto">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <button onclick="backToLanding()" class="bg-blue-900 hover:bg-blue-800 text-blue-100 px-2.5 py-1 rounded-lg text-xs font-bold border border-blue-700">
+              🏠 返回首頁
+            </button>
+            <div>
+              <h1 id="workspaceLedgerTitle" class="text-sm font-bold tracking-wide">帳戶名稱</h1>
+              <div class="flex items-center gap-1.5 text-[10px] text-blue-200">
+                <span id="syncDot" class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span id="syncStatus">雲端已同步</span>
+              </div>
+            </div>
+          </div>
+          <!-- 操作人切換 -->
+          <div class="bg-blue-900/80 p-1 rounded-xl flex items-center text-xs border border-blue-700">
+            <button id="userAmzi" onclick="setOperator('Amzi')" class="px-2 py-0.5 rounded-lg font-bold transition">Amzi</button>
+            <button id="userDennis" onclick="setOperator('Dennis')" class="px-2 py-0.5 rounded-lg font-bold transition">Dennis</button>
+          </div>
         </div>
-        <!-- 場地切換 -->
-        <div class="flex items-center gap-1.5 pt-1 border-t border-blue-800/80">
-          <span class="text-[11px] text-blue-200 whitespace-nowrap font-bold">📍 本帳戶分店：</span>
+
+        <!-- 分店（場地）選擇列 -->
+        <div class="flex items-center gap-1.5 mb-2 bg-blue-900/90 p-1.5 rounded-xl border border-blue-700/80">
+          <span class="text-[11px] text-blue-200 whitespace-nowrap font-bold">📍 分店：</span>
           <select id="locationSelect" onchange="switchLocation(this.value)" class="flex-1 bg-blue-950 text-white border border-blue-600 rounded-lg px-2 py-1 text-xs font-bold focus:outline-none"></select>
           <button onclick="renameCurrentLocation()" class="bg-blue-800 hover:bg-blue-700 text-blue-100 px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap">✏️改名</button>
           <button onclick="deleteCurrentLocation()" class="bg-rose-900/80 hover:bg-rose-900 text-rose-100 px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap">🗑️刪場</button>
           <button onclick="addNewLocation()" class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap">＋新場地</button>
         </div>
-      </div>
 
-      <!-- 置頂導航分頁列 -->
-      <nav class="bg-blue-900/90 border border-blue-700/60 rounded-xl p-1 grid grid-cols-5 gap-1 text-center text-xs">
-        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="tab-active py-2 rounded-lg transition">📊 總覽</button>
-        <button onclick="switchTab('coins')" id="nav-coins" class="py-2 rounded-lg text-blue-100 font-semibold transition">🪙 點/兌幣</button>
-        <button onclick="switchTab('stock')" id="nav-stock" class="py-2 rounded-lg text-blue-100 font-semibold transition">📦 補/調</button>
-        <button onclick="switchTab('settlement')" id="nav-settlement" class="py-2 rounded-lg text-blue-100 font-semibold transition">🤝 結算</button>
-        <button onclick="switchTab('danger')" id="nav-danger" class="py-2 rounded-lg text-blue-100 font-semibold transition">⚠️ 重置</button>
-      </nav>
+        <!-- 置頂導航分頁列 -->
+        <nav class="bg-blue-900/90 border border-blue-700/60 rounded-xl p-1 grid grid-cols-5 gap-1 text-center text-xs">
+          <button onclick="switchTab('dashboard')" id="nav-dashboard" class="tab-active py-2 rounded-lg transition">📊 總覽</button>
+          <button onclick="switchTab('coins')" id="nav-coins" class="py-2 rounded-lg text-blue-100 font-semibold transition">🪙 點/兌幣</button>
+          <button onclick="switchTab('stock')" id="nav-stock" class="py-2 rounded-lg text-blue-100 font-semibold transition">📦 補/調</button>
+          <button onclick="switchTab('settlement')" id="nav-settlement" class="py-2 rounded-lg text-blue-100 font-semibold transition">🤝 結算</button>
+          <button onclick="switchTab('danger')" id="nav-danger" class="py-2 rounded-lg text-blue-100 font-semibold transition">⚠️ 重置</button>
+        </nav>
+      </div>
+    </header>
+
+    <!-- 浮動操作提示 -->
+    <div id="toastBanner" class="hidden fixed top-36 inset-x-4 max-w-lg mx-auto z-40 bg-emerald-600 text-white text-center text-sm font-bold py-2.5 px-4 rounded-xl shadow-lg">
     </div>
-  </header>
 
-  <!-- 浮動操作提示 -->
-  <div id="toastBanner" class="hidden fixed top-36 inset-x-4 max-w-lg mx-auto z-40 bg-emerald-600 text-white text-center text-sm font-bold py-2.5 px-4 rounded-xl shadow-lg">
-  </div>
+    <!-- 主內容區 -->
+    <main class="max-w-lg mx-auto px-4 pt-4">
 
-  <!-- 主內容區 -->
-  <main class="max-w-lg mx-auto px-4 pt-4">
-
-    <!-- 1. 總覽分頁 -->
-    <section id="tab-dashboard">
-      <div class="grid grid-cols-2 gap-3 mb-3">
-        <div class="card !mb-0 border-l-4 border-blue-600">
-          <div class="text-xs text-slate-500">本場未兌機數總和</div>
-          <div id="statCoins" class="text-2xl font-extrabold text-blue-900 mt-1">0 機</div>
-          <div id="statCoinCash" class="text-xs text-slate-500 mt-0.5">約 HK$ 0</div>
-        </div>
-        <div class="card !mb-0 border-l-4 border-emerald-600">
-          <div class="text-xs text-slate-500">本場累計已兌現金</div>
-          <div id="statRedeemed" class="text-2xl font-extrabold text-emerald-700 mt-1">$0</div>
-          <div id="statHalfRedeemed" class="text-xs text-emerald-600 mt-0.5">50%對分每人: $0</div>
-        </div>
-      </div>
-
-      <!-- 台主獨立損益與庫存 -->
-      <div class="card border border-slate-200">
-        <div class="flex justify-between items-center mb-2">
-          <span class="text-sm font-bold text-slate-800">💳 本場台主獨立損益與庫存</span>
-          <span id="statStock" class="text-sm font-extrabold text-indigo-700">庫存 0 隻</span>
-        </div>
-        <div class="grid grid-cols-2 gap-2.5 mt-2">
-          <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-2.5">
-            <div class="text-xs text-blue-800 font-semibold">Amzi 淨利（含專屬舊帳）</div>
-            <div id="statNetAmzi" class="text-lg font-extrabold text-blue-950 mt-0.5">$0</div>
-            <div id="statDetailAmzi" class="text-[11px] text-slate-600 mt-0.5">舊帳 $0 · 成本 $0</div>
+      <!-- 1. 總覽分頁 -->
+      <section id="tab-dashboard">
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div class="card !mb-0 border-l-4 border-blue-600">
+            <div class="text-xs text-slate-500">本場未兌機數總和</div>
+            <div id="statCoins" class="text-2xl font-extrabold text-blue-900 mt-1">0 機</div>
+            <div id="statCoinCash" class="text-xs text-slate-500 mt-0.5">約 HK$ 0</div>
           </div>
-          <div class="bg-purple-50/70 border border-purple-100 rounded-xl p-2.5">
-            <div class="text-xs text-purple-800 font-semibold">Dennis 淨利（含專屬舊帳）</div>
-            <div id="statNetDennis" class="text-lg font-extrabold text-purple-950 mt-0.5">$0</div>
-            <div id="statDetailDennis" class="text-[11px] text-slate-600 mt-0.5">舊帳 $0 · 成本 $0</div>
+          <div class="card !mb-0 border-l-4 border-emerald-600">
+            <div class="text-xs text-slate-500">本場累計已兌現金</div>
+            <div id="statRedeemed" class="text-2xl font-extrabold text-emerald-700 mt-1">$0</div>
+            <div id="statHalfRedeemed" class="text-xs text-emerald-600 mt-0.5">50%對分每人: $0</div>
           </div>
         </div>
-        <div class="text-xs text-slate-500 mt-2 pt-2 border-t border-slate-100 flex justify-between">
-          <span>本場總墊付成本：<strong id="statCostTotal" class="text-slate-700">$0</strong></span>
-          <span>共同成本：<strong id="statCostShared" class="text-slate-700">$0</strong></span>
-        </div>
-      </div>
 
-      <!-- 機台管理與刪除機台 -->
-      <div class="card">
-        <div class="flex justify-between items-center mb-3">
-          <h2 class="font-bold text-slate-800 text-sm">🎰 本場機台清單（可改名/刪除/四合一）</h2>
-          <button onclick="addNewMachine()" class="bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg font-bold">＋新增機台</button>
-        </div>
-        <div id="machineListContainer" class="space-y-2.5"></div>
-      </div>
-
-      <!-- 最近紀錄 -->
-      <div class="card">
-        <div class="flex justify-between items-center mb-2">
-          <h2 class="font-bold text-slate-800 text-sm">🕒 最近操作紀錄</h2>
-          <span id="lastCloudWriteTime" class="text-xs text-slate-400">等待寫入驗證</span>
-        </div>
-        <div id="recentLogs" class="divide-y divide-slate-100 text-xs"></div>
-      </div>
-    </section>
-
-    <!-- 2. 點幣 / 兌幣分頁 -->
-    <section id="tab-coins" class="hidden">
-      <!-- 同場未兌機數總和看板 -->
-      <div class="card bg-blue-900 text-white flex justify-between items-center">
-        <div>
-          <div class="text-xs text-blue-200">同場未兌機數總和（直到場主兌幣歸零）</div>
-          <div id="coinPageTotalCount" class="text-2xl font-extrabold mt-0.5">0 機</div>
-        </div>
-        <div class="text-right">
-          <div class="text-xs text-blue-200">預計可兌現金</div>
-          <div id="coinPageTotalCash" class="text-xl font-bold text-amber-300 mt-0.5">HK$ 0</div>
-        </div>
-      </div>
-
-      <!-- 巡機點幣（面板累計數值輸入） -->
-      <div class="card">
-        <h2 class="font-bold text-base text-blue-950 mb-1">🪙 巡機點幣（輸入機台當前「面板累計數值」）</h2>
-        <p class="text-xs text-slate-500 mb-3">確認並儲存後數值會自動歸零，等待下一次輸入。</p>
-        <div class="space-y-3">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">點幣日期</label>
-              <input type="date" id="coinDateInput" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white" />
+        <!-- 台主獨立損益與庫存 -->
+        <div class="card border border-slate-200">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-sm font-bold text-slate-800">💳 本場台主獨立損益與庫存</span>
+            <span id="statStock" class="text-sm font-extrabold text-indigo-700">庫存 0 隻</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2.5 mt-2">
+            <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-2.5">
+              <div class="text-xs text-blue-800 font-semibold">Amzi 淨利（含專屬舊帳）</div>
+              <div id="statNetAmzi" class="text-lg font-extrabold text-blue-950 mt-0.5">$0</div>
+              <div id="statDetailAmzi" class="text-[11px] text-slate-600 mt-0.5">舊帳 $0 · 成本 $0</div>
             </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">選擇機台</label>
-              <select id="coinMachineSelect" onchange="onCoinMachineChange()" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white"></select>
+            <div class="bg-purple-50/70 border border-purple-100 rounded-xl p-2.5">
+              <div class="text-xs text-purple-800 font-semibold">Dennis 淨利（含專屬舊帳）</div>
+              <div id="statNetDennis" class="text-lg font-extrabold text-purple-950 mt-0.5">$0</div>
+              <div id="statDetailDennis" class="text-[11px] text-slate-600 mt-0.5">舊帳 $0 · 成本 $0</div>
             </div>
           </div>
+          <div class="text-xs text-slate-500 mt-2 pt-2 border-t border-slate-100 flex justify-between">
+            <span>本場總墊付成本：<strong id="statCostTotal" class="text-slate-700">$0</strong></span>
+            <span>共同成本：<strong id="statCostShared" class="text-slate-700">$0</strong></span>
+          </div>
+        </div>
 
-          <!-- 一般機台單一面板輸入 -->
-          <div id="singlePanelWrapper">
+        <!-- 機台管理與刪除機台 -->
+        <div class="card">
+          <div class="flex justify-between items-center mb-3">
+            <h2 class="font-bold text-slate-800 text-sm">🎰 本場機台清單（可改名/刪除/四合一）</h2>
+            <button onclick="addNewMachine()" class="bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg font-bold">＋新增機台</button>
+          </div>
+          <div id="machineListContainer" class="space-y-2.5"></div>
+        </div>
+
+        <!-- 最近紀錄 -->
+        <div class="card">
+          <div class="flex justify-between items-center mb-2">
+            <h2 class="font-bold text-slate-800 text-sm">🕒 最近操作紀錄</h2>
+            <span id="lastCloudWriteTime" class="text-xs text-slate-400">等待寫入驗證</span>
+          </div>
+          <div id="recentLogs" class="divide-y divide-slate-100 text-xs"></div>
+        </div>
+      </section>
+
+      <!-- 2. 點幣 / 兌幣分頁 -->
+      <section id="tab-coins" class="hidden">
+        <!-- 同場未兌機數總和看板 -->
+        <div class="card bg-blue-900 text-white flex justify-between items-center">
+          <div>
+            <div class="text-xs text-blue-200">同場未兌機數總和（直到場主兌幣歸零）</div>
+            <div id="coinPageTotalCount" class="text-2xl font-extrabold mt-0.5">0 機</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-blue-200">預計可兌現金</div>
+            <div id="coinPageTotalCash" class="text-xl font-bold text-amber-300 mt-0.5">HK$ 0</div>
+          </div>
+        </div>
+
+        <!-- 巡機點幣（輸入機台當前「面板累計數值」，確認後自動清空） -->
+        <div class="card">
+          <h2 class="font-bold text-base text-blue-950 mb-1">🪙 巡機點幣（輸入機台當前「面板累計數值」）</h2>
+          <p class="text-xs text-slate-500 mb-3">確認並儲存後數值會自動歸零，等待下一次輸入。</p>
+          <div class="space-y-3">
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">面板當前累計數值</label>
-                <input type="number" id="coinCountInput" oninput="onPanelCountInput()" placeholder="請輸入當前累計數" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+                <label class="block text-xs font-bold text-slate-600 mb-1">點幣日期</label>
+                <input type="date" id="coinDateInput" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white" />
               </div>
               <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">每幣面值 (HK$)</label>
-                <input type="number" step="0.5" id="coinRateInput" value="5" oninput="onPanelCountInput()" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+                <label class="block text-xs font-bold text-slate-600 mb-1">選擇機台</label>
+                <select id="coinMachineSelect" onchange="onCoinMachineChange()" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white"></select>
               </div>
             </div>
-          </div>
 
-          <!-- 四合一迷你機 4 個獨立輸入欄 -->
-          <div id="fourInOneWrapper" class="hidden bg-indigo-50/70 border border-indigo-200 rounded-xl p-3">
-            <label class="block text-xs font-bold text-indigo-900 mb-2">四合一迷你機格位讀數（請直接輸入 4 格當前累計值）</label>
-            <div class="grid grid-cols-2 gap-2.5 mb-2">
-              <div>
-                <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">左上格讀數</label>
-                <input type="number" id="slot-lt" oninput="onPanelCountInput()" placeholder="左上" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">右上格讀數</label>
-                <input type="number" id="slot-rt" oninput="onPanelCountInput()" placeholder="右上" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">左下格讀數</label>
-                <input type="number" id="slot-lb" oninput="onPanelCountInput()" placeholder="左下" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">右下格讀數</label>
-                <input type="number" id="slot-rb" oninput="onPanelCountInput()" placeholder="右下" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
+            <!-- 一般機台單一面板輸入 -->
+            <div id="singlePanelWrapper">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-600 mb-1">面板當前累計數值</label>
+                  <input type="number" id="coinCountInput" oninput="onPanelCountInput()" placeholder="請輸入當前累計數" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-600 mb-1">每幣面值 (HK$)</label>
+                  <input type="number" step="0.5" id="coinRateInput" value="5" oninput="onPanelCountInput()" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+                </div>
               </div>
             </div>
+
+            <!-- 四合一迷你機 4 個獨立輸入欄 -->
+            <div id="fourInOneWrapper" class="hidden bg-indigo-50/70 border border-indigo-200 rounded-xl p-3">
+              <label class="block text-xs font-bold text-indigo-900 mb-2">四合一迷你機格位讀數（請直接輸入 4 格當前累計值）</label>
+              <div class="grid grid-cols-2 gap-2.5 mb-2">
+                <div>
+                  <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">左上格讀數</label>
+                  <input type="number" id="slot-lt" oninput="onPanelCountInput()" placeholder="左上" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">右上格讀數</label>
+                  <input type="number" id="slot-rt" oninput="onPanelCountInput()" placeholder="右上" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">左下格讀數</label>
+                  <input type="number" id="slot-lb" oninput="onPanelCountInput()" placeholder="左下" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">右下格讀數</label>
+                  <input type="number" id="slot-rb" oninput="onPanelCountInput()" placeholder="右下" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-indigo-900 mb-1">每幣面值 (HK$)</label>
+                <input type="number" step="0.5" id="coinRateInputFour" value="5" oninput="onPanelCountInput()" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
+              </div>
+            </div>
+
+            <button onclick="recordCoins()" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 rounded-xl shadow">
+              確認儲存點幣紀錄
+            </button>
+          </div>
+        </div>
+
+        <!-- 場主兌幣歸零（50/50 拆帳） -->
+        <div class="card border-2 border-amber-200 bg-amber-50/40">
+          <h2 class="font-bold text-base text-amber-900 mb-1">💰 場主兌幣結算（50/50 拆帳並歸零機數）</h2>
+          <p class="text-xs text-amber-800 mb-3">💡 <strong>提示</strong>：與場主對數收現後按此鍵，系統會將實收現金計入當月 50/50 收益，並自動將本場未兌機數歸零重新計算。</p>
+          <div class="space-y-3 mb-3">
             <div>
-              <label class="block text-xs font-bold text-indigo-900 mb-1">每幣面值 (HK$)</label>
-              <input type="number" step="0.5" id="coinRateInputFour" value="5" oninput="onPanelCountInput()" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
+              <label class="block text-xs font-bold text-slate-600 mb-1">場主兌幣日期</label>
+              <input type="date" id="redeemDateInput" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">兌幣數量（機數）</label>
+                <input type="number" id="redeemCoinInput" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">實收現金 (HK$)</label>
+                <input type="number" id="redeemCashInput" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+              </div>
             </div>
           </div>
-
-          <button onclick="recordCoins()" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 rounded-xl shadow">
-            確認儲存點幣紀錄
+          <button onclick="redeemAndReset()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl shadow">
+            確認兌幣入帳並歸零機數
           </button>
         </div>
-      </div>
 
-      <!-- 場主兌幣歸零（50/50 拆帳） -->
-      <div class="card border-2 border-amber-200 bg-amber-50/40">
-        <h2 class="font-bold text-base text-amber-900 mb-1">💰 場主兌幣結算（50/50 拆帳並歸零機數）</h2>
-        <p class="text-xs text-amber-800 mb-3">💡 <strong>提示</strong>：與場主對數收現後按此鍵，系統會將實收現金計入當月 50/50 收益，並自動將本場未兌機數歸零重新計算。</p>
-        <div class="space-y-3 mb-3">
-          <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1">場主兌幣日期</label>
-            <input type="date" id="redeemDateInput" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white" />
+        <!-- 本場各月機數與兌幣入帳 Record List（預設全部收起，點擊「▼ 展開月覽」才展開） -->
+        <div class="card">
+          <div class="flex justify-between items-center mb-2">
+            <h2 class="font-bold text-base text-slate-800">📅 本場各月機數與兌幣入帳 Record List</h2>
+            <button onclick="toggleAllMonthlyExpand()" id="toggleAllMonthlyBtn" class="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">📂 全部展開月覽</button>
           </div>
-          <div class="grid grid-cols-2 gap-3">
+          <div id="coinPageMonthlySummary" class="divide-y divide-slate-100 text-xs"></div>
+        </div>
+      </section>
+
+      <!-- 3. 補貨 / 調貨分頁 -->
+      <section id="tab-stock" class="hidden">
+        <!-- 新增貨物 / 支出 -->
+        <div class="card">
+          <h2 class="font-bold text-base text-blue-950 mb-3">🧸 新增貨物 / 支出紀錄（獨立計算台主成本）</h2>
+          <div class="space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">貨物狀態 / 類型</label>
+                <select id="stockStatusSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white">
+                  <option value="貨存">📦 貨存（入庫備用）</option>
+                  <option value="入機">🕹️ 入機（上架機台）</option>
+                  <option value="出貨">🎁 出貨（客人夾出）</option>
+                  <option value="雜費">🧾 場租 / 雜費支出</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">貨物擁有人 / 墊付人</label>
+                <select id="stockOwnerSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white">
+                  <option value="Amzi">Amzi</option>
+                  <option value="Dennis">Dennis</option>
+                  <option value="共同">共同 / 場地公數</option>
+                </select>
+              </div>
+            </div>
+
             <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">兌幣數量（機數）</label>
-              <input type="number" id="redeemCoinInput" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+              <label class="block text-xs font-bold text-slate-600 mb-1">貨物名稱 / 說明</label>
+              <input type="text" id="stockNoteInput" placeholder="例如：Chiikawa 公仔 / 景品大盒" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">數量（隻）</label>
+                <input type="number" id="stockQtyInput" value="1" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">墊付成本 (HK$)</label>
+                <input type="number" id="stockCostInput" placeholder="輸入金額" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
+              </div>
+            </div>
+
+            <button onclick="recordGoodsItem()" class="w-full bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-3 rounded-xl shadow">
+              新增至貨物 List 並計算成本
+            </button>
+          </div>
+        </div>
+
+        <!-- 貨物 List -->
+        <div class="card">
+          <div class="flex justify-between items-center mb-2">
+            <div class="flex items-center gap-2">
+              <h2 class="font-bold text-base text-slate-800">📋 本場貨物 List</h2>
+              <button onclick="toggleAllGoodsExpand()" id="toggleAllGoodsBtn" class="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg">📂 展開全部貨物</button>
+            </div>
+            <span id="goodsListCount" class="text-xs text-slate-500">共 0 項</span>
+          </div>
+          <div class="flex gap-1.5 mb-2 text-xs">
+            <button onclick="setGoodsFilter('ACTIVE')" id="filter-ACTIVE" class="px-2.5 py-1 rounded-lg font-bold bg-blue-900 text-white">目前庫存 (入機/貨存)</button>
+            <button onclick="setGoodsFilter('ALL')" id="filter-ALL" class="px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600">全部明細</button>
+            <button onclick="setGoodsFilter('SHIPPED')" id="filter-SHIPPED" class="px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600">已出貨</button>
+          </div>
+          <div id="goodsListPreview" class="text-xs text-slate-500 py-1">（列表已收起，點擊上方按鈕可展開全部貨物明細）</div>
+          <div id="goodsListContainer" class="space-y-1.5 hidden mt-2"></div>
+        </div>
+
+        <!-- 跨店調貨 -->
+        <div class="card border-2 border-teal-200 bg-teal-50/30">
+          <h2 class="font-bold text-base text-teal-900 mb-1">🚚 跨店調貨（從存貨 List 選擇貨品移動）</h2>
+          <p class="text-xs text-teal-800 mb-3">選擇調出分店的貨存項目後，兩邊總庫存自動加減；該項目會從原分店 List 移除並出現在調入分店 List。</p>
+          <div class="space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">調出分店</label>
+                <select id="transferFromSelect" onchange="updateTransferGoodsDropdown()" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white"></select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">調入分店</label>
+                <select id="transferToSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white"></select>
+              </div>
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">實收現金 (HK$)</label>
-              <input type="number" id="redeemCashInput" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+              <label class="block text-xs font-bold text-slate-600 mb-1">選擇調出分店的存貨 List 項目</label>
+              <select id="transferGoodsSelect" onchange="onTransferGoodsSelectChange()" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white"></select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">調動數量（隻）</label>
+              <input type="number" id="transferQtyInput" placeholder="自動帶入該批全部數量" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+            </div>
+            <button onclick="transferStock()" class="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold py-3 rounded-xl shadow">
+              確認跨店調貨（同步更新兩邊 List）
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. 全場總結算分頁 -->
+      <section id="tab-settlement" class="hidden">
+        <div class="card bg-gradient-to-br from-slate-900 to-blue-950 text-white">
+          <div class="text-xs text-blue-300">全線分店合併結算（50/50 兌現對分 ＋ 各自舊帳 - 各自獨立成本）</div>
+          <div id="allTotalRedeemed" class="text-2xl font-extrabold mt-1">全線總兌現 $0</div>
+          <div class="text-xs text-blue-200 mt-0.5">50/50 兌現每人分得：<strong id="allHalfRedeemed" class="text-white">$0</strong></div>
+
+          <div class="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-blue-800 text-xs">
+            <div class="bg-blue-900/50 p-2.5 rounded-xl">
+              <div class="text-blue-200 font-bold">Amzi 應佔淨利潤</div>
+              <div id="amziShare" class="text-xl font-extrabold text-emerald-400 mt-1">$0</div>
+              <div id="amziCalcDetail" class="text-[11px] text-blue-300 mt-1">50%兌現 $0 + 舊帳 $0 - 成本 $0</div>
+            </div>
+            <div class="bg-blue-900/50 p-2.5 rounded-xl">
+              <div class="text-blue-200 font-bold">Dennis 應佔淨利潤</div>
+              <div id="dennisShare" class="text-xl font-extrabold text-emerald-400 mt-1">$0</div>
+              <div id="dennisCalcDetail" class="text-[11px] text-blue-300 mt-1">50%兌現 $0 + 舊帳 $0 - 成本 $0</div>
             </div>
           </div>
         </div>
-        <button onclick="redeemAndReset()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl shadow">
-          確認兌幣入帳並歸零機數
-        </button>
-      </div>
 
-      <!-- 本場各月機數與兌幣入帳 Record List（樣式與結算分頁展開月覽完全一致） -->
-      <div class="card">
-        <div class="flex justify-between items-center mb-2">
-          <h2 class="font-bold text-base text-slate-800">📅 本場各月機數與兌幣入帳 Record List</h2>
-          <button onclick="toggleAllMonthlyExpand()" id="toggleAllMonthlyBtn" class="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">📂 全部展開月覽</button>
+        <div class="card">
+          <div class="flex justify-between items-center mb-2">
+            <h2 class="font-bold text-sm text-slate-800">📊 各分店帳目明細（點擊店名展開各月總覽）</h2>
+          </div>
+          <div id="allLocationsSummary" class="divide-y divide-slate-100 text-xs"></div>
         </div>
-        <div id="coinPageMonthlySummary" class="divide-y divide-slate-100 text-xs"></div>
-      </div>
-    </section>
+      </section>
 
-    <!-- 3. 補貨 / 調貨分頁 -->
-    <section id="tab-stock" class="hidden">
-      <!-- 新增貨物 / 支出 -->
-      <div class="card">
-        <h2 class="font-bold text-base text-blue-950 mb-3">🧸 新增貨物 / 支出紀錄（獨立計算台主成本）</h2>
-        <div class="space-y-3">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">貨物狀態 / 類型</label>
-              <select id="stockStatusSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white">
-                <option value="貨存">📦 貨存（入庫備用）</option>
-                <option value="入機">🕹️ 入機（上架機台）</option>
-                <option value="出貨">🎁 出貨（客人夾出）</option>
-                <option value="雜費">🧾 場租 / 雜費支出</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">貨物擁有人 / 墊付人</label>
-              <select id="stockOwnerSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white">
-                <option value="Amzi">Amzi</option>
-                <option value="Dennis">Dennis</option>
-                <option value="共同">共同 / 場地公數</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1">貨物名稱 / 說明</label>
-            <input type="text" id="stockNoteInput" placeholder="例如：Chiikawa 公仔 / 景品大盒" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">數量（隻）</label>
-              <input type="number" id="stockQtyInput" value="1" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">墊付成本 (HK$)</label>
-              <input type="number" id="stockCostInput" placeholder="輸入金額" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
-            </div>
-          </div>
-
-          <button onclick="recordGoodsItem()" class="w-full bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-3 rounded-xl shadow">
-            新增至貨物 List 並計算成本
-          </button>
-        </div>
-      </div>
-
-      <!-- 貨物 List -->
-      <div class="card">
-        <div class="flex justify-between items-center mb-2">
-          <div class="flex items-center gap-2">
-            <h2 class="font-bold text-base text-slate-800">📋 本場貨物 List</h2>
-            <button onclick="toggleAllGoodsExpand()" id="toggleAllGoodsBtn" class="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg">📂 展開全部貨物</button>
-          </div>
-          <span id="goodsListCount" class="text-xs text-slate-500">共 0 項</span>
-        </div>
-        <div class="flex gap-1.5 mb-2 text-xs">
-          <button onclick="setGoodsFilter('ACTIVE')" id="filter-ACTIVE" class="px-2.5 py-1 rounded-lg font-bold bg-blue-900 text-white">目前庫存 (入機/貨存)</button>
-          <button onclick="setGoodsFilter('ALL')" id="filter-ALL" class="px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600">全部明細</button>
-          <button onclick="setGoodsFilter('SHIPPED')" id="filter-SHIPPED" class="px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600">已出貨</button>
-        </div>
-        <div id="goodsListPreview" class="text-xs text-slate-500 py-1">（列表已收起，點擊上方按鈕可展開全部貨物明細）</div>
-        <div id="goodsListContainer" class="space-y-1.5 hidden mt-2"></div>
-      </div>
-
-      <!-- 跨店調貨 -->
-      <div class="card border-2 border-teal-200 bg-teal-50/30">
-        <h2 class="font-bold text-base text-teal-900 mb-1">🚚 跨店調貨（從存貨 List 選擇貨品移動）</h2>
-        <p class="text-xs text-teal-800 mb-3">選擇調出分店的貨存項目後，兩邊總庫存自動加減；該項目會從原分店 List 移除並出現在調入分店 List。</p>
-        <div class="space-y-3">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">調出分店</label>
-              <select id="transferFromSelect" onchange="updateTransferGoodsDropdown()" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white"></select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">調入分店</label>
-              <select id="transferToSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white"></select>
-            </div>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1">選擇調出分店的存貨 List 項目</label>
-            <select id="transferGoodsSelect" onchange="onTransferGoodsSelectChange()" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white"></select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1">調動數量（隻）</label>
-            <input type="number" id="transferQtyInput" placeholder="自動帶入該批全部數量" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
-          </div>
-          <button onclick="transferStock()" class="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold py-3 rounded-xl shadow">
-            確認跨店調貨（同步更新兩邊 List）
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- 4. 全場總結算分頁 -->
-    <section id="tab-settlement" class="hidden">
-      <div class="card bg-gradient-to-br from-slate-900 to-blue-950 text-white">
-        <div class="text-xs text-blue-300">全線分店合併結算（50/50 兌現對分 ＋ 各自舊帳 - 各自獨立成本）</div>
-        <div id="allTotalRedeemed" class="text-2xl font-extrabold mt-1">全線總兌現 $0</div>
-        <div class="text-xs text-blue-200 mt-0.5">50/50 兌現每人分得：<strong id="allHalfRedeemed" class="text-white">$0</strong></div>
-
-        <div class="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-blue-800 text-xs">
-          <div class="bg-blue-900/50 p-2.5 rounded-xl">
-            <div class="text-blue-200 font-bold">Amzi 應佔淨利潤</div>
-            <div id="amziShare" class="text-xl font-extrabold text-emerald-400 mt-1">$0</div>
-            <div id="amziCalcDetail" class="text-[11px] text-blue-300 mt-1">50%兌現 $0 + 舊帳 $0 - 成本 $0</div>
-          </div>
-          <div class="bg-blue-900/50 p-2.5 rounded-xl">
-            <div class="text-blue-200 font-bold">Dennis 應佔淨利潤</div>
-            <div id="dennisShare" class="text-xl font-extrabold text-emerald-400 mt-1">$0</div>
-            <div id="dennisCalcDetail" class="text-[11px] text-blue-300 mt-1">50%兌現 $0 + 舊帳 $0 - 成本 $0</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="flex justify-between items-center mb-2">
-          <h2 class="font-bold text-sm text-slate-800">📊 各分店帳目明細（點擊店名展開各月總覽）</h2>
-        </div>
-        <div id="allLocationsSummary" class="divide-y divide-slate-100 text-xs"></div>
-      </div>
-    </section>
-
-    <!-- 5. 獨立設定與重置、備份頁面 -->
-    <section id="tab-danger" class="hidden">
-      <!-- 數據安全與備份還原區 -->
-      <div class="card border-2 border-indigo-300 bg-indigo-50/40">
-        <h2 class="font-bold text-base text-indigo-900 mb-1">💾 資料本地備份與還原（保障絕不遺失）</h2>
-        <p class="text-xs text-indigo-800 mb-3">
-          隨時可以把手動輸入的最新資料下載成備份檔。就算日後 App 改動或重裝，也能一秒還原！
-        </p>
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="exportJsonBackup()" class="bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-2.5 rounded-xl text-xs shadow">
-            📤 備份匯出資料 (JSON)
-          </button>
-          <label class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl text-xs shadow text-center cursor-pointer flex items-center justify-center">
-            📥 匯入本地備份
-            <input type="file" id="importJsonFile" accept=".json" onchange="importJsonBackup(event)" class="hidden" />
+      <!-- 5. 獨立設定與重置、備份頁面 -->
+      <section id="tab-danger" class="hidden">
+        <!-- 動態匯入 Excel 帳目檔案 -->
+        <div class="card border-2 border-emerald-300 bg-emerald-50/40">
+          <h2 class="font-bold text-base text-emerald-900 mb-1">📁 匯入 Excel 帳目檔案 (.xlsx)</h2>
+          <p class="text-xs text-emerald-800 mb-3">
+            支援任意合夥帳目的 Excel 檔案。選取檔案後會自動讀取貨物與舊帳資料並加入當前帳戶。
+          </p>
+          <label class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow text-center cursor-pointer flex items-center justify-center">
+            📂 選擇並匯入 Excel 檔案
+            <input type="file" id="excelUploadInput" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(event)" class="hidden" />
           </label>
         </div>
-      </div>
 
-      <!-- 智能匯入 Excel -->
-      <div class="card border-2 border-emerald-300 bg-emerald-50/40">
-        <h2 class="font-bold text-base text-emerald-900 mb-1">📥 智能對應匯入《麗城夾 new.xlsx》</h2>
-        <p class="text-xs text-emerald-800 mb-3">
-          完整載入 129 筆貨物、雙機台設定與各月舊帳，<strong>不會覆蓋</strong>你後來手動輸入的其他資料。
-        </p>
-        <button onclick="importLichengExcelData()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow">
-          📥 智能匯入 Excel 帳目並同步雲端
-        </button>
-      </div>
-
-      <div class="card">
-        <h2 class="font-bold text-base text-slate-800 mb-2">📡 雲端連線診斷與手動同步</h2>
-        <div id="cloudDiagnosticBox" class="text-xs text-slate-600 space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200 mb-3">
-          <p>• 資料庫實例：<span class="font-mono font-bold text-blue-900">default / ledgers / DENNIS_AMZI_MAIN</span></p>
-          <p>• 登入狀態：<span id="diagAuthText" class="font-bold">檢查中...</span></p>
-          <p>• 最後伺服器確認：<span id="diagWriteText" class="font-bold">正在自動同步...</span></p>
+        <div class="card">
+          <h2 class="font-bold text-base text-slate-800 mb-2">📡 雲端連線診斷與手動同步</h2>
+          <div id="cloudDiagnosticBox" class="text-xs text-slate-600 space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200 mb-3">
+            <p>• 資料庫實例：<span class="font-mono font-bold text-blue-900">default / ledgers / DENNIS_AMZI_MAIN</span></p>
+            <p>• 登入狀態：<span id="diagAuthText" class="font-bold">檢查中...</span></p>
+            <p>• 最後伺服器確認：<span id="diagWriteText" class="font-bold">正在自動同步...</span></p>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="pullFromCloud(false)" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs shadow">
+              ⬇️ 從雲端拉取最新
+            </button>
+            <button onclick="pushToCloud(false)" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl text-xs shadow">
+              ⬆️ 立即推送至雲端
+            </button>
+          </div>
         </div>
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="pullFromCloud(false)" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs shadow">
-            ⬇️ 從雲端拉取最新
-          </button>
-          <button onclick="pushToCloud(false)" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2.5 rounded-xl text-xs shadow">
-            ⬆️ 立即推送至雲端
+
+        <div class="card border-2 border-rose-200 bg-rose-50/30">
+          <h2 class="font-bold text-base text-rose-700 mb-1">⚠️ 危險操作區</h2>
+          <p class="text-xs text-slate-600 mb-4">如需重新開帳，可一鍵清空所有場地、貨物清單、點幣紀錄、舊帳與台主成本，全部數目歸零重新開始。</p>
+          <button onclick="resetAllData()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl text-sm shadow">
+            全部數目歸零重新開始
           </button>
         </div>
-      </div>
+      </section>
 
-      <div class="card border-2 border-rose-200 bg-rose-50/30">
-        <h2 class="font-bold text-base text-rose-700 mb-1">⚠️ 危險操作區</h2>
-        <p class="text-xs text-slate-600 mb-4">如需重新開帳，可一鍵清空所有場地、貨物清單、點幣紀錄、舊帳與台主成本，全部數目歸零重新開始。</p>
-        <button onclick="resetAllData()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl text-sm shadow">
-          全部數目歸零重新開始
-        </button>
-      </div>
-    </section>
-
-  </main>
+    </main>
+  </div>
 
   <script>
     const firebaseConfig = {
@@ -456,159 +483,16 @@
     };
 
     const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v20";
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v21";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
+    let currentView = "landing"; // "landing" or "workspace"
     let expandedSettlementLocIds = {};
     let goodsFilterMode = "ACTIVE";
     let allGoodsExpanded = false;
     let allMonthlyExpanded = false;
     let expandedMonthlyKeys = {};
     let isResetting = false;
-
-    const LICHENG_RAW_GOODS = [
-      ["Dennis", "2月出貨", 6780, "出貨"],
-      ["Dennis", "3月出貨", 4120, "出貨"],
-      ["Dennis", "4月出貨", 3790, "出貨"],
-      ["Dennis", "5月出貨", 2000, "出貨"],
-      ["Dennis", "6月出貨", 1180, "出貨"],
-      ["Dennis", "白龍", 500, "出貨"],
-      ["Dennis", "薑餅屋", 380, "出貨"],
-      ["Dennis", "孔雀", 500, "出貨"],
-      ["Dennis", "臘腸狗袋", 400, "出貨"],
-      ["Dennis", "鸚鵡", 200, "出貨"],
-      ["Dennis", "老虎", 350, "出貨"],
-      ["Dennis", "隔熱手套", 250, "出貨"],
-      ["Dennis", "白雲", 220, "出貨"],
-      ["Dennis", "情人節龍", 420, "出貨"],
-      ["Dennis", "情人節龍", 420, "出貨"],
-      ["Dennis", "黑蝙蝠", 270, "出貨"],
-      ["Dennis", "絕版熊", 280, "出貨"],
-      ["Dennis", "金標藍色兔", 350, "出貨"],
-      ["Dennis", "彩兔", 380, "出貨"],
-      ["Dennis", "彩兔", 380, "出貨"],
-      ["Dennis", "深粉紅兔", 200, "出貨"],
-      ["Dennis", "淺粉紅兔", 200, "出貨"],
-      ["Dennis", "卷毛馬騮", 270, "出貨"],
-      ["Dennis", "豬袋", 300, "出貨"],
-      ["Dennis", "31cm馬騮", 220, "出貨"],
-      ["Dennis", "灰兔", 200, "出貨"],
-      ["Dennis", "情人節龍", 450, "出貨"],
-      ["Dennis", "籃拼色兔", 310, "出貨"],
-      ["Dennis", "沙堡", 300, "出貨"],
-      ["Dennis", "水壺", 300, "出貨"],
-      ["Dennis", "生日兔", 350, "出貨"],
-      ["Dennis", "害羞恐龍", 250, "出貨"],
-      ["Dennis", "粉紅色兔", 200, "出貨"],
-      ["Dennis", "太空兔", 300, "出貨"],
-      ["Dennis", "紅兔", 350, "出貨"],
-      ["Dennis", "金標象", 350, "出貨"],
-      ["Dennis", "ET", 300, "出貨"],
-      ["Dennis", "青豆", 350, "出貨"],
-      ["Amzi", "黃袋 (刮)", 420, "出貨"],
-      ["Amzi", "火炬", 540, "貨存"],
-      ["Amzi", "西瓜", 400, "出貨"],
-      ["Amzi", "史納莎狗", 250, "出貨"],
-      ["Amzi", "老虎", 330, "出貨"],
-      ["Amzi", "白虎", 730, "出貨"],
-      ["Amzi", "水母蟹", 250, "出貨"],
-      ["Amzi", "啡狗袋", 300, "貨存"],
-      ["Amzi", "浴衣熊", 350, "出貨"],
-      ["Amzi", "紅標馬", 350, "出貨"],
-      ["Amzi", "Pancake", 250, "出貨"],
-      ["Amzi", "大蛇", 250, "出貨"],
-      ["Amzi", "花", 250, "出貨"],
-      ["Amzi", "花澆壺", 250, "出貨"],
-      ["Amzi", "坐兔", 250, "出貨"],
-      ["Amzi", "啡兔", 250, "出貨"],
-      ["Amzi", "灰白兔", 250, "出貨"],
-      ["Amzi", "細象", 160, "出貨"],
-      ["Amzi", "牧羊犬", 220, "出貨"],
-      ["Amzi", "嘟嘟魚", 280, "出貨"],
-      ["Amzi", "灰兔", 210, "出貨"],
-      ["Amzi", "太空狗", 350, "出貨"],
-      ["Amzi", "烏雲", 250, "出貨"],
-      ["Amzi", "花裝熊", 550, "出貨"],
-      ["Amzi", "綿羊", 350, "出貨"],
-      ["Amzi", "灰貓", 250, "出貨"],
-      ["Amzi", "黑白牛", 380, "出貨"],
-      ["Amzi", "大五彩蛋糕", 550, "入機"],
-      ["Amzi", "水母蟹", 250, "出貨"],
-      ["Amzi", "18cm紫兔 （刮）", 220, "出貨"],
-      ["Amzi", "長春藤", 350, "出貨"],
-      ["Amzi", "露營熊", 650, "出貨"],
-      ["Amzi", "浣熊", 410, "出貨"],
-      ["Amzi", "巨人", 600, "出貨"],
-      ["Amzi", "雪怪", 500, "出貨"],
-      ["Amzi", "50cm 飛馬", 700, "貨存"],
-      ["Amzi", "彩兔", 250, "出貨"],
-      ["Amzi", "31cm白色兔", 250, "出貨"],
-      ["Amzi", "31cm上海兔", 320, "出貨"],
-      ["Amzi", "白虎", 330, "出貨"],
-      ["Amzi", "趴趴狗", 250, "出貨"],
-      ["Amzi", "生日蛋糕", 220, "出貨"],
-      ["Amzi", "2月出貨", 1960, "出貨"],
-      ["Amzi", "3月出貨", 3730, "出貨"],
-      ["Amzi", "4月出貨", 970, "出貨"],
-      ["Amzi", "5月出貨", 1745, "出貨"],
-      ["Amzi", "6月出貨", 940, "出貨"],
-      ["Amzi", "水壺", 300, "入機"],
-      ["Amzi", "狸貓", 400, "出貨"],
-      ["Amzi", "臘腸狗", 300, "出貨"],
-      ["Amzi", "18cm紅兔", 200, "出貨"],
-      ["Amzi", "瀨尿蝦", 200, "出貨"],
-      ["Amzi", "熱狗", 250, "出貨"],
-      ["Dennis", "骷髏盆栽", 0, "出貨"],
-      ["Amzi", "狗仔袋", 250, "出貨"],
-      ["Amzi", "露營熊", 300, "出貨"],
-      ["Amzi", "浴衣熊", 300, "出貨"],
-      ["Amzi", "浴衣熊", 300, "出貨"],
-      ["Amzi", "浣熊", 300, "出貨"],
-      ["Amzi", "紅燈籠", 200, "入機"],
-      ["Amzi", "聖誕高地狗", 300, "出貨"],
-      ["Amzi", "紅色兔", 350, "出貨"],
-      ["Amzi", "石像鬼", 350, "出貨"],
-      ["Dennis", "31cm灰色花耳兔", 350, "入機"],
-      ["Dennis", "Library 綠絲帶兔", 580, "出貨"],
-      ["Dennis", "臘腸狗", 300, "出貨"],
-      ["Dennis", "水母蟹", 280, "出貨"],
-      ["Dennis", "蟲", 280, "入機"],
-      ["Dennis", "20cm 企鵝", 258, "出貨"],
-      ["Dennis", "淺粉紅色兔", 258, "入機"],
-      ["Dennis", "粉紅色兔", 258, "入機"],
-      ["Dennis", "中蛇", 258, "出貨"],
-      ["Dennis", "月亮", 258, "入機"],
-      ["Dennis", "豬袋", 258, "出貨"],
-      ["Dennis", "紅色心人", 258, "入機"],
-      ["Amzi", "太空兔", 290, "出貨"],
-      ["Amzi", "灰絲帶兔", 530, "入機"],
-      ["Amzi", "粉絲帶兔", 530, "入機"],
-      ["Amzi", "黑白狗", 210, "出貨"],
-      ["Amzi", "黑白狗", 210, "入機"],
-      ["Amzi", "獅子", 230, "出貨"],
-      ["Amzi", "大象", 230, "入機"],
-      ["Amzi", "金毛狗", 230, "出貨"],
-      ["Amzi", "盆栽", 290, "出貨"],
-      ["Amzi", "金標狗", 290, "出貨"],
-      ["Dennis", "水母蟹", 280, "入機"],
-      ["Dennis", "灰兔", 280, "出貨"],
-      ["Dennis", "石像鬼", 320, "出貨"],
-      ["Dennis", "大象", 280, "出貨"],
-      ["Dennis", "獅子", 300, "出貨"],
-      ["Dennis", "鹿", 250, "出貨"]
-    ];
-
-    const LICHENG_LEGACY_RECORDS = {
-      "2026-03": [{ id: "r_31", type: "legacy", owner: "Amzi", cash: 15630, date: "2026-03-15" }, { id: "r_32", type: "legacy", owner: "Dennis", cash: 18680, date: "2026-03-15" }],
-      "2026-04": [{ id: "r_41", type: "legacy", owner: "Amzi", cash: 7110, date: "2026-04-30" }, { id: "r_42", type: "legacy", owner: "Dennis", cash: 7910, date: "2026-04-30" }],
-      "2026-05": [{ id: "r_51", type: "legacy", owner: "Amzi", cash: 2410, date: "2026-05-29" }, { id: "r_52", type: "legacy", owner: "Dennis", cash: 2350, date: "2026-05-29" }],
-      "2026-06": [{ id: "r_61", type: "legacy", owner: "Amzi", cash: 6470, date: "2026-06-30" }, { id: "r_62", type: "legacy", owner: "Dennis", cash: 6460, date: "2026-06-30" }],
-      "2026-07": [{ id: "r_71", type: "legacy", owner: "Amzi", cash: 2050, date: "2026-07-13" }, { id: "r_72", type: "legacy", owner: "Dennis", cash: 2050, date: "2026-07-13" }],
-      "2026-08": [{ id: "r_81", type: "redeem", coins: 0, cash: 15770, date: "2026-08-07" }, { id: "r_82", type: "redeem", coins: 0, cash: 9000, date: "2026-08-23" }],
-      "2026-09": [{ id: "r_91", type: "redeem", coins: 0, cash: 6190, date: "2026-09-08" }, { id: "r_92", type: "redeem", coins: 0, cash: 4120, date: "2026-09-12" }],
-      "2026-10": [{ id: "r_101", type: "redeem", coins: 0, cash: 2420, date: "2026-10-07" }, { id: "r_102", type: "legacy", owner: "Amzi", cash: 10, date: "2026-10-07" }, { id: "r_103", type: "redeem", coins: 0, cash: 5000, date: "2026-10-12" }],
-      "2026-11": [{ id: "r_111", type: "redeem", coins: 0, cash: 2980, date: "2026-11-10" }]
-    };
 
     function getTodayStr() {
       const d = new Date();
@@ -654,7 +538,6 @@
           const parsed = JSON.parse(raw);
           if (parsed && parsed.ledgers) return parsed;
           if (parsed && parsed.locations) {
-            // Migrate old single ledger to multi-ledger format
             return {
               currentLedgerId: "ledger_main",
               ledgers: {
@@ -754,10 +637,14 @@
     }
 
     function setSyncUI(ok, text) {
-      const dot = document.getElementById("syncDot");
-      const label = document.getElementById("syncStatus");
-      dot.className = "inline-block w-2 h-2 rounded-full " + (ok ? "bg-emerald-400" : "bg-rose-500");
-      label.textContent = text;
+      ["syncStatus", "landingSyncStatus"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+      });
+      ["syncDot", "landingSyncDot"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.className = "inline-block w-2.5 h-2.5 rounded-full " + (ok ? "bg-emerald-400" : "bg-rose-500");
+      });
     }
 
     async function getAuthHeaders() {
@@ -794,7 +681,7 @@
             renderAll();
             const t = new Date();
             const ts = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}:${String(t.getSeconds()).padStart(2, "0")}`;
-            setSyncUI(true, "雲端已同步（HTTPS 直連 " + ts + "）");
+            setSyncUI(true, "雲端已同步 (" + ts + ")");
             document.getElementById("diagWriteText").textContent = "正常 (" + ts + ")";
             if (!silent) showToast("☁️ 已成功從雲端拉取最新帳目！");
             return;
@@ -802,7 +689,7 @@
         }
         await pushToCloud(true);
       } catch (err) {
-        setSyncUI(false, "網絡連線異常：" + err.message);
+        setSyncUI(false, "網絡異常：" + err.message);
         if (!silent) showToast("❌ 拉取失敗：" + err.message, true);
       }
     }
@@ -832,9 +719,10 @@
         }
         const t = new Date();
         const ts = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}:${String(t.getSeconds()).padStart(2, "0")}`;
-        setSyncUI(true, "雲端已同步 · 最後寫入 " + ts);
+        setSyncUI(true, "雲端已同步 (" + ts + ")");
         document.getElementById("diagWriteText").textContent = "成功寫入 (" + ts + ")";
-        document.getElementById("lastCloudWriteTime").textContent = "☁️ 雲端已存 " + ts;
+        const lw = document.getElementById("lastCloudWriteTime");
+        if (lw) lw.textContent = "☁️ 雲端已存 " + ts;
         if (!silent) showToast("☁️ 已成功寫入 Firebase 雲端伺服器！");
       } catch (err) {
         setSyncUI(false, "寫入異常：" + err.message);
@@ -927,11 +815,11 @@
       const btnA = document.getElementById("userAmzi");
       const btnD = document.getElementById("userDennis");
       if (currentOperator === "Amzi") {
-        btnA.className = "px-2.5 py-1 rounded-lg font-bold bg-white text-blue-950 shadow";
-        btnD.className = "px-2.5 py-1 rounded-lg font-bold text-blue-200";
+        btnA.className = "px-2 py-0.5 rounded-lg font-bold bg-white text-blue-950 shadow";
+        btnD.className = "px-2 py-0.5 rounded-lg font-bold text-blue-200";
       } else {
-        btnD.className = "px-2.5 py-1 rounded-lg font-bold bg-white text-blue-950 shadow";
-        btnA.className = "px-2.5 py-1 rounded-lg font-bold text-blue-200";
+        btnD.className = "px-2 py-0.5 rounded-lg font-bold bg-white text-blue-950 shadow";
+        btnA.className = "px-2 py-0.5 rounded-lg font-bold text-blue-200";
       }
     }
 
@@ -979,21 +867,55 @@
       });
     }
 
-    function switchLedgerAccount(ledgerId) {
+    function selectLedgerAccount(ledgerId) {
       appState.currentLedgerId = ledgerId;
-      saveState();
-      showToast("✅ 已切換至合夥帳戶：" + getCurrentLedger().name);
+      currentView = "workspace";
+      renderAll();
+      showToast("✅ 已進入帳戶：" + getCurrentLedger().name);
+    }
+
+    function backToLanding() {
+      currentView = "landing";
+      renderAll();
     }
 
     function addNewLedgerAccount() {
-      const name = prompt("請輸入新的合夥帳目名稱（例如：另一合夥項目 / 銅鑼灣夾公仔）：");
+      const name = prompt("請輸入新的合夥帳戶名稱（例如：另一合夥項目 / 銅鑼灣夾公仔）：");
       if (!name || !name.trim()) return;
       const newL = getDefaultLedger(name.trim());
       appState.ledgers[newL.id] = newL;
       appState.currentLedgerId = newL.id;
+      currentView = "workspace";
       addLog(`建立新合夥帳戶：「${name.trim()}」`);
       saveState();
-      showToast("✅ 新合夥帳戶已建立並切換");
+      showToast("✅ 新合夥帳戶已建立並進入");
+    }
+
+    function renameLedgerAccount(ledgerId) {
+      const l = appState.ledgers[ledgerId];
+      if (!l) return;
+      const newName = prompt("請輸入新的帳戶名稱：", l.name);
+      if (!newName || !newName.trim() || newName.trim() === l.name) return;
+      l.name = newName.trim();
+      addLog(`帳戶改名為「${l.name}」`);
+      saveState();
+      showToast("✅ 帳戶名稱已更新");
+    }
+
+    function deleteLedgerAccount(ledgerId) {
+      const keys = Object.keys(appState.ledgers);
+      if (keys.length <= 1) {
+        alert("必須至少保留一個合夥帳戶，無法刪除！");
+        return;
+      }
+      const l = appState.ledgers[ledgerId];
+      if (!confirm(`⚠️ 確定要刪除合夥帳戶「${l.name}」嗎？\n\n此操作將刪除該帳戶所有分店、機台與帳目數據！`)) return;
+
+      delete appState.ledgers[ledgerId];
+      appState.currentLedgerId = Object.keys(appState.ledgers)[0];
+      currentView = "landing";
+      saveState();
+      showToast("✅ 合夥帳戶已刪除");
     }
 
     function switchLocation(locId) {
@@ -1112,7 +1034,6 @@
       if (machine && machine.isFourInOne) {
         singleWrapper.classList.add("hidden");
         fourWrapper.classList.remove("hidden");
-        // Clear inputs for fresh entry as requested
         document.getElementById("slot-lt").value = "";
         document.getElementById("slot-rt").value = "";
         document.getElementById("slot-lb").value = "";
@@ -1202,7 +1123,6 @@
 
         addLog(`[${dateVal}] 點幣 ${machine.name}(四合一) 左上:${lt} 右上:${rt} 左下:${lb} 右下:${rb}`);
         
-        // Clear input fields immediately so they don't retain values
         document.getElementById("slot-lt").value = "";
         document.getElementById("slot-rt").value = "";
         document.getElementById("slot-lb").value = "";
@@ -1217,7 +1137,6 @@
         machine.panelTotal = panelVal;
         addLog(`[${dateVal}] 點幣 ${machine.name} 面板改為 ${panelVal} (變動 ${diff >= 0 ? "+" + diff : diff})`);
 
-        // Clear input field immediately
         document.getElementById("coinCountInput").value = "";
       }
 
@@ -1454,7 +1373,7 @@
     }
 
     function resetAllData() {
-      if (!confirm("確定要清空所有場地帳目、貨物 List 與紀錄，全部數目歸零重新開始嗎？\n\n（點擊確定後，系統會自動將清空後的乾淨狀態同步至雲端）")) return;
+      if (!confirm("確定要清空所有合夥帳戶與數據嗎？\n\n（點擊確定後，系統會自動將清空後的乾淨狀態同步至雲端）")) return;
       isResetting = true;
       const defaultL = getDefaultLedger("Dennis & Amzi 夾娃娃合夥");
       appState = {
@@ -1462,14 +1381,70 @@
         ledgers: { [defaultL.id]: defaultL },
         logs: []
       };
+      currentView = "landing";
       localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
       renderAll();
-      switchTab("dashboard");
       
       pushToCloud(true).then(() => {
         showToast("✅ 全部數目已歸零，並已同步清空雲端！");
         setTimeout(() => { isResetting = false; }, 3000);
       });
+    }
+
+    function handleExcelUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+          const loc = getCurrentLocation();
+          let addedCount = 0;
+
+          // Try parsing rows flexibly (e.g. Owner, Name, Cost, Status)
+          jsonRows.forEach((row, idx) => {
+            if (!row || row.length < 2) return;
+            // Scan for text columns and number columns
+            let owner = "Amzi";
+            let name = "";
+            let cost = 0;
+            let status = "出貨";
+
+            row.forEach(cell => {
+              if (cell === "Dennis" || cell === "Amzi" || cell === "共同") owner = cell;
+              else if (typeof cell === "string" && cell.length > 0 && !name && isNaN(Number(cell))) name = cell;
+              else if (typeof cell === "number" && cost === 0) cost = cell;
+              else if (cell === "出貨" || cell === "貨存" || cell === "入機") status = cell;
+            });
+
+            if (name) {
+              loc.goodsList.push({
+                id: "g_excel_" + Date.now() + "_" + idx,
+                owner: owner,
+                name: name,
+                qty: 1,
+                cost: cost || 0,
+                status: status,
+                date: getTodayStr()
+              });
+              addedCount++;
+            }
+          });
+
+          addLog(`上傳匯入 Excel 檔案 (${file.name})：新增 ${addedCount} 筆貨物`);
+          saveState();
+          showToast(`✅ 成功從 Excel 匯入 ${addedCount} 筆貨物資料！`);
+          event.target.value = "";
+        } catch (err) {
+          alert("解析 Excel 檔案失敗：" + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
     }
 
     function addLog(text) {
@@ -1532,14 +1507,47 @@
       recalculateLocationTotals();
       renderOperatorUI();
 
-      // Render ledger account dropdown
-      const ledgerSelect = document.getElementById("ledgerAccountSelect");
-      ledgerSelect.innerHTML = "";
-      Object.values(appState.ledgers).forEach(l => {
-        ledgerSelect.add(new Option(l.name, l.id, false, l.id === appState.currentLedgerId));
-      });
+      const landingEl = document.getElementById("view-landing");
+      const workspaceEl = document.getElementById("view-workspace");
+
+      if (currentView === "landing") {
+        landingEl.classList.remove("hidden");
+        workspaceEl.classList.add("hidden");
+
+        const cardsContainer = document.getElementById("ledgerCardsContainer");
+        cardsContainer.innerHTML = Object.values(appState.ledgers).map(ledger => {
+          let totalLocs = Object.keys(ledger.locations).length;
+          let totalRedeem = 0;
+          Object.values(ledger.locations).forEach(l => {
+            totalRedeem += (l.totalRedeemedCash || 0);
+          });
+          return `
+            <div class="card border border-slate-200 hover:border-blue-500 transition cursor-pointer">
+              <div class="flex justify-between items-start mb-2">
+                <div onclick="selectLedgerAccount('${ledger.id}')" class="flex-1">
+                  <h3 class="font-extrabold text-blue-950 text-base">${ledger.name}</h3>
+                  <p class="text-xs text-slate-500 mt-0.5">包含 ${totalLocs} 個分店場地</p>
+                </div>
+                <div class="flex gap-1.5">
+                  <button onclick="renameLedgerAccount('${ledger.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg font-bold text-slate-700">✏️改名</button>
+                  <button onclick="deleteLedgerAccount('${ledger.id}')" class="text-xs bg-rose-50 hover:bg-rose-100 px-2 py-1 rounded-lg font-bold text-rose-600">🗑️刪除</button>
+                </div>
+              </div>
+              <div onclick="selectLedgerAccount('${ledger.id}')" class="flex justify-between items-center pt-2 border-t border-slate-100 text-xs">
+                <span class="text-slate-600">全線總兌現：<strong class="text-emerald-700">$${totalRedeem}</strong></span>
+                <span class="bg-blue-900 text-white px-3 py-1.5 rounded-lg font-bold">進入帳戶 ➔</span>
+              </div>
+            </div>`;
+        }).join("");
+        return;
+      } else {
+        landingEl.classList.add("hidden");
+        workspaceEl.classList.remove("hidden");
+      }
 
       const ledger = getCurrentLedger();
+      document.getElementById("workspaceLedgerTitle").textContent = ledger.name;
+
       const locIds = Object.keys(ledger.locations);
       const locSelect = document.getElementById("locationSelect");
       const fromSelect = document.getElementById("transferFromSelect");
