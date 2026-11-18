@@ -99,10 +99,10 @@
               </div>
             </div>
           </div>
-          <!-- 操作人切換 -->
-          <div class="bg-blue-900/80 p-1 rounded-xl flex items-center text-xs border border-blue-700">
-            <button id="userPartnerA" onclick="setOperator('partnerA')" class="px-2 py-0.5 rounded-lg font-bold transition">夥伴1</button>
-            <button id="userPartnerB" onclick="setOperator('partnerB')" class="px-2 py-0.5 rounded-lg font-bold transition">夥伴2</button>
+          <!-- 右上角直接點擊切換與改名 -->
+          <div class="bg-blue-900/80 p-1 rounded-xl flex items-center text-xs border border-blue-700 gap-1">
+            <button id="userPartnerA" onclick="handlePartnerClick('partnerA')" class="px-2 py-0.5 rounded-lg font-bold transition">夥伴1</button>
+            <button id="userPartnerB" onclick="handlePartnerClick('partnerB')" class="px-2 py-0.5 rounded-lg font-bold transition">夥伴2</button>
           </div>
         </div>
 
@@ -404,25 +404,6 @@
 
       <!-- 5. 獨立設定與重置、備份頁面 -->
       <section id="tab-danger" class="hidden">
-        <!-- 修改台主合夥人名稱設定卡片 -->
-        <div class="card border-2 border-indigo-300 bg-indigo-50/40">
-          <h2 class="font-bold base text-indigo-950 mb-1">✏️ 修改合夥人（台主）名稱</h2>
-          <p class="text-xs text-slate-600 mb-3">隨時可以更改兩位台主的顯示名稱（例如從 Amzi / Dennis 改為你的全名或暱稱）。</p>
-          <div class="space-y-3">
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">夥伴 1 名稱（原 Amzi）</label>
-              <input type="text" id="settingNameA" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white text-xs" />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">夥伴 2 名稱（原 Dennis）</label>
-              <input type="text" id="settingNameB" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white text-xs" />
-            </div>
-            <button onclick="savePartnerNames()" class="w-full bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-2.5 rounded-xl text-xs shadow">
-              儲存合夥人名稱修改
-            </button>
-          </div>
-        </div>
-
         <div class="card border-2 border-emerald-300 bg-emerald-50/40">
           <h2 class="font-bold text-base text-emerald-900 mb-1">📁 匯入 Excel 帳目檔案 (.xlsx)</h2>
           <p class="text-xs text-emerald-800 mb-3">
@@ -474,7 +455,7 @@
       measurementId: "G-RPZDMHX5C1"
     };
 
-    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v35";
+    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v36";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "partnerA";
     let currentView = "landing";
@@ -800,10 +781,31 @@
       });
     }
 
+    // 點擊右上角按鈕：如果已是當前操作人則詢問改名，否則切換為當前操作人
+    function handlePartnerClick(partnerKey) {
+      const ledger = getCurrentLedger();
+      const currentName = partnerKey === "partnerA" ? ledger.partnerA : ledger.partnerB;
+
+      if (currentOperator === partnerKey) {
+        const newName = prompt(`請輸入「${currentName}」的新名稱：`, currentName);
+        if (!newName || !newName.trim() || newName.trim() === currentName) return;
+        const trimmed = newName.trim();
+
+        if (partnerKey === "partnerA") ledger.partnerA = trimmed;
+        else ledger.partnerB = trimmed;
+
+        saveState();
+        showToast(`✅ 名稱已更新為「${trimmed}」`);
+      } else {
+        currentOperator = partnerKey;
+        localStorage.setItem("claw_operator", partnerKey);
+        renderOperatorUI();
+        showToast(`✅ 已切換操作人為：${partnerKey === "partnerA" ? ledger.partnerA : ledger.partnerB}`);
+      }
+    }
+
     function setOperator(name) {
-      currentOperator = name;
-      localStorage.setItem("claw_operator", name);
-      renderOperatorUI();
+      // 保持向下相容
     }
 
     function renderOperatorUI() {
@@ -814,26 +816,12 @@
       if (btnD) btnD.textContent = ledger.partnerB;
 
       if (currentOperator === "partnerA") {
-        if (btnA) btnA.className = "px-2 py-0.5 rounded-lg font-bold bg-white text-blue-950 shadow";
-        if (btnD) btnD.className = "px-2 py-0.5 rounded-lg font-bold text-blue-200";
+        if (btnA) btnA.className = "px-2.5 py-1 rounded-lg font-bold bg-white text-blue-950 shadow";
+        if (btnD) btnD.className = "px-2.5 py-1 rounded-lg font-bold text-blue-200 hover:bg-blue-800/50";
       } else {
-        if (btnD) btnD.className = "px-2 py-0.5 rounded-lg font-bold bg-white text-blue-950 shadow";
-        if (btnA) btnA.className = "px-2 py-0.5 rounded-lg font-bold text-blue-200";
+        if (btnD) btnD.className = "px-2.5 py-1 rounded-lg font-bold bg-white text-blue-950 shadow";
+        if (btnA) btnA.className = "px-2.5 py-1 rounded-lg font-bold text-blue-200 hover:bg-blue-800/50";
       }
-    }
-
-    function savePartnerNames() {
-      const ledger = getCurrentLedger();
-      const newA = document.getElementById("settingNameA").value.trim();
-      const newB = document.getElementById("settingNameB").value.trim();
-      if (!newA || !newB) {
-        alert("合夥人名稱不能為空！");
-        return;
-      }
-      ledger.partnerA = newA;
-      ledger.partnerB = newB;
-      saveState();
-      showToast("✅ 合夥人名稱已更新！");
     }
 
     function setGoodsFilter(mode) {
@@ -1500,8 +1488,6 @@
 
       const ledger = getCurrentLedger();
       document.getElementById("workspaceLedgerTitle").textContent = ledger.name;
-      document.getElementById("settingNameA").value = ledger.partnerA;
-      document.getElementById("settingNameB").value = ledger.partnerB;
 
       document.getElementById("optPartnerA").textContent = ledger.partnerA;
       document.getElementById("optPartnerA").value = ledger.partnerA;
