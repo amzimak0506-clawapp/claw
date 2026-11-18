@@ -434,7 +434,7 @@
         <div class="card border-2 border-emerald-300 bg-emerald-50/40">
           <h2 class="font-bold text-base text-emerald-900 mb-1">📁 匯入 Excel 帳目檔案 (.xlsx)</h2>
           <p class="text-xs text-emerald-800 mb-3">
-            支援任意合夥帳目的 Excel 檔案。選取檔案後會自動解析並將數據匯入至當前分店！
+            支援任意合夥帳目的 Excel 檔案。選取檔案後會自動解析並將貨物、成本與收入數據匯入至當前分店！
           </p>
           <label class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow text-center cursor-pointer flex items-center justify-center">
             📂 選擇並匯入 Excel 檔案
@@ -483,7 +483,7 @@
     };
 
     const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v23";
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v24";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
     let currentView = "landing";
@@ -1395,39 +1395,76 @@
           const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
           const loc = getCurrentLocation();
-          let addedCount = 0;
+          let addedGoodsCount = 0;
+          let addedIncomeCount = 0;
+          let totalImportCost = 0;
+          let totalImportIncome = 0;
 
           jsonRows.forEach((row, idx) => {
             if (!row || row.length === 0) return;
             let owner = "Amzi";
             let name = "";
-            let cost = 0;
+            let numbers = [];
             let status = "出貨";
+            let isIncomeRow = false;
 
             row.forEach(cell => {
               if (cell === "Dennis" || cell === "Amzi" || cell === "共同") owner = cell;
-              else if (typeof cell === "string" && cell.trim().length > 0 && !name && isNaN(Number(cell))) name = cell.trim();
-              else if (typeof cell === "number" && cost === 0) cost = cell;
-              else if (cell === "出貨" || cell === "貨存" || cell === "入機") status = cell;
+              else if (typeof cell === "string" && cell.trim().length > 0) {
+                const s = cell.trim();
+                if (s === "出貨" || s === "貨存" || s === "入機") status = s;
+                else if (s.includes("兌現") || s.includes("收入") || s.includes("現金") || s.includes("收益")) isIncomeRow = true;
+                else if (!name && isNaN(Number(s))) name = s;
+              } else if (typeof cell === "number" && !isNaN(cell)) {
+                numbers.push(cell);
+              }
             });
 
-            if (name) {
+            if (isIncomeRow || (numbers.length > 0 && !name)) {
+              // Income / Redeem row
+              const cashVal = numbers.length > 0 ? Math.max(...numbers) : 0;
+              if (cashVal > 0) {
+                const monthKey = getMonthKey(getTodayStr());
+                const bucket = ensureMonthlyBucket(loc, monthKey);
+                bucket.records = bucket.records || [];
+                bucket.records.push({
+                  id: "r_excel_" + Date.now() + "_" + idx,
+                  type: "redeem",
+                  coins: Math.round(cashVal / 5),
+                  cash: cashVal,
+                  date: getTodayStr()
+                });
+                totalImportIncome += cashVal;
+                addedIncomeCount++;
+              }
+            } else if (name || numbers.length > 0) {
+              // Goods / Expense row
+              const costVal = numbers.length > 0 ? numbers[numbers.length - 1] : 0;
+              const goodsName = name || "Excel匯入貨物";
+              
               loc.goodsList.push({
                 id: "g_excel_" + Date.now() + "_" + idx,
                 owner: owner,
-                name: name,
+                name: goodsName,
                 qty: 1,
-                cost: cost || 0,
+                cost: costVal,
                 status: status,
                 date: getTodayStr()
               });
-              addedCount++;
+
+              if (costVal > 0) {
+                if (owner === "Amzi") loc.costAmzi = (loc.costAmzi || 0) + costVal;
+                else if (owner === "Dennis") loc.costDennis = (loc.costDennis || 0) + costVal;
+                else loc.costShared = (loc.costShared || 0) + costVal;
+                totalImportCost += costVal;
+              }
+              addedGoodsCount++;
             }
           });
 
-          addLog(`上傳匯入 Excel 檔案 (${file.name})：新增 ${addedCount} 筆貨物`);
+          addLog(`上傳匯入 Excel 檔案 (${file.name})：新增 ${addedGoodsCount} 筆貨物(成本$${totalImportCost})，${addedIncomeCount} 筆收入(金額$${totalImportIncome})`);
           saveState();
-          showToast(`✅ 成功從 Excel 匯入 ${addedCount} 筆貨物資料！`);
+          showToast(`✅ Excel 成功匯入：${addedGoodsCount}筆貨物($${totalImportCost})、${addedIncomeCount}筆收入($${totalImportIncome})！`);
           event.target.value = "";
         } catch (err) {
           alert("解析 Excel 檔案失敗：" + err.message);
