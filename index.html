@@ -434,7 +434,7 @@
         <div class="card border-2 border-emerald-300 bg-emerald-50/40">
           <h2 class="font-bold text-base text-emerald-900 mb-1">📁 匯入 Excel 帳目檔案 (.xlsx)</h2>
           <p class="text-xs text-emerald-800 mb-3">
-            已完美適配：「租金&收入」分頁中含有 Rental 的項目會自動判定為租金成本，含有 income 的項目會判定為現金收入。
+            已完美適配：所有貨物/標機金額皆視為成本；「租金&收入」分頁中含有 Rental 的金額會自動計入成本，含有 income 的金額會計入收入。
           </p>
           <label class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow text-center cursor-pointer flex items-center justify-center">
             📂 選擇並匯入 Excel 檔案
@@ -1436,8 +1436,8 @@
                 // 「租金&收入」分頁邏輯：
                 // Col A (index 0): 擁有人 (Amzi / Dennis)
                 // Col B (index 1): 說明 (income 或 Feb Rental 等)
-                // Col D (index 3): 金額 (數字)
-                // Col E (index 4): 日期 (例如 15/3/2026)
+                // Col D (index 3): 金額
+                // Col E (index 4): 日期
                 let owner = String(row[0] || "").trim();
                 if (owner !== "Amzi" && owner !== "Dennis") owner = "Amzi";
                 
@@ -1466,13 +1466,13 @@
 
                 if (amount > 0) {
                   const descLower = desc.toLowerCase();
-                  // 判斷是否為租金成本 (Rental)
+                  // 根據您的明確規定：「租金是成本計算，income欄才是收入」
                   if (descLower.includes("rental") || descLower.includes("租金")) {
                     if (owner === "Amzi") loc.costAmzi = (loc.costAmzi || 0) + amount;
                     else loc.costDennis = (loc.costDennis || 0) + amount;
                     totalImportedRent++;
-                  } else {
-                    // 其他視為台主專屬收入 (legacy)
+                  } else if (descLower.includes("income") || descLower.includes("收入") || !descLower.includes("rental")) {
+                    // 視為現金收入 (legacy)
                     const monthKey = getMonthKey(dateVal);
                     const bucket = ensureMonthlyBucket(loc, monthKey);
                     bucket.records = bucket.records || [];
@@ -1489,7 +1489,7 @@
                 }
 
               } else {
-                // 「標機」分頁邏輯：
+                // 「標機 / 貨物」分頁邏輯（所有金額皆視為成本）：
                 let owner = String(row[0] || "").trim();
                 if (owner !== "Amzi" && owner !== "Dennis" && owner !== "共同") owner = "Amzi";
 
@@ -1524,7 +1524,7 @@
 
           addLog(`上傳 Excel 檔案 (${file.name})：匯入 ${totalImportedGoods} 筆貨物成本($${totalImportCost})，${totalImportedIncome} 筆收入($${totalImportIncomeVal})，${totalImportedRent} 筆租金成本`);
           saveState();
-          showToast(`✅ 成功匯入：${totalImportedGoods}筆貨物、${totalImportedIncome}筆專屬收入、${totalImportedRent}筆租金成本！`);
+          showToast(`✅ 成功匯入：${totalImportedGoods}筆貨物成本、${totalImportedIncome}筆專屬收入、${totalImportedRent}筆租金成本！`);
           event.target.value = "";
         } catch (err) {
           alert("解析 Excel 檔案失敗：" + err.message);
