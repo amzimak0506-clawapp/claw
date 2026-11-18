@@ -293,11 +293,11 @@
           </button>
         </div>
 
-        <!-- 本場各月機數與兌幣入帳 Record List（預設全部收起，點擊「▼ 展開月覽」才展開） -->
+        <!-- 本場各月機數與兌幣入帳 Record List（預設完全收起，點擊「▼ 展開月覽」才展開） -->
         <div class="card">
           <div class="flex justify-between items-center mb-2">
             <h2 class="font-bold text-base text-slate-800">📅 本場各月機數與兌幣入帳 Record List</h2>
-            <button onclick="toggleAllMonthlyExpand()" id="toggleAllMonthlyBtn" class="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">📂 全部展開月覽</button>
+            <button onclick="toggleCoinPageMonthly()" id="toggleCoinMonthlyBtn" class="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">▼ 展開月覽</button>
           </div>
           <div id="coinPageMonthlySummary" class="divide-y divide-slate-100 text-xs"></div>
         </div>
@@ -434,7 +434,7 @@
         <div class="card border-2 border-emerald-300 bg-emerald-50/40">
           <h2 class="font-bold text-base text-emerald-900 mb-1">📁 匯入 Excel 帳目檔案 (.xlsx)</h2>
           <p class="text-xs text-emerald-800 mb-3">
-            支援任意合夥帳目的 Excel 檔案。選取檔案後會自動讀取貨物與舊帳資料並加入當前帳戶。
+            支援任意合夥帳目的 Excel 檔案。選取檔案後會自動解析並將數據匯入至當前分店！
           </p>
           <label class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow text-center cursor-pointer flex items-center justify-center">
             📂 選擇並匯入 Excel 檔案
@@ -483,14 +483,14 @@
     };
 
     const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v21";
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v23";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
-    let currentView = "landing"; // "landing" or "workspace"
+    let currentView = "landing";
     let expandedSettlementLocIds = {};
     let goodsFilterMode = "ACTIVE";
     let allGoodsExpanded = false;
-    let allMonthlyExpanded = false;
+    let coinPageMonthlyExpanded = false;
     let expandedMonthlyKeys = {};
     let isResetting = false;
 
@@ -757,7 +757,7 @@
       appState.updatedAt = Date.now();
       localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
       recalculateLocationTotals();
-      renderAll();
+      renderAllWithoutViewReset();
       pushToCloud(true);
     }
 
@@ -833,26 +833,17 @@
           btn.className = "px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600";
         }
       });
-      renderAll();
+      renderAllWithoutViewReset();
     }
 
     function toggleAllGoodsExpand() {
       allGoodsExpanded = !allGoodsExpanded;
-      renderAll();
+      renderAllWithoutViewReset();
     }
 
-    function toggleAllMonthlyExpand() {
-      allMonthlyExpanded = !allMonthlyExpanded;
-      const loc = getCurrentLocation();
-      Object.keys(loc.monthlyStats || {}).forEach(mk => {
-        expandedMonthlyKeys[mk] = allMonthlyExpanded;
-      });
-      renderAll();
-    }
-
-    function toggleMonthlyKey(mk) {
-      expandedMonthlyKeys[mk] = !expandedMonthlyKeys[mk];
-      renderAll();
+    function toggleCoinPageMonthly() {
+      coinPageMonthlyExpanded = !coinPageMonthlyExpanded;
+      renderAllWithoutViewReset();
     }
 
     function switchTab(tab) {
@@ -1369,7 +1360,7 @@
 
     function toggleSettlementLocation(locId) {
       expandedSettlementLocIds[locId] = !expandedSettlementLocIds[locId];
-      renderAll();
+      renderAllWithoutViewReset();
     }
 
     function resetAllData() {
@@ -1406,10 +1397,8 @@
           const loc = getCurrentLocation();
           let addedCount = 0;
 
-          // Try parsing rows flexibly (e.g. Owner, Name, Cost, Status)
           jsonRows.forEach((row, idx) => {
-            if (!row || row.length < 2) return;
-            // Scan for text columns and number columns
+            if (!row || row.length === 0) return;
             let owner = "Amzi";
             let name = "";
             let cost = 0;
@@ -1417,7 +1406,7 @@
 
             row.forEach(cell => {
               if (cell === "Dennis" || cell === "Amzi" || cell === "共同") owner = cell;
-              else if (typeof cell === "string" && cell.length > 0 && !name && isNaN(Number(cell))) name = cell;
+              else if (typeof cell === "string" && cell.trim().length > 0 && !name && isNaN(Number(cell))) name = cell.trim();
               else if (typeof cell === "number" && cost === 0) cost = cell;
               else if (cell === "出貨" || cell === "貨存" || cell === "入機") status = cell;
             });
@@ -1462,7 +1451,8 @@
       if (appState.logs.length > 100) appState.logs.length = 100;
     }
 
-    function renderMonthlyHtml(loc, locId) {
+    function renderCoinPageMonthly(loc) {
+      if (!coinPageMonthlyExpanded) return "";
       const stats = loc.monthlyStats || {};
       const months = Object.keys(stats).sort().reverse();
       if (months.length === 0) {
@@ -1473,7 +1463,6 @@
         const records = bucket.records || [];
         let monthTotal = 0;
         records.forEach(r => { monthTotal += (r.cash || 0); });
-        const isExp = !!expandedMonthlyKeys[m];
 
         const recHtml = records.map(r => {
           const isRedeem = r.type === "redeem";
@@ -1494,7 +1483,47 @@
 
         return `
           <div class="py-2">
-            <div onclick="toggleMonthlyKey('${m}')" class="flex justify-between items-center font-bold text-slate-800 bg-slate-100 px-3 py-2 rounded-xl cursor-pointer hover:bg-slate-200 transition">
+            <div class="font-bold text-slate-800 bg-slate-100 px-3 py-2 rounded-xl mb-1">
+              🗓️ ${m} 月份明細（總計 HK$ ${monthTotal}）
+            </div>
+            <div class="space-y-1 pl-2 bg-white p-2 rounded-xl border border-slate-200">${recHtml}</div>
+          </div>`;
+      }).join("");
+    }
+
+    function renderMonthlyHtml(loc, locId) {
+      const stats = loc.monthlyStats || {};
+      const months = Object.keys(stats).sort().reverse();
+      if (months.length === 0) {
+        return `<div class="py-3 text-center text-slate-400">尚無各月兌幣紀錄</div>`;
+      }
+      return months.map(m => {
+        const bucket = stats[m];
+        const records = bucket.records || [];
+        let monthTotal = 0;
+        records.forEach(r => { monthTotal += (r.cash || 0); });
+        const isExp = !!expandedMonthlyKeys[m + "_" + locId];
+
+        const recHtml = records.map(r => {
+          const isRedeem = r.type === "redeem";
+          const title = isRedeem ? `💰 場主兌現入帳` : `📜 專屬舊帳 (${r.owner || '共同'})`;
+          const detailStr = isRedeem ? `兌幣機數：${r.coins || 0} 機 · 現金：HK$ ${r.cash}` : `擁有人：${r.owner} · 金額：HK$ ${r.cash}`;
+          return `
+            <div class="flex justify-between items-center py-2 pl-2 pr-1 border-b border-slate-100 last:border-b-0 text-xs">
+              <div>
+                <div class="font-bold text-slate-800">${title}</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">📅 日期：${r.date || "未填"} | ${detailStr}</div>
+              </div>
+              <div class="flex gap-1.5 ml-2">
+                <button onclick="editRecord('${m}', '${r.id}')" class="text-blue-600 font-bold px-2 py-1 bg-blue-50 rounded">✏️修改</button>
+                <button onclick="deleteRecord('${m}', '${r.id}')" class="text-rose-600 font-bold px-2 py-1 bg-rose-50 rounded">刪除</button>
+              </div>
+            </div>`;
+        }).join("") || `<div class="text-slate-400 py-1 pl-2">無明細紀錄</div>`;
+
+        return `
+          <div class="py-2">
+            <div onclick="toggleSettlementMonth('${locId}', '${m}')" class="flex justify-between items-center font-bold text-slate-800 bg-slate-100 px-3 py-2 rounded-xl cursor-pointer hover:bg-slate-200 transition">
               <span>🗓️ ${m} 月份明細（總計 HK$ ${monthTotal}）</span>
               <span class="text-xs text-blue-700 font-bold px-2 py-0.5 bg-blue-50 rounded border border-blue-200">${isExp ? "▲ 收起月覽" : "▼ 展開月覽"}</span>
             </div>
@@ -1503,47 +1532,17 @@
       }).join("");
     }
 
-    function renderAll() {
+    function toggleSettlementMonth(locId, mk) {
+      const key = mk + "_" + locId;
+      expandedMonthlyKeys[key] = !expandedMonthlyKeys[key];
+      renderAllWithoutViewReset();
+    }
+
+    function renderAllWithoutViewReset() {
       recalculateLocationTotals();
       renderOperatorUI();
 
-      const landingEl = document.getElementById("view-landing");
-      const workspaceEl = document.getElementById("view-workspace");
-
-      if (currentView === "landing") {
-        landingEl.classList.remove("hidden");
-        workspaceEl.classList.add("hidden");
-
-        const cardsContainer = document.getElementById("ledgerCardsContainer");
-        cardsContainer.innerHTML = Object.values(appState.ledgers).map(ledger => {
-          let totalLocs = Object.keys(ledger.locations).length;
-          let totalRedeem = 0;
-          Object.values(ledger.locations).forEach(l => {
-            totalRedeem += (l.totalRedeemedCash || 0);
-          });
-          return `
-            <div class="card border border-slate-200 hover:border-blue-500 transition cursor-pointer">
-              <div class="flex justify-between items-start mb-2">
-                <div onclick="selectLedgerAccount('${ledger.id}')" class="flex-1">
-                  <h3 class="font-extrabold text-blue-950 text-base">${ledger.name}</h3>
-                  <p class="text-xs text-slate-500 mt-0.5">包含 ${totalLocs} 個分店場地</p>
-                </div>
-                <div class="flex gap-1.5">
-                  <button onclick="renameLedgerAccount('${ledger.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg font-bold text-slate-700">✏️改名</button>
-                  <button onclick="deleteLedgerAccount('${ledger.id}')" class="text-xs bg-rose-50 hover:bg-rose-100 px-2 py-1 rounded-lg font-bold text-rose-600">🗑️刪除</button>
-                </div>
-              </div>
-              <div onclick="selectLedgerAccount('${ledger.id}')" class="flex justify-between items-center pt-2 border-t border-slate-100 text-xs">
-                <span class="text-slate-600">全線總兌現：<strong class="text-emerald-700">$${totalRedeem}</strong></span>
-                <span class="bg-blue-900 text-white px-3 py-1.5 rounded-lg font-bold">進入帳戶 ➔</span>
-              </div>
-            </div>`;
-        }).join("");
-        return;
-      } else {
-        landingEl.classList.add("hidden");
-        workspaceEl.classList.remove("hidden");
-      }
+      if (currentView === "landing") return;
 
       const ledger = getCurrentLedger();
       document.getElementById("workspaceLedgerTitle").textContent = ledger.name;
@@ -1617,8 +1616,8 @@
       document.getElementById("coinPageTotalCash").textContent = `HK$ ${loc.unredeemedCash || 0}`;
       document.getElementById("redeemCoinInput").value = loc.unredeemedCoins || 0;
       document.getElementById("redeemCashInput").value = loc.unredeemedCash || 0;
-      document.getElementById("coinPageMonthlySummary").innerHTML = renderMonthlyHtml(loc, ledger.currentLocationId);
-      document.getElementById("toggleAllMonthlyBtn").textContent = allMonthlyExpanded ? "📂 全部收起月覽" : "📂 全部展開月覽";
+      document.getElementById("coinPageMonthlySummary").innerHTML = renderCoinPageMonthly(loc);
+      document.getElementById("toggleCoinMonthlyBtn").textContent = coinPageMonthlyExpanded ? "▲ 收起月覽" : "▼ 展開月覽";
 
       const mContainer = document.getElementById("machineListContainer");
       const coinMSelect = document.getElementById("coinMachineSelect");
@@ -1797,6 +1796,48 @@
       document.getElementById("amziCalcDetail").textContent = `50%兌現 $${grandHalf.toFixed(1)} + 舊帳 $${grandLegAmzi} - 成本 $${(grandCostAmzi + grandCostShared / 2).toFixed(1)}`;
       document.getElementById("dennisShare").textContent = `$${finalDennis.toFixed(1)}`;
       document.getElementById("dennisCalcDetail").textContent = `50%兌現 $${grandHalf.toFixed(1)} + 舊帳 $${grandLegDennis} - 成本 $${(grandCostDennis + grandCostShared / 2).toFixed(1)}`;
+    }
+
+    function renderAll() {
+      if (currentView === "landing") {
+        const landingEl = document.getElementById("view-landing");
+        const workspaceEl = document.getElementById("view-workspace");
+        landingEl.classList.remove("hidden");
+        workspaceEl.classList.add("hidden");
+
+        const cardsContainer = document.getElementById("ledgerCardsContainer");
+        cardsContainer.innerHTML = Object.values(appState.ledgers).map(ledger => {
+          let totalLocs = Object.keys(ledger.locations).length;
+          let totalRedeem = 0;
+          Object.values(ledger.locations).forEach(l => {
+            totalRedeem += (l.totalRedeemedCash || 0);
+          });
+          return `
+            <div class="card border border-slate-200 hover:border-blue-500 transition cursor-pointer">
+              <div class="flex justify-between items-start mb-2">
+                <div onclick="selectLedgerAccount('${ledger.id}')" class="flex-1">
+                  <h3 class="font-extrabold text-blue-950 text-base">${ledger.name}</h3>
+                  <p class="text-xs text-slate-500 mt-0.5">包含 ${totalLocs} 個分店場地</p>
+                </div>
+                <div class="flex gap-1.5">
+                  <button onclick="renameLedgerAccount('${ledger.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg font-bold text-slate-700">✏️改名</button>
+                  <button onclick="deleteLedgerAccount('${ledger.id}')" class="text-xs bg-rose-50 hover:bg-rose-100 px-2 py-1 rounded-lg font-bold text-rose-600">🗑️刪除</button>
+                </div>
+              </div>
+              <div onclick="selectLedgerAccount('${ledger.id}')" class="flex justify-between items-center pt-2 border-t border-slate-100 text-xs">
+                <span class="text-slate-600">全線總兌現：<strong class="text-emerald-700">$${totalRedeem}</strong></span>
+                <span class="bg-blue-900 text-white px-3 py-1.5 rounded-lg font-bold">進入帳戶 ➔</span>
+              </div>
+            </div>`;
+        }).join("");
+        return;
+      } else {
+        const landingEl = document.getElementById("view-landing");
+        const workspaceEl = document.getElementById("view-workspace");
+        landingEl.classList.add("hidden");
+        workspaceEl.classList.remove("hidden");
+      }
+      renderAllWithoutViewReset();
     }
 
     initCloud();
