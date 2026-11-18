@@ -222,11 +222,11 @@
         </button>
       </div>
 
-      <!-- 本場該月幣數兌幣總覽與 Record List -->
+      <!-- 本場該月幣數兌幣總覽與 Record List（帶各月展開收起） -->
       <div class="card">
         <div class="flex justify-between items-center mb-2">
           <h2 class="font-bold text-base text-slate-800">📅 本場各月機數與兌幣入帳 Record List</h2>
-          <span class="text-xs text-slate-400">點擊紀錄可修改/刪除</span>
+          <button onclick="toggleAllMonthlyExpand()" id="toggleAllMonthlyBtn" class="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg">📂 全部展開</button>
         </div>
         <div id="coinPageMonthlySummary" class="divide-y divide-slate-100 text-xs"></div>
       </div>
@@ -280,10 +280,13 @@
         </div>
       </div>
 
-      <!-- 貨物 List（展開收起式檢視） -->
+      <!-- 貨物 List（簡潔清單 ＋ 全局展開／收起） -->
       <div class="card">
         <div class="flex justify-between items-center mb-2">
-          <h2 class="font-bold text-base text-slate-800">📋 本場貨物 List（點擊可展開收起）</h2>
+          <div class="flex items-center gap-2">
+            <h2 class="font-bold text-base text-slate-800">📋 本場貨物 List</h2>
+            <button onclick="toggleAllGoodsExpand()" id="toggleAllGoodsBtn" class="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded-lg">📂 全部展開</button>
+          </div>
           <span id="goodsListCount" class="text-xs text-slate-500">共 0 項</span>
         </div>
         <div class="flex gap-1.5 mb-2 text-xs">
@@ -291,7 +294,7 @@
           <button onclick="setGoodsFilter('ALL')" id="filter-ALL" class="px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600">全部明細</button>
           <button onclick="setGoodsFilter('SHIPPED')" id="filter-SHIPPED" class="px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600">已出貨</button>
         </div>
-        <div id="goodsListContainer" class="space-y-2"></div>
+        <div id="goodsListContainer" class="space-y-1.5"></div>
       </div>
 
       <!-- 跨店調貨 -->
@@ -434,13 +437,15 @@
     };
 
     const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v11";
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v12";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
     let selectedSlot = "左上";
     let expandedSettlementLocIds = {};
-    let expandedGoodsIds = {};
     let goodsFilterMode = "ACTIVE";
+    let allGoodsExpanded = false;
+    let allMonthlyExpanded = false;
+    let expandedMonthlyKeys = {};
 
     const LICHENG_RAW_GOODS = [
       ["Dennis", "2月出貨", 6780, "出貨"],
@@ -827,22 +832,21 @@
         if (rawStr) {
           const cloudState = JSON.parse(rawStr);
           if (cloudState && cloudState.locations) {
-            if (!appState.updatedAt || (cloudState.updatedAt && cloudState.updatedAt >= appState.updatedAt)) {
-              appState = normalizeState(cloudState);
-              localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
-              renderAll();
-            }
+            appState = normalizeState(cloudState);
+            localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
+            renderAll();
             const t = new Date();
             const ts = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}:${String(t.getSeconds()).padStart(2, "0")}`;
             setSyncUI(true, "雲端已同步（HTTPS 直連 " + ts + "）");
             document.getElementById("diagWriteText").textContent = "正常 (" + ts + ")";
-            if (!silent) showToast("☁️ 已從雲端同步最新帳目！");
+            if (!silent) showToast("☁️ 已成功從雲端拉取最新帳目！");
             return;
           }
         }
         await pushToCloud(true);
       } catch (err) {
         setSyncUI(false, "網絡連線異常：" + err.message);
+        if (!silent) showToast("❌ 拉取失敗：" + err.message, true);
       }
     }
 
@@ -983,6 +987,25 @@
           btn.className = "px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600";
         }
       });
+      renderAll();
+    }
+
+    function toggleAllGoodsExpand() {
+      allGoodsExpanded = !allGoodsExpanded;
+      renderAll();
+    }
+
+    function toggleAllMonthlyExpand() {
+      allMonthlyExpanded = !allMonthlyExpanded;
+      const loc = appState.locations[appState.currentLocationId];
+      Object.keys(loc.monthlyStats || {}).forEach(mk => {
+        expandedMonthlyKeys[mk] = allMonthlyExpanded;
+      });
+      renderAll();
+    }
+
+    function toggleMonthlyKey(mk) {
+      expandedMonthlyKeys[mk] = !expandedMonthlyKeys[mk];
       renderAll();
     }
 
@@ -1137,11 +1160,9 @@
     function recordCoins() {
       const loc = appState.locations[appState.currentLocationId];
       const dateVal = document.getElementById("coinDateInput").value || getTodayStr();
-      const monthKey = getMonthKey(dateVal);
       const mId = document.getElementById("coinMachineSelect").value;
       const machine = loc.machines.find(m => m.id === mId);
       const panelVal = parseInt(document.getElementById("coinCountInput").value, 10);
-      const rate = parseFloat(document.getElementById("coinRateInput").value) || 5;
       const note = document.getElementById("coinNoteInput").value.trim();
 
       if (!machine || isNaN(panelVal) || panelVal < 0) {
@@ -1161,7 +1182,6 @@
         addLog(`[${dateVal}] 點幣 ${machine.name} 面板改為 ${panelVal} (新增 +${diff}) ${note ? "· " + note : ""}`);
       }
 
-      document.getElementById("coinCountInput").value = "";
       document.getElementById("coinNoteInput").value = "";
       saveState();
       showToast(`✅ 機台累計讀數已更新`);
@@ -1282,11 +1302,6 @@
       showToast(`✅ 已新增「${name}」`);
     }
 
-    function toggleGoodsExpand(goodsId) {
-      expandedGoodsIds[goodsId] = !expandedGoodsIds[goodsId];
-      renderAll();
-    }
-
     function cycleGoodsStatus(goodsId, newStatus) {
       const loc = appState.locations[appState.currentLocationId];
       const item = (loc.goodsList || []).find(g => g.id === goodsId);
@@ -1324,7 +1339,6 @@
         availableGoods.forEach(g => {
           goodsSelect.add(new Option(`【${g.status}】${g.name} · ${g.qty} 隻 ($${g.cost || 0} · ${g.owner})`, g.id));
         });
-        // 保持之前選中的項目，若不存在才預設選第一個
         if (prevSelectedGId && Array.from(goodsSelect.options).some(o => o.value === prevSelectedGId)) {
           goodsSelect.value = prevSelectedGId;
         } else {
@@ -1401,9 +1415,10 @@
     function resetAllData() {
       if (!confirm("確定要清空所有場地帳目、貨物 List 與紀錄，全部數目歸零重新開始嗎？")) return;
       appState = getDefaultState();
-      saveState();
+      localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
+      renderAll();
       switchTab("dashboard");
-      showToast("✅ 全部數目已歸零");
+      showToast("✅ 全部數目已歸零（未自動上傳雲端，如需覆蓋請按「立即推送」）");
     }
 
     function addLog(text) {
@@ -1431,8 +1446,10 @@
         const bucket = stats[m];
         const records = bucket.records || [];
         let monthTotal = 0;
+        records.forEach(r => { monthTotal += (r.cash || 0); });
+        const isExp = !!expandedMonthlyKeys[m];
+
         const recHtml = records.map(r => {
-          monthTotal += (r.cash || 0);
           const title = r.type === "redeem" ? `💰 兌現 $${r.cash} (${r.coins || 0}機)` : `📜 舊帳 (${r.owner}) $${r.cash}`;
           return `
             <div class="flex justify-between items-center py-1.5 pl-2 border-b border-slate-100 last:border-b-0 text-[11px]">
@@ -1449,10 +1466,11 @@
 
         return `
           <div class="py-2">
-            <div class="flex justify-between items-center font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded">
+            <div onclick="toggleMonthlyKey('${m}')" class="flex justify-between items-center font-bold text-slate-800 bg-slate-100 px-2.5 py-1.5 rounded cursor-pointer">
               <span>🗓️ ${m} 月份 (總計 $${monthTotal})</span>
+              <span class="text-xs text-blue-700 font-bold">${isExp ? "▲ 收起" : "▼ 展開"}</span>
             </div>
-            <div class="mt-1 space-y-1">${recHtml}</div>
+            ${isExp ? `<div class="mt-1 space-y-1 pl-1">${recHtml}</div>` : ""}
           </div>`;
       }).join("");
     }
@@ -1530,6 +1548,7 @@
       document.getElementById("redeemCoinInput").value = loc.unredeemedCoins || 0;
       document.getElementById("redeemCashInput").value = loc.unredeemedCash || 0;
       document.getElementById("coinPageMonthlySummary").innerHTML = renderMonthlyHtml(loc, appState.currentLocationId);
+      document.getElementById("toggleAllMonthlyBtn").textContent = allMonthlyExpanded ? "📂 全部收起" : "📂 全部展開";
 
       const mContainer = document.getElementById("machineListContainer");
       const coinMSelect = document.getElementById("coinMachineSelect");
@@ -1584,44 +1603,30 @@
         return true;
       });
       document.getElementById("goodsListCount").textContent = `顯示 ${filteredGoods.length} / 總共 ${rawGoodsList.length} 項`;
+      document.getElementById("toggleAllGoodsBtn").textContent = allGoodsExpanded ? "📂 全部收起" : "📂 全部展開";
+
       const gContainer = document.getElementById("goodsListContainer");
       gContainer.innerHTML = filteredGoods.map(g => {
         const statusBadge = g.status === "入機"
           ? "bg-emerald-100 text-emerald-800"
           : (g.status === "貨存" ? "bg-blue-100 text-blue-800" : "bg-slate-200 text-slate-700");
-        const isExp = !!expandedGoodsIds[g.id];
         return `
-          <div class="card !mb-2 border border-slate-200">
-            <div class="flex justify-between items-center cursor-pointer" onclick="toggleGoodsExpand('${g.id}')">
+          <div class="card !mb-1.5 !p-3 border border-slate-200">
+            <div class="flex justify-between items-center">
               <div class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
                 <span class="px-1.5 py-0.5 rounded ${statusBadge}">${g.status}</span>
                 <span>${g.name} (${g.qty}隻)</span>
+                <span class="text-[11px] text-slate-500 font-normal">· $${g.cost || 0} · ${g.owner}</span>
               </div>
-              <div class="text-[11px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 font-bold">
-                ${isExp ? "▲ 收起" : "▼ 詳情"}
-              </div>
+              <button onclick="deleteGoodsItem('${g.id}')" class="text-rose-500 text-[11px] font-bold px-1.5 py-0.5 bg-rose-50 rounded">刪除</button>
             </div>
-            ${isExp ? `
-              <div class="mt-3 pt-3 border-t border-slate-100 text-xs space-y-2">
-                <div class="flex justify-between">
-                  <span class="text-slate-500">擁有人/墊付人：</span>
-                  <strong class="text-indigo-700">${g.owner}</strong>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-slate-500">墊付成本價錢：</span>
-                  <strong>$${g.cost || 0}</strong>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-slate-500">建檔日期：</span>
-                  <span>${g.date || ""}</span>
-                </div>
-                <div class="flex justify-between items-center pt-2 border-t border-slate-100">
-                  <div class="flex gap-1">
-                    <button onclick="cycleGoodsStatus('${g.id}', '入機')" class="px-2 py-1 rounded border text-xs ${g.status === '入機' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white border-slate-300'}">入機</button>
-                    <button onclick="cycleGoodsStatus('${g.id}', '貨存')" class="px-2 py-1 rounded border text-xs ${g.status === '貨存' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-slate-300'}">貨存</button>
-                    <button onclick="cycleGoodsStatus('${g.id}', '出貨')" class="px-2 py-1 rounded border text-xs ${g.status === '出貨' ? 'bg-slate-700 text-white border-slate-700' : 'bg-white border-slate-300'}">出貨</button>
-                  </div>
-                  <button onclick="deleteGoodsItem('${g.id}')" class="text-rose-500 text-xs font-bold px-2 py-1 bg-rose-50 rounded">刪除</button>
+            ${allGoodsExpanded ? `
+              <div class="mt-2 pt-2 border-t border-slate-100 text-xs flex justify-between items-center">
+                <span class="text-slate-400">建檔：${g.date || ""}</span>
+                <div class="flex gap-1">
+                  <button onclick="cycleGoodsStatus('${g.id}', '入機')" class="px-2 py-0.5 rounded border text-[11px] ${g.status === '入機' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white border-slate-300'}">入機</button>
+                  <button onclick="cycleGoodsStatus('${g.id}', '貨存')" class="px-2 py-0.5 rounded border text-[11px] ${g.status === '貨存' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-slate-300'}">貨存</button>
+                  <button onclick="cycleGoodsStatus('${g.id}', '出貨')" class="px-2 py-0.5 rounded border text-[11px] ${g.status === '出貨' ? 'bg-slate-700 text-white border-slate-700' : 'bg-white border-slate-300'}">出貨</button>
                 </div>
               </div>` : ""}
           </div>`;
