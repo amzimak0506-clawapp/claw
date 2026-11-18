@@ -33,7 +33,7 @@
     }
   </style>
 </head>
-<body class="pb-28">
+<body class="pb-32">
 
   <!-- 頂部狀態列 -->
   <header class="bg-blue-950 text-white px-4 pt-4 pb-3.5 sticky top-0 z-30 shadow-md">
@@ -440,7 +440,7 @@
     };
 
     const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v13";
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v14";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
     let selectedSlot = "左上";
@@ -818,7 +818,7 @@
     }
 
     async function pullFromCloud(silent) {
-      if (isResetting) return; // 重置鎖定中不自動拉取
+      if (isResetting) return; // 重置鎖定期間拒絕背景自動覆蓋
       try {
         const headers = await getAuthHeaders();
         const res = await fetch(FIRESTORE_REST_URL, { method: "GET", headers });
@@ -1187,6 +1187,7 @@
         addLog(`[${dateVal}] 點幣 ${machine.name} 面板改為 ${panelVal} (新增 +${diff}) ${note ? "· " + note : ""}`);
       }
 
+      document.getElementById("coinCountInput").value = "";
       document.getElementById("coinNoteInput").value = "";
       saveState();
       showToast(`✅ 機台累計讀數已更新`);
@@ -1418,14 +1419,18 @@
     }
 
     function resetAllData() {
-      if (!confirm("確定要清空所有場地帳目、貨物 List 與紀錄，全部數目歸零重新開始嗎？\n\n（點擊確定後，如需同步清空雲端，請手動按「立即推送至雲端」）")) return;
+      if (!confirm("確定要清空所有場地帳目、貨物 List 與紀錄，全部數目歸零重新開始嗎？\n\n（點擊確定後，系統會自動將清空後的乾淨狀態同步至雲端，防止自動恢復舊資料）")) return;
       isResetting = true;
       appState = getDefaultState();
       localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
       renderAll();
       switchTab("dashboard");
-      showToast("✅ 全部數目已歸零（已鎖定防雲端自動覆蓋）");
-      setTimeout(() => { isResetting = false; }, 10000); // 10秒後解除鎖定
+      
+      // 同步將空白狀態推送到雲端，確保雲端也被清空
+      pushToCloud(true).then(() => {
+        showToast("✅ 全部數目已歸零，並已同步清空雲端！");
+        setTimeout(() => { isResetting = false; }, 3000);
+      });
     }
 
     function addLog(text) {
