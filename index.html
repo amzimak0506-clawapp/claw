@@ -434,10 +434,10 @@
         <div class="card border-2 border-emerald-300 bg-emerald-50/40">
           <h2 class="font-bold text-base text-emerald-900 mb-1">📁 匯入 Excel 帳目檔案 (.xlsx)</h2>
           <p class="text-xs text-emerald-800 mb-3">
-            支援多分頁 Excel 檔案。選取檔案後會自動掃描**所有分頁（Sheets）**中的貨物、成本與收入數據並匯入！
+            支援多分頁 Excel。系統會自動掃描**所有分頁**，並透過智慧關鍵字（收入、兌現、現金、收益、找數、實收、營業、總計、金額、交收）辨識營收與貨物成本！
           </p>
           <label class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow text-center cursor-pointer flex items-center justify-center">
-            📂 選擇並匯入 Excel 檔案（含所有分頁）
+            📂 選擇並匯入 Excel 檔案（含智能關鍵字辨識）
             <input type="file" id="excelUploadInput" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(event)" class="hidden" />
           </label>
         </div>
@@ -1397,6 +1397,9 @@
           let totalImportCost = 0;
           let totalImportIncomeVal = 0;
 
+          // 擴大收入關鍵字集合
+          const incomeKeywords = ["收入", "兌現", "現金", "收益", "找數", "實收", "營業", "總計", "金額", "交收"];
+
           // Loop through ALL worksheets (分頁) in the workbook
           workbook.SheetNames.forEach(sheetName => {
             const worksheet = workbook.Sheets[sheetName];
@@ -1407,7 +1410,7 @@
               let owner = "Amzi";
               let name = "";
               let numbers = [];
-              let status = "출貨" || "出貨";
+              let status = "出貨";
               let isIncomeRow = false;
 
               row.forEach(cell => {
@@ -1415,8 +1418,13 @@
                 else if (typeof cell === "string" && cell.trim().length > 0) {
                   const s = cell.trim();
                   if (s === "出貨" || s === "貨存" || s === "入機") status = s;
-                  else if (s.includes("兌現") || s.includes("收入") || s.includes("現金") || s.includes("收益") || s.includes("Now")) isIncomeRow = true;
-                  else if (!name && isNaN(Number(s))) name = s;
+                  else {
+                    // 檢查是否包含任何擴大收入關鍵字
+                    if (incomeKeywords.some(kw => s.includes(kw))) {
+                      isIncomeRow = true;
+                    }
+                    if (!name && isNaN(Number(s))) name = s;
+                  }
                 } else if (typeof cell === "number" && !isNaN(cell)) {
                   numbers.push(cell);
                 }
