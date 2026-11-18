@@ -174,24 +174,44 @@
             </div>
           </div>
 
-          <div id="slotSelectWrapper" class="hidden">
-            <label class="block text-xs font-bold text-indigo-700 mb-1">四合一迷你機格位</label>
-            <div class="grid grid-cols-4 gap-2">
-              <button type="button" onclick="selectSlot('左上')" id="slot-左上" class="slot-btn border border-slate-300 rounded-xl py-2 text-xs font-bold">左上</button>
-              <button type="button" onclick="selectSlot('右上')" id="slot-右上" class="slot-btn border border-slate-300 rounded-xl py-2 text-xs font-bold">右上</button>
-              <button type="button" onclick="selectSlot('左下')" id="slot-左下" class="slot-btn border border-slate-300 rounded-xl py-2 text-xs font-bold">左下</button>
-              <button type="button" onclick="selectSlot('右下')" id="slot-右下" class="slot-btn border border-slate-300 rounded-xl py-2 text-xs font-bold">右下</button>
+          <!-- 一般機台單一面板輸入 -->
+          <div id="singlePanelWrapper">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">面板當前累計數值</label>
+                <input type="number" id="coinCountInput" oninput="onPanelCountInput()" placeholder="請輸入當前累計數" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">每幣面值 (HK$)</label>
+                <input type="number" step="0.5" id="coinRateInput" value="5" oninput="onPanelCountInput()" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+              </div>
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">面板當前累計數值</label>
-              <input type="number" id="coinCountInput" oninput="onPanelCountInput(this.value)" placeholder="請輸入當前累計數" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+          <!-- 四合一迷你機 4 個獨立輸入欄 -->
+          <div id="fourInOneWrapper" class="hidden bg-indigo-50/70 border border-indigo-200 rounded-xl p-3">
+            <label class="block text-xs font-bold text-indigo-900 mb-2">四合一迷你機格位讀數（請直接輸入 4 格當前累計值）</label>
+            <div class="grid grid-cols-2 gap-2.5 mb-2">
+              <div>
+                <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">左上格讀數</label>
+                <input type="number" id="slot-lt" oninput="onPanelCountInput()" placeholder="左上" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">右上格讀數</label>
+                <input type="number" id="slot-rt" oninput="onPanelCountInput()" placeholder="右上" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">左下格讀數</label>
+                <input type="number" id="slot-lb" oninput="onPanelCountInput()" placeholder="左下" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">右下格讀數</label>
+                <input type="number" id="slot-rb" oninput="onPanelCountInput()" placeholder="右下" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
+              </div>
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">每幣面值 (HK$)</label>
-              <input type="number" step="0.5" id="coinRateInput" value="5" oninput="onPanelCountInput(document.getElementById('coinCountInput').value)" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+              <label class="block text-xs font-bold text-indigo-900 mb-1">每幣面值 (HK$)</label>
+              <input type="number" step="0.5" id="coinRateInputFour" value="5" oninput="onPanelCountInput()" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
             </div>
           </div>
 
@@ -231,7 +251,7 @@
         </button>
       </div>
 
-      <!-- 本場各月機數與兌幣入帳 Record List（預設收起，可點擊展開月覽） -->
+      <!-- 本場各月機數與兌幣入帳 Record List（預設收起，可點擊展開月覽與明確顯示詳細） -->
       <div class="card">
         <div class="flex justify-between items-center mb-2">
           <h2 class="font-bold text-base text-slate-800">📅 本場各月機數與兌幣入帳 Record List</h2>
@@ -436,15 +456,14 @@
     };
 
     const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v17";
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v18";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
-    let selectedSlot = "左上";
     let expandedSettlementLocIds = {};
     let goodsFilterMode = "ACTIVE";
     let allGoodsExpanded = false;
     let allMonthlyExpanded = false;
-    let expandedMonthlyKeys = {}; // 預設全部收起
+    let expandedMonthlyKeys = {}; // 預設全部收起 (false)
     let isResetting = false;
 
     const LICHENG_RAW_GOODS = [
@@ -1129,59 +1148,66 @@
       const loc = appState.locations[appState.currentLocationId];
       const mId = document.getElementById("coinMachineSelect").value;
       const machine = loc.machines.find(m => m.id === mId);
-      const wrapper = document.getElementById("slotSelectWrapper");
-      const countInput = document.getElementById("coinCountInput");
-      countInput.value = "";
+      const singleWrapper = document.getElementById("singlePanelWrapper");
+      const fourWrapper = document.getElementById("fourInOneWrapper");
+
       if (machine && machine.isFourInOne) {
-        wrapper.classList.remove("hidden");
-        selectSlot(selectedSlot);
+        singleWrapper.classList.add("hidden");
+        fourWrapper.classList.remove("hidden");
+        document.getElementById("slot-lt").value = machine.slots["左上"] || "";
+        document.getElementById("slot-rt").value = machine.slots["右上"] || "";
+        document.getElementById("slot-lb").value = machine.slots["左下"] || "";
+        document.getElementById("slot-rb").value = machine.slots["右下"] || "";
       } else {
-        wrapper.classList.add("hidden");
+        singleWrapper.classList.remove("hidden");
+        fourWrapper.classList.add("hidden");
+        document.getElementById("coinCountInput").value = machine ? (machine.panelTotal || "") : "";
       }
+      onPanelCountInput();
     }
 
-    function selectSlot(slot) {
-      selectedSlot = slot;
-      ["左上", "右上", "左下", "右下"].forEach(s => {
-        const btn = document.getElementById("slot-" + s);
-        if (s === slot) {
-          btn.className = "slot-btn bg-indigo-700 text-white border border-indigo-700 rounded-xl py-2 text-xs font-bold";
-        } else {
-          btn.className = "slot-btn border border-slate-300 bg-white text-slate-700 rounded-xl py-2 text-xs font-bold";
-        }
-      });
-      document.getElementById("coinCountInput").value = "";
-    }
-
-    function onPanelCountInput(valStr) {
-      const val = parseInt(valStr, 10);
-      if (isNaN(val)) return;
+    function onPanelCountInput() {
       const loc = appState.locations[appState.currentLocationId];
       const mId = document.getElementById("coinMachineSelect").value;
       const machine = loc.machines.find(m => m.id === mId);
       if (!machine) return;
 
       let simulatedUnred = 0;
-      loc.machines.forEach(m => {
-        if (m.id === machine.id) {
-          if (m.isFourInOne) {
-            let mSum = 0;
-            ["左上", "右上", "左下", "右下"].forEach(slot => {
-              const current = (slot === selectedSlot) ? val : (m.slots[slot] || 0);
-              const last = m.slotLast[slot] || 0;
-              mSum += Math.max(0, current - last);
-            });
+      let rate = 5;
+
+      if (machine.isFourInOne) {
+        rate = parseFloat(document.getElementById("coinRateInputFour").value) || 5;
+        const lt = parseInt(document.getElementById("slot-lt").value, 10) || 0;
+        const rt = parseInt(document.getElementById("slot-rt").value, 10) || 0;
+        const lb = parseInt(document.getElementById("slot-lb").value, 10) || 0;
+        const rb = parseInt(document.getElementById("slot-rb").value, 10) || 0;
+
+        loc.machines.forEach(m => {
+          if (m.id === machine.id) {
+            let mSum = 
+              Math.max(0, lt - (m.slotLast["左上"] || 0)) +
+              Math.max(0, rt - (m.slotLast["右上"] || 0)) +
+              Math.max(0, lb - (m.slotLast["左下"] || 0)) +
+              Math.max(0, rb - (m.slotLast["右下"] || 0));
             simulatedUnred += mSum;
           } else {
+            simulatedUnred += (m.coins || 0);
+          }
+        });
+      } else {
+        rate = parseFloat(document.getElementById("coinRateInput").value) || 5;
+        const val = parseInt(document.getElementById("coinCountInput").value, 10) || 0;
+
+        loc.machines.forEach(m => {
+          if (m.id === machine.id) {
             const last = m.lastRedeemedPanel || 0;
             simulatedUnred += Math.max(0, val - last);
+          } else {
+            simulatedUnred += (m.coins || 0);
           }
-        } else {
-          simulatedUnred += (m.coins || 0);
-        }
-      });
+        });
+      }
 
-      const rate = parseFloat(document.getElementById("coinRateInput").value) || 5;
       document.getElementById("coinPageTotalCount").textContent = `${simulatedUnred} 機`;
       document.getElementById("coinPageTotalCash").textContent = `HK$ ${simulatedUnred * rate}`;
       document.getElementById("redeemCoinInput").value = simulatedUnred;
@@ -1193,22 +1219,42 @@
       const dateVal = document.getElementById("coinDateInput").value || getTodayStr();
       const mId = document.getElementById("coinMachineSelect").value;
       const machine = loc.machines.find(m => m.id === mId);
-      const panelVal = parseInt(document.getElementById("coinCountInput").value, 10);
       const note = document.getElementById("coinNoteInput").value.trim();
 
-      if (!machine || isNaN(panelVal) || panelVal < 0) {
-        alert("請輸入有效的面板累計數值！");
+      if (!machine) {
+        alert("請選擇機台！");
         return;
       }
 
       if (machine.isFourInOne) {
-        const oldVal = machine.slots[selectedSlot] || 0;
-        const diff = panelVal - oldVal;
-        machine.slots[selectedSlot] = panelVal;
-        addLog(`[${dateVal}] 點幣 ${machine.name} [${selectedSlot}] 面板改為 ${panelVal} (變動 ${diff >= 0 ? "+" + diff : diff}) ${note ? "· " + note : ""}`);
+        const lt = parseInt(document.getElementById("slot-lt").value, 10);
+        const rt = parseInt(document.getElementById("slot-rt").value, 10);
+        const lb = parseInt(document.getElementById("slot-lb").value, 10);
+        const rb = parseInt(document.getElementById("slot-rb").value, 10);
+
+        if (isNaN(lt) || isNaN(rt) || isNaN(lb) || isNaN(rb)) {
+          alert("請填齊四個格位的面板當前數值！");
+          return;
+        }
+
+        const diffLt = lt - (machine.slots["左上"] || 0);
+        const diffRt = rt - (machine.slots["右上"] || 0);
+        const diffLb = lb - (machine.slots["左下"] || 0);
+        const diffRb = rb - (machine.slots["右下"] || 0);
+
+        machine.slots["左上"] = lt;
+        machine.slots["右上"] = rt;
+        machine.slots["左下"] = lb;
+        machine.slots["右下"] = rb;
+
+        addLog(`[${dateVal}] 點幣 ${machine.name}(四合一) 左上:${lt} 右上:${rt} 左下:${lb} 右下:${rb} ${note ? "· " + note : ""}`);
       } else {
-        const oldVal = machine.panelTotal || 0;
-        const diff = panelVal - oldVal;
+        const panelVal = parseInt(document.getElementById("coinCountInput").value, 10);
+        if (isNaN(panelVal) || panelVal < 0) {
+          alert("請輸入有效的面板累計數值！");
+          return;
+        }
+        const diff = panelVal - (machine.panelTotal || 0);
         machine.panelTotal = panelVal;
         addLog(`[${dateVal}] 點幣 ${machine.name} 面板改為 ${panelVal} (變動 ${diff >= 0 ? "+" + diff : diff}) ${note ? "· " + note : ""}`);
       }
@@ -1487,27 +1533,29 @@
         const isExp = !!expandedMonthlyKeys[m];
 
         const recHtml = records.map(r => {
-          const title = r.type === "redeem" ? `💰 兌現 $${r.cash} (${r.coins || 0}機)` : `📜 舊帳 (${r.owner}) $${r.cash}`;
+          const isRedeem = r.type === "redeem";
+          const title = isRedeem ? `💰 場主兌現入帳` : `📜 專屬舊帳 (${r.owner || '共同'})`;
+          const detailStr = isRedeem ? `兌幣機數：${r.coins || 0} 機 · 現金：HK$ ${r.cash}` : `擁有人：${r.owner} · 金額：HK$ ${r.cash}`;
           return `
-            <div class="flex justify-between items-center py-1.5 pl-2 border-b border-slate-100 last:border-b-0 text-[11px]">
+            <div class="flex justify-between items-center py-2 pl-2 pr-1 border-b border-slate-100 last:border-b-0 text-xs">
               <div>
-                <span class="font-bold text-slate-700">${title}</span>
-                <span class="text-slate-400 ml-1.5">${r.date || ""}</span>
+                <div class="font-bold text-slate-800">${title}</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">📅 日期：${r.date || "未填"} | ${detailStr}</div>
               </div>
-              <div class="flex gap-1.5">
-                <button onclick="editRecord('${m}', '${r.id}')" class="text-blue-600 font-semibold px-1.5 py-0.5 bg-blue-50 rounded">✏️修改</button>
-                <button onclick="deleteRecord('${m}', '${r.id}')" class="text-rose-500 font-semibold px-1.5 py-0.5 bg-rose-50 rounded">刪除</button>
+              <div class="flex gap-1.5 ml-2">
+                <button onclick="editRecord('${m}', '${r.id}')" class="text-blue-600 font-bold px-2 py-1 bg-blue-50 rounded">✏️修改</button>
+                <button onclick="deleteRecord('${m}', '${r.id}')" class="text-rose-600 font-bold px-2 py-1 bg-rose-50 rounded">刪除</button>
               </div>
             </div>`;
         }).join("") || `<div class="text-slate-400 py-1 pl-2">無明細紀錄</div>`;
 
         return `
           <div class="py-2">
-            <div onclick="toggleMonthlyKey('${m}')" class="flex justify-between items-center font-bold text-slate-800 bg-slate-100 px-2.5 py-1.5 rounded cursor-pointer">
-              <span>🗓️ ${m} 月份 (總計 $${monthTotal})</span>
-              <span class="text-xs text-blue-700 font-bold">${isExp ? "▲ 收起" : "▼ 展開"}</span>
+            <div onclick="toggleMonthlyKey('${m}')" class="flex justify-between items-center font-bold text-slate-800 bg-slate-100 px-3 py-2 rounded-xl cursor-pointer hover:bg-slate-200 transition">
+              <span>🗓️ ${m} 月份明細（總計 HK$ ${monthTotal}）</span>
+              <span class="text-xs text-blue-700 font-bold">${isExp ? "▲ 收起" : "▼ 展開查看明細"}</span>
             </div>
-            ${isExp ? `<div class="mt-1 space-y-1 pl-1">${recHtml}</div>` : ""}
+            ${isExp ? `<div class="mt-2 space-y-1 pl-2 bg-white p-2 rounded-xl border border-slate-200">${recHtml}</div>` : ""}
           </div>`;
       }).join("");
     }
@@ -1631,6 +1679,7 @@
       if (prevMId && Array.from(coinMSelect.options).some(o => o.value === prevMId)) {
         coinMSelect.value = prevMId;
       }
+      onCoinMachineChange();
 
       const rawGoodsList = loc.goodsList || [];
       const filteredGoods = rawGoodsList.filter(g => {
