@@ -137,8 +137,8 @@
       <section id="tab-dashboard">
         <div class="grid grid-cols-2 gap-3 mb-3">
           <div class="card !mb-0 border-l-4 border-blue-600">
-            <div class="text-xs text-slate-500">本場未兌機數總和</div>
-            <div id="statCoins" class="text-2xl font-extrabold text-blue-900 mt-1">0 機</div>
+            <div class="text-xs text-slate-500">本場未兌幣數總和</div>
+            <div id="statCoins" class="text-2xl font-extrabold text-blue-900 mt-1">0 幣</div>
             <div id="statCoinCash" class="text-xs text-slate-500 mt-0.5">約 HK$ 0</div>
           </div>
           <div class="card !mb-0 border-l-4 border-emerald-600">
@@ -193,10 +193,10 @@
 
       <!-- 2. 點幣 / 兌幣分頁 -->
       <section id="tab-coins" class="hidden">
-        <!-- 各場地獨立顯示的未兌機數看板 -->
+        <!-- 各場地獨立顯示的未兌幣數看板 -->
         <div class="card bg-blue-900 text-white flex justify-between items-center">
           <div>
-            <div id="coinPageLocationLabel" class="text-xs text-blue-200">當前分店未兌機數總和</div>
+            <div id="coinPageLocationLabel" class="text-xs text-blue-200">當前分店未兌幣數總和</div>
             <div id="coinPageTotalCount" class="text-2xl font-extrabold mt-0.5">0 幣</div>
           </div>
           <div class="text-right">
@@ -274,7 +274,7 @@
             </div>
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">兌幣數量（機數）</label>
+                <label class="block text-xs font-bold text-slate-600 mb-1">兌幣數量（幣數）</label>
                 <input type="number" id="redeemCoinInput" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
               </div>
               <div>
@@ -396,9 +396,9 @@
 
         <div class="card">
           <div class="flex justify-between items-center mb-2">
-            <h2 class="font-bold text-sm text-slate-800">📊 各分店帳目明細</h2>
+            <h2 class="font-bold text-sm text-slate-800">📊 當前分店帳目明細與各月紀錄</h2>
           </div>
-          <div id="allLocationsSummary" class="divide-y divide-slate-100 text-xs"></div>
+          <div id="currentLocationSettlementBox"></div>
         </div>
       </section>
 
@@ -418,7 +418,7 @@
         <div class="card">
           <h2 class="font-bold text-base text-slate-800 mb-2">📡 雲端連線診斷與手動同步</h2>
           <div id="cloudDiagnosticBox" class="text-xs text-slate-600 space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200 mb-3">
-            <p>• 資料庫實例：<span class="font-mono font-bold text-blue-900">default / ledgers / DENNIS_AMZI_MAIN</span></p>
+            <p>• 資料庫實例：<span id="diagDbName" class="font-mono font-bold text-blue-900">載入中...</span></p>
             <p>• 登入狀態：<span id="diagAuthText" class="font-bold">檢查中...</span></p>
             <p>• 最後伺服器確認：<span id="diagWriteText" class="font-bold">正在自動同步...</span></p>
           </div>
@@ -433,10 +433,10 @@
         </div>
 
         <div class="card border-2 border-rose-200 bg-rose-50/30">
-          <h2 class="font-bold text-base text-rose-700 mb-1">⚠️ 危險操作區</h2>
-          <p class="text-xs text-slate-600 mb-4">如需重新開帳，可一鍵清空所有場地、貨物清單、點幣紀錄與台主成本。</p>
-          <button onclick="resetAllData()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl text-sm shadow">
-            全部數目歸零重新開始
+          <h2 class="font-bold text-base text-rose-700 mb-1">⚠️ 當前帳戶重置區</h2>
+          <p class="text-xs text-slate-600 mb-4">點擊下方按鈕只會清空**目前這個合夥帳戶**的場地與數據，不會影響其他帳戶。</p>
+          <button onclick="resetCurrentLedgerData()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl text-sm shadow">
+            清空當前帳戶並重新開始
           </button>
         </div>
       </section>
@@ -455,12 +455,10 @@
       measurementId: "G-RPZDMHX5C1"
     };
 
-    const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v29";
+    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v31";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
     let currentView = "landing";
-    let expandedSettlementLocIds = {};
     let goodsFilterMode = "ACTIVE";
     let allGoodsExpanded = false;
     let coinPageMonthlyExpanded = false;
@@ -518,7 +516,8 @@
         id: "ledger_" + Date.now(),
         name: name || "Dennis & Amzi 夾娃娃合夥",
         currentLocationId: locId,
-        locations: accounts
+        locations: accounts,
+        logs: []
       };
     }
 
@@ -533,34 +532,18 @@
       const defaultL = getDefaultLedger("Dennis & Amzi 夾娃娃合夥");
       return {
         currentLedgerId: defaultL.id,
-        ledgers: { [defaultL.id]: defaultL },
-        logs: []
+        ledgers: { [defaultL.id]: defaultL }
       };
     }
 
     let appState = loadLocalBackup();
 
     function normalizeState(data) {
-      if (!data || (!data.ledgers && !data.locations)) {
+      if (!data || !data.ledgers) {
         const defaultL = getDefaultLedger("Dennis & Amzi 夾娃娃合夥");
         return {
           currentLedgerId: defaultL.id,
-          ledgers: { [defaultL.id]: defaultL },
-          logs: []
-        };
-      }
-      if (data.locations && !data.ledgers) {
-        return {
-          currentLedgerId: "ledger_main",
-          ledgers: {
-            ledger_main: {
-              id: "ledger_main",
-              name: "Dennis & Amzi 夾娃娃合夥",
-              currentLocationId: data.currentLocationId,
-              locations: data.locations
-            }
-          },
-          logs: data.logs || []
+          ledgers: { [defaultL.id]: defaultL }
         };
       }
       if (!data.currentLedgerId || !data.ledgers[data.currentLedgerId]) {
@@ -575,6 +558,7 @@
         if (!ledger.locations[ledger.currentLocationId]) {
           ledger.currentLocationId = Object.keys(ledger.locations)[0];
         }
+        if (!Array.isArray(ledger.logs)) ledger.logs = [];
         Object.values(ledger.locations).forEach(l => {
           if (typeof l.costAmzi !== "number") l.costAmzi = 0;
           if (typeof l.costDennis !== "number") l.costDennis = 0;
@@ -602,6 +586,11 @@
       return ledger.locations[ledger.currentLocationId] || Object.values(ledger.locations)[0];
     }
 
+    function getFirestoreUrl() {
+      const ledgerId = appState.currentLedgerId || "default";
+      return `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/${ledgerId}`;
+    }
+
     function showToast(msg, isError) {
       const el = document.getElementById("toastBanner");
       el.textContent = msg;
@@ -621,6 +610,8 @@
         const el = document.getElementById(id);
         if (el) el.className = "inline-block w-2.5 h-2.5 rounded-full " + (ok ? "bg-emerald-400" : "bg-rose-500");
       });
+      const dbEl = document.getElementById("diagDbName");
+      if (dbEl) dbEl.textContent = `ledgers / ${appState.currentLedgerId}`;
     }
 
     async function getAuthHeaders() {
@@ -636,7 +627,7 @@
       if (isResetting) return;
       try {
         const headers = await getAuthHeaders();
-        const res = await fetch(FIRESTORE_REST_URL, { method: "GET", headers });
+        const res = await fetch(getFirestoreUrl(), { method: "GET", headers });
         if (res.status === 404) {
           await pushToCloud(true);
           return;
@@ -650,16 +641,16 @@
         const docJson = await res.json();
         const rawStr = docJson.fields && docJson.fields.payloadJson && docJson.fields.payloadJson.stringValue;
         if (rawStr) {
-          const cloudState = JSON.parse(rawStr);
-          if (cloudState && (cloudState.ledgers || cloudState.locations)) {
-            appState = normalizeState(cloudState);
+          const cloudLedger = JSON.parse(rawStr);
+          if (cloudLedger && cloudLedger.id) {
+            appState.ledgers[cloudLedger.id] = cloudLedger;
             localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
             renderAll();
             const t = new Date();
             const ts = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}:${String(t.getSeconds()).padStart(2, "0")}`;
             setSyncUI(true, "雲端已同步 (" + ts + ")");
             document.getElementById("diagWriteText").textContent = "正常 (" + ts + ")";
-            if (!silent) showToast("☁️ 已成功從雲端拉取最新帳目！");
+            if (!silent) showToast("☁️ 已成功從雲端拉取當前帳戶最新資料！");
             return;
           }
         }
@@ -672,16 +663,17 @@
 
     async function pushToCloud(silent) {
       try {
-        appState.updatedAt = Date.now();
+        const ledger = getCurrentLedger();
+        ledger.updatedAt = Date.now();
         localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
         const headers = await getAuthHeaders();
         const body = JSON.stringify({
           fields: {
-            payloadJson: { stringValue: JSON.stringify(appState) },
-            updatedAt: { integerValue: String(appState.updatedAt) }
+            payloadJson: { stringValue: JSON.stringify(ledger) },
+            updatedAt: { integerValue: String(ledger.updatedAt) }
           }
         });
-        const res = await fetch(FIRESTORE_REST_URL, {
+        const res = await fetch(getFirestoreUrl(), {
           method: "PATCH",
           headers,
           body
@@ -699,7 +691,7 @@
         document.getElementById("diagWriteText").textContent = "成功寫入 (" + ts + ")";
         const lw = document.getElementById("lastCloudWriteTime");
         if (lw) lw.textContent = "☁️ 雲端已存 " + ts;
-        if (!silent) showToast("☁️ 已成功寫入 Firebase 雲端伺服器！");
+        if (!silent) showToast("☁️ 當前帳戶已成功寫入雲端！");
       } catch (err) {
         setSyncUI(false, "寫入異常：" + err.message);
         showToast("❌ 網絡異常（已存本機）：" + err.message, true);
@@ -730,7 +722,6 @@
     }
 
     function saveState() {
-      appState.updatedAt = Date.now();
       localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
       recalculateLocationTotals();
       renderAllWithoutViewReset();
@@ -834,11 +825,12 @@
       });
     }
 
-    function selectLedgerAccount(ledgerId) {
+    async function selectLedgerAccount(ledgerId) {
       appState.currentLedgerId = ledgerId;
       currentView = "workspace";
       renderAll();
       showToast("✅ 已進入帳戶：" + getCurrentLedger().name);
+      await pullFromCloud(true);
     }
 
     function backToLanding() {
@@ -846,7 +838,7 @@
       renderAll();
     }
 
-    function addNewLedgerAccount() {
+    async function addNewLedgerAccount() {
       const name = prompt("請輸入新的合夥帳戶名稱：");
       if (!name || !name.trim()) return;
       const newL = getDefaultLedger(name.trim());
@@ -1191,28 +1183,23 @@
       saveState();
     }
 
-    function toggleSettlementLocation(locId) {
-      expandedSettlementLocIds[locId] = !expandedSettlementLocIds[locId];
+    function toggleCoinMonth(mk) {
+      expandedMonthlyKeys["coin_" + mk] = !expandedMonthlyKeys["coin_" + mk];
       renderAllWithoutViewReset();
     }
 
-    function resetAllData() {
-      if (!confirm("確定要清空所有合夥帳戶與數據嗎？")) return;
+    function resetCurrentLedgerData() {
+      const ledger = getCurrentLedger();
+      if (!confirm(`⚠️ 確定要清空當前帳戶「${ledger.name}」的所有場地與數據嗎？此操作不會影響其他合夥帳戶。`)) return;
       isResetting = true;
-      const defaultL = getDefaultLedger("Dennis & Amzi 夾娃娃合夥");
-      appState = {
-        currentLedgerId: defaultL.id,
-        ledgers: { [defaultL.id]: defaultL },
-        logs: []
-      };
-      currentView = "landing";
-      localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
-      renderAll();
-      
-      pushToCloud(true).then(() => {
-        showToast("✅ 全部數目已歸零！");
-        setTimeout(() => { isResetting = false; }, 3000);
-      });
+
+      const freshL = getDefaultLedger(ledger.name);
+      freshL.id = ledger.id;
+      appState.ledgers[ledger.id] = freshL;
+
+      saveState();
+      showToast("✅ 當前帳戶已清空並重新開始！");
+      setTimeout(() => { isResetting = false; }, 3000);
     }
 
     function handleExcelUpload(event) {
@@ -1300,19 +1287,20 @@
     function addLog(text) {
       const now = new Date();
       const timeStr = `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      const ledger = getCurrentLedger();
       const loc = getCurrentLocation();
-      appState.logs = appState.logs || [];
-      appState.logs.unshift({
+      ledger.logs = ledger.logs || [];
+      ledger.logs.unshift({
         id: Date.now(),
         time: timeStr,
         operator: currentOperator,
         locationName: loc ? loc.name : "",
         text
       });
-      if (appState.logs.length > 100) appState.logs.length = 100;
+      if (ledger.logs.length > 100) ledger.logs.length = 100;
     }
 
-    function renderMonthlyHtml(loc, locId) {
+    function renderCoinPageMonthlyHtml(loc) {
       const stats = loc.monthlyStats || {};
       const months = Object.keys(stats).sort().reverse();
       if (months.length === 0) {
@@ -1321,9 +1309,7 @@
       return months.map(m => {
         const bucket = stats[m];
         const records = bucket.records || [];
-        let monthTotal = 0;
-        records.forEach(r => { monthTotal += (r.cash || 0); });
-        const isExp = !!expandedMonthlyKeys[m + "_" + locId];
+        const isExp = !!expandedMonthlyKeys["coin_" + m];
 
         const recHtml = records.map(r => {
           const isRedeem = r.type === "redeem";
@@ -1343,19 +1329,13 @@
 
         return `
           <div class="py-2">
-            <div onclick="toggleSettlementMonth('${locId}', '${m}')" class="flex justify-between items-center font-bold text-slate-800 bg-slate-100 px-3 py-2 rounded-xl cursor-pointer hover:bg-slate-200 transition">
-              <span>🗓️ ${m} 月份明細（總計 HK$ ${monthTotal}）</span>
-              <span class="text-xs text-blue-700 font-bold px-2 py-0.5 bg-blue-50 rounded border border-blue-200">${isExp ? "▲ 收起月覽" : "▼ 展開月覽"}</span>
+            <div onclick="toggleCoinMonth('${m}')" class="flex justify-between items-center font-bold text-slate-800 bg-slate-100 px-3 py-2 rounded-xl cursor-pointer hover:bg-slate-200 transition">
+              <span>🗓️ ${m} 月份紀錄</span>
+              <span class="text-xs text-blue-700 font-bold px-2 py-0.5 bg-blue-50 rounded border border-blue-200">${isExp ? "▲ 收起" : "▼ 展開月覽"}</span>
             </div>
             ${isExp ? `<div class="mt-2 space-y-1 pl-2 bg-white p-2 rounded-xl border border-slate-200">${recHtml}</div>` : ""}
           </div>`;
       }).join("");
-    }
-
-    function toggleSettlementMonth(locId, mk) {
-      const key = mk + "_" + locId;
-      expandedMonthlyKeys[key] = !expandedMonthlyKeys[key];
-      renderAllWithoutViewReset();
     }
 
     function renderAllWithoutViewReset() {
@@ -1407,7 +1387,8 @@
       const dennisProfit = dennisInc - dennisTotalCost;
       const totalAllInc = amziInc + dennisInc;
 
-      document.getElementById("statCoins").textContent = `${loc.unredeemedCoins || 0} 機`;
+      // 總覽：紅圈中的「機」改成「幣」
+      document.getElementById("statCoins").textContent = `${loc.unredeemedCoins || 0} 幣`;
       document.getElementById("statCoinCash").textContent = `約 HK$ ${loc.unredeemedCash || 0}`;
       document.getElementById("statRedeemed").textContent = `$${totalAllInc}`;
       document.getElementById("statHalfRedeemed").textContent = `雙方總累計營收`;
@@ -1420,15 +1401,16 @@
       document.getElementById("statCostTotal").textContent = `$${amziTotalCost + dennisTotalCost}`;
       document.getElementById("statCostShared").textContent = `$0`;
 
-      // 點/兌幣分頁：每個場地獨立顯示未兌幣數總和 (已改為「幣」)
+      // 點幣頁面
       document.getElementById("coinPageLocationLabel").textContent = `【${loc.name}】未兌幣數總和`;
       document.getElementById("coinPageTotalCount").textContent = `${loc.unredeemedCoins || 0} 幣`;
       document.getElementById("coinPageTotalCash").textContent = `HK$ ${loc.unredeemedCash || 0}`;
       document.getElementById("redeemCoinInput").value = loc.unredeemedCoins || 0;
       document.getElementById("redeemCashInput").value = loc.unredeemedCash || 0;
 
-      document.getElementById("coinPageMonthlySummary").innerHTML = renderMonthlyHtml(loc, loc.id);
+      document.getElementById("coinPageMonthlySummary").innerHTML = renderCoinPageMonthlyHtml(loc);
       document.getElementById("toggleCoinMonthlyBtn").textContent = coinPageMonthlyExpanded ? "▲ 收起月覽" : "▼ 展開月覽";
+      document.getElementById("coinPageMonthlySummary").classList.toggle("hidden", !coinPageMonthlyExpanded);
 
       // 結算分頁數值填入
       document.getElementById("amziTotalInc").textContent = `$${amziInc}`;
@@ -1442,6 +1424,56 @@
       document.getElementById("dennisStockCost").textContent = `$${dennisStockCost}`;
       document.getElementById("dennisTotalCost").textContent = `$${dennisTotalCost}`;
       document.getElementById("dennisShare").textContent = `$${dennisProfit}`;
+
+      // 結算頁面：同步當前場地明細（上下排列形式，帶有 Amzi 利潤與 Dennis 利潤）
+      const currentLocBox = document.getElementById("currentLocationSettlementBox");
+      const stats = loc.monthlyStats || {};
+      const months = Object.keys(stats).sort().reverse();
+      let monthlyRecsHtml = "";
+      if (months.length === 0) {
+        monthlyRecsHtml = `<div class="py-2 text-center text-slate-400 text-xs">此場地尚無各月紀錄</div>`;
+      } else {
+        monthlyRecsHtml = months.map(m => {
+          const bucket = stats[m];
+          const records = bucket.records || [];
+          let monthTotal = 0;
+          records.forEach(r => { monthTotal += (r.cash || 0); });
+          return `
+            <div class="py-2 border-b border-slate-100 last:border-b-0 text-xs">
+              <div class="font-bold text-slate-800 mb-1">🗓️ ${m} 月份（總計收入 HK$ ${monthTotal}）</div>
+              <div class="space-y-1 pl-2">
+                ${records.map(r => {
+                  const isRedeem = r.type === "redeem";
+                  const title = isRedeem ? `💰 場主兌現入帳` : `💵 台主收入入帳 (${r.owner || '共同'})`;
+                  const detailStr = isRedeem ? `兌幣數量：${r.coins || 0} 幣 · 現金：HK$ ${r.cash}` : `擁有人：${r.owner} · 金額：HK$ ${r.cash}`;
+                  return `<div class="text-slate-600 text-[11px]">• ${title} - ${detailStr} (${r.date || ""})</div>`;
+                }).join("")}
+              </div>
+            </div>`;
+        }).join("");
+      }
+
+      currentLocBox.innerHTML = `
+        <div class="space-y-3">
+          <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs">
+            <div class="font-bold text-blue-950 text-sm mb-2">📍 ${loc.name}</div>
+            <div class="space-y-1.5">
+              <div class="bg-white p-2 rounded-lg border border-blue-100 flex justify-between items-center">
+                <span class="font-bold text-blue-900">Amzi 利潤 :</span>
+                <span class="font-extrabold text-emerald-700 text-sm">$${amziProfit}</span>
+              </div>
+              <div class="bg-white p-2 rounded-lg border border-blue-100 flex justify-between items-center">
+                <span class="font-bold text-purple-900">Dennis 利潤 :</span>
+                <span class="font-extrabold text-emerald-700 text-sm">$${dennisProfit}</span>
+              </div>
+            </div>
+            <div class="text-slate-500 mt-2 text-[11px]">庫存：${loc.stockCount || 0} 隻 · 未兌幣數：${loc.unredeemedCoins || 0} 幣</div>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-xl p-3">
+            <div class="font-bold text-slate-800 text-xs mb-2">📋 本場各月收支明細記錄</div>
+            <div class="divide-y divide-slate-100">${monthlyRecsHtml}</div>
+          </div>
+        </div>`;
 
       // 機台清單渲染
       const mContainer = document.getElementById("machineListContainer");
@@ -1532,9 +1564,8 @@
         previewEl.textContent = `（列表已收起，目前篩選共 ${filteredGoods.length} 項，點擊「展開全部貨物」可查看完整清單）`;
       }
 
-      // 操作紀錄
       const logsDiv = document.getElementById("recentLogs");
-      logsDiv.innerHTML = (appState.logs || []).slice(0, 15).map(log => `
+      logsDiv.innerHTML = (ledger.logs || []).slice(0, 15).map(log => `
         <div class="py-2 flex justify-between items-start gap-2">
           <div>
             <span class="inline-block px-1.5 py-0.5 rounded bg-blue-100 text-blue-900 font-bold mr-1">${log.operator}</span>
@@ -1543,32 +1574,6 @@
           <span class="text-slate-400 whitespace-nowrap">${log.time}</span>
         </div>
       `).join("") || `<div class="py-4 text-center text-slate-400">尚無紀錄</div>`;
-
-      // 分店摘要列表
-      const summaryDiv = document.getElementById("allLocationsSummary");
-      summaryDiv.innerHTML = "";
-      locIds.forEach(id => {
-        const l = ledger.locations[id];
-        const isExpanded = !!expandedSettlementLocIds[id];
-        const wrapper = document.createElement("div");
-        wrapper.className = "py-2.5";
-        wrapper.innerHTML = `
-          <div onclick="toggleSettlementLocation('${id}')" class="flex justify-between items-center cursor-pointer active:bg-slate-50 rounded-lg p-1">
-            <div>
-              <div class="font-bold text-slate-800 flex items-center gap-1.5">
-                <span>${l.name}</span>
-                <span class="text-[11px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">${isExpanded ? "▲ 收起月覽" : "▼ 展開月覽"}</span>
-              </div>
-              <div class="text-slate-500 mt-0.5">庫存 ${l.stockCount || 0} 隻 · 未兌 ${l.unredeemedCoins || 0} 幣</div>
-            </div>
-            <div class="text-right">
-              <div class="font-bold text-emerald-700">Amzi利潤:$${amziProfit} / D利潤:$${dennisProfit}</div>
-            </div>
-          </div>
-          ${isExpanded ? `<div class="mt-2 pl-3 pr-2 py-1 bg-slate-50 rounded-xl border border-slate-200 divide-y divide-slate-200">${renderMonthlyHtml(l, id)}</div>` : ""}
-        `;
-        summaryDiv.appendChild(wrapper);
-      });
     }
 
     function renderAll() {
@@ -1578,7 +1583,7 @@
 
         const cardsContainer = document.getElementById("ledgerCardsContainer");
         cardsContainer.innerHTML = Object.values(appState.ledgers).map(ledger => {
-          let totalLocs = Object.keys(ledger.locations).length;
+          let totalLocs = Object.keys(ledger.locations || {}).length;
           return `
             <div class="card border border-slate-200 hover:border-blue-500 transition cursor-pointer">
               <div class="flex justify-between items-start mb-2">
