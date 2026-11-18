@@ -101,8 +101,8 @@
           </div>
           <!-- 操作人切換 -->
           <div class="bg-blue-900/80 p-1 rounded-xl flex items-center text-xs border border-blue-700">
-            <button id="userAmzi" onclick="setOperator('Amzi')" class="px-2 py-0.5 rounded-lg font-bold transition">Amzi</button>
-            <button id="userDennis" onclick="setOperator('Dennis')" class="px-2 py-0.5 rounded-lg font-bold transition">Dennis</button>
+            <button id="userPartnerA" onclick="setOperator('partnerA')" class="px-2 py-0.5 rounded-lg font-bold transition">夥伴1</button>
+            <button id="userPartnerB" onclick="setOperator('partnerB')" class="px-2 py-0.5 rounded-lg font-bold transition">夥伴2</button>
           </div>
         </div>
 
@@ -156,14 +156,14 @@
           </div>
           <div class="grid grid-cols-2 gap-2.5 mt-2">
             <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-2.5">
-              <div class="text-xs text-blue-800 font-semibold">Amzi 淨利（收入 - 總成本）</div>
-              <div id="statNetAmzi" class="text-lg font-extrabold text-blue-950 mt-0.5">$0</div>
-              <div id="statDetailAmzi" class="text-[11px] text-slate-600 mt-0.5">收入 $0 · 成本 $0</div>
+              <div id="labelNetA" class="text-xs text-blue-800 font-semibold">夥伴1 淨利（收入 - 總成本）</div>
+              <div id="statNetA" class="text-lg font-extrabold text-blue-950 mt-0.5">$0</div>
+              <div id="statDetailA" class="text-[11px] text-slate-600 mt-0.5">收入 $0 · 成本 $0</div>
             </div>
             <div class="bg-purple-50/70 border border-purple-100 rounded-xl p-2.5">
-              <div class="text-xs text-purple-800 font-semibold">Dennis 淨利（收入 - 總成本）</div>
-              <div id="statNetDennis" class="text-lg font-extrabold text-purple-950 mt-0.5">$0</div>
-              <div id="statDetailDennis" class="text-[11px] text-slate-600 mt-0.5">收入 $0 · 成本 $0</div>
+              <div id="labelNetB" class="text-xs text-purple-800 font-semibold">夥伴2 淨利（收入 - 總成本）</div>
+              <div id="statNetB" class="text-lg font-extrabold text-purple-950 mt-0.5">$0</div>
+              <div id="statDetailB" class="text-[11px] text-slate-600 mt-0.5">收入 $0 · 成本 $0</div>
             </div>
           </div>
           <div class="text-xs text-slate-500 mt-2 pt-2 border-t border-slate-100 flex justify-between">
@@ -314,8 +314,8 @@
               <div>
                 <label class="block text-xs font-bold text-slate-600 mb-1">貨物擁有人 / 墊付人</label>
                 <select id="stockOwnerSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white">
-                  <option value="Amzi">Amzi</option>
-                  <option value="Dennis">Dennis</option>
+                  <option id="optPartnerA" value="Amzi">Amzi</option>
+                  <option id="optPartnerB" value="Dennis">Dennis</option>
                 </select>
               </div>
             </div>
@@ -367,28 +367,28 @@
 
           <div class="grid grid-cols-2 gap-3 mt-3 text-xs">
             <div class="bg-blue-900/50 p-3 rounded-xl border border-blue-700/50">
-              <div class="text-blue-200 font-bold text-sm mb-1">Amzi 統計</div>
+              <div id="labelCardA" class="text-blue-200 font-bold text-sm mb-1">夥伴1 統計</div>
               <div class="text-slate-300 text-[11px] space-y-0.5">
-                <div>總收入: <strong id="amziTotalInc" class="text-emerald-400">$0</strong></div>
-                <div>已出貨成本: <strong id="amziShippedCost" class="text-rose-300">$0</strong></div>
-                <div>餘貨成本(入機+存貨): <strong id="amziStockCost" class="text-amber-300">$0</strong></div>
-                <div>總成本: <strong id="amziTotalCost" class="text-white">$0</strong></div>
+                <div>總收入: <strong id="partnerATotalInc" class="text-emerald-400">$0</strong></div>
+                <div>已出貨成本: <strong id="partnerAShippedCost" class="text-rose-300">$0</strong></div>
+                <div>餘貨成本(入機+存貨): <strong id="partnerAStockCost" class="text-amber-300">$0</strong></div>
+                <div>總成本: <strong id="partnerATotalCost" class="text-white">$0</strong></div>
               </div>
               <div class="mt-2 pt-2 border-t border-blue-800 text-xs font-bold">
-                淨利潤：<span id="amziShare" class="text-lg text-emerald-400">$0</span>
+                淨利潤：<span id="partnerAShare" class="text-lg text-emerald-400">$0</span>
               </div>
             </div>
 
             <div class="bg-blue-900/50 p-3 rounded-xl border border-blue-700/50">
-              <div class="text-blue-200 font-bold text-sm mb-1">Dennis 統計</div>
+              <div id="labelCardB" class="text-blue-200 font-bold text-sm mb-1">夥伴2 統計</div>
               <div class="text-slate-300 text-[11px] space-y-0.5">
-                <div>總收入: <strong id="dennisTotalInc" class="text-emerald-400">$0</strong></div>
-                <div>已出貨成本: <strong id="dennisShippedCost" class="text-rose-300">$0</strong></div>
-                <div>餘貨成本(入機+存貨): <strong id="dennisStockCost" class="text-amber-300">$0</strong></div>
-                <div>總成本: <strong id="dennisTotalCost" class="text-white">$0</strong></div>
+                <div>總收入: <strong id="partnerBTotalInc" class="text-emerald-400">$0</strong></div>
+                <div>已出貨成本: <strong id="partnerBShippedCost" class="text-rose-300">$0</strong></div>
+                <div>餘貨成本(入機+存貨): <strong id="partnerBStockCost" class="text-amber-300">$0</strong></div>
+                <div>總成本: <strong id="partnerBTotalCost" class="text-white">$0</strong></div>
               </div>
               <div class="mt-2 pt-2 border-t border-blue-800 text-xs font-bold">
-                淨利潤：<span id="dennisShare" class="text-lg text-emerald-400">$0</span>
+                淨利潤：<span id="partnerBShare" class="text-lg text-emerald-400">$0</span>
               </div>
             </div>
           </div>
@@ -404,6 +404,25 @@
 
       <!-- 5. 獨立設定與重置、備份頁面 -->
       <section id="tab-danger" class="hidden">
+        <!-- 修改台主合夥人名稱設定卡片 -->
+        <div class="card border-2 border-indigo-300 bg-indigo-50/40">
+          <h2 class="font-bold base text-indigo-950 mb-1">✏️ 修改合夥人（台主）名稱</h2>
+          <p class="text-xs text-slate-600 mb-3">隨時可以更改兩位台主的顯示名稱（例如從 Amzi / Dennis 改為你的全名或暱稱）。</p>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">夥伴 1 名稱（原 Amzi）</label>
+              <input type="text" id="settingNameA" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white text-xs" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">夥伴 2 名稱（原 Dennis）</label>
+              <input type="text" id="settingNameB" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white text-xs" />
+            </div>
+            <button onclick="savePartnerNames()" class="w-full bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-2.5 rounded-xl text-xs shadow">
+              儲存合夥人名稱修改
+            </button>
+          </div>
+        </div>
+
         <div class="card border-2 border-emerald-300 bg-emerald-50/40">
           <h2 class="font-bold text-base text-emerald-900 mb-1">📁 匯入 Excel 帳目檔案 (.xlsx)</h2>
           <p class="text-xs text-emerald-800 mb-3">
@@ -455,9 +474,9 @@
       measurementId: "G-RPZDMHX5C1"
     };
 
-    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v33";
+    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v35";
     let authUser = null;
-    let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
+    let currentOperator = localStorage.getItem("claw_operator") || "partnerA";
     let currentView = "landing";
     let expandedSettlementLocIds = {};
     let goodsFilterMode = "ACTIVE";
@@ -505,8 +524,6 @@
         unredeemedCoins: 0,
         unredeemedCash: 0,
         totalRedeemedCash: 0,
-        costAmzi: 0,
-        costDennis: 0,
         goodsList: [],
         monthlyStats: {},
         machines: [
@@ -516,6 +533,8 @@
       return {
         id: "ledger_" + Date.now(),
         name: name || "Dennis & Amzi 夾娃娃合夥",
+        partnerA: "Amzi",
+        partnerB: "Dennis",
         currentLocationId: locId,
         locations: accounts,
         logs: []
@@ -551,6 +570,8 @@
         data.currentLedgerId = Object.keys(data.ledgers)[0];
       }
       Object.values(data.ledgers).forEach(ledger => {
+        if (!ledger.partnerA) ledger.partnerA = "Amzi";
+        if (!ledger.partnerB) ledger.partnerB = "Dennis";
         if (!ledger.locations || Object.keys(ledger.locations).length === 0) {
           const defLoc = getDefaultLedger();
           ledger.locations = defLoc.locations;
@@ -561,10 +582,18 @@
         }
         if (!Array.isArray(ledger.logs)) ledger.logs = [];
         Object.values(ledger.locations).forEach(l => {
-          if (typeof l.costAmzi !== "number") l.costAmzi = 0;
-          if (typeof l.costDennis !== "number") l.costDennis = 0;
           if (!Array.isArray(l.goodsList)) l.goodsList = [];
           if (!l.monthlyStats || typeof l.monthlyStats !== "object") l.monthlyStats = {};
+          (l.goodsList || []).forEach(g => {
+            if (g.owner === "Amzi") g.owner = ledger.partnerA;
+            if (g.owner === "Dennis") g.owner = ledger.partnerB;
+          });
+          Object.values(l.monthlyStats || {}).forEach(bucket => {
+            (bucket.records || []).forEach(r => {
+              if (r.owner === "Amzi") r.owner = ledger.partnerA;
+              if (r.owner === "Dennis") r.owner = ledger.partnerB;
+            });
+          });
           (l.machines || []).forEach(m => {
             if (typeof m.panelTotal !== "number") m.panelTotal = m.coins || 0;
             if (typeof m.lastRedeemedPanel !== "number") m.lastRedeemedPanel = 0;
@@ -703,7 +732,6 @@
       const today = getTodayStr();
       document.getElementById("coinDateInput").value = today;
       document.getElementById("redeemDateInput").value = today;
-      document.getElementById("stockOwnerSelect").value = currentOperator;
       renderAll();
 
       firebase.initializeApp(firebaseConfig);
@@ -775,20 +803,37 @@
     function setOperator(name) {
       currentOperator = name;
       localStorage.setItem("claw_operator", name);
-      document.getElementById("stockOwnerSelect").value = name;
       renderOperatorUI();
     }
 
     function renderOperatorUI() {
-      const btnA = document.getElementById("userAmzi");
-      const btnD = document.getElementById("userDennis");
-      if (currentOperator === "Amzi") {
-        btnA.className = "px-2 py-0.5 rounded-lg font-bold bg-white text-blue-950 shadow";
-        btnD.className = "px-2 py-0.5 rounded-lg font-bold text-blue-200";
+      const ledger = getCurrentLedger();
+      const btnA = document.getElementById("userPartnerA");
+      const btnD = document.getElementById("userPartnerB");
+      if (btnA) btnA.textContent = ledger.partnerA;
+      if (btnD) btnD.textContent = ledger.partnerB;
+
+      if (currentOperator === "partnerA") {
+        if (btnA) btnA.className = "px-2 py-0.5 rounded-lg font-bold bg-white text-blue-950 shadow";
+        if (btnD) btnD.className = "px-2 py-0.5 rounded-lg font-bold text-blue-200";
       } else {
-        btnD.className = "px-2 py-0.5 rounded-lg font-bold bg-white text-blue-950 shadow";
-        btnA.className = "px-2 py-0.5 rounded-lg font-bold text-blue-200";
+        if (btnD) btnD.className = "px-2 py-0.5 rounded-lg font-bold bg-white text-blue-950 shadow";
+        if (btnA) btnA.className = "px-2 py-0.5 rounded-lg font-bold text-blue-200";
       }
+    }
+
+    function savePartnerNames() {
+      const ledger = getCurrentLedger();
+      const newA = document.getElementById("settingNameA").value.trim();
+      const newB = document.getElementById("settingNameB").value.trim();
+      if (!newA || !newB) {
+        alert("合夥人名稱不能為空！");
+        return;
+      }
+      ledger.partnerA = newA;
+      ledger.partnerB = newB;
+      saveState();
+      showToast("✅ 合夥人名稱已更新！");
     }
 
     function setGoodsFilter(mode) {
@@ -918,8 +963,6 @@
         unredeemedCoins: 0,
         unredeemedCash: 0,
         totalRedeemedCash: 0,
-        costAmzi: 0,
-        costDennis: 0,
         goodsList: [],
         monthlyStats: {},
         machines: [
@@ -1145,8 +1188,10 @@
 
     function recordGoodsItem() {
       const loc = getCurrentLocation();
+      const ledger = getCurrentLedger();
       const status = document.getElementById("stockStatusSelect").value;
-      const owner = document.getElementById("stockOwnerSelect").value;
+      const opKey = document.getElementById("stockOwnerSelect").value;
+      const ownerName = opKey === "partnerA" ? ledger.partnerA : ledger.partnerB;
       const name = document.getElementById("stockNoteInput").value.trim() || "未命名貨物";
       const cost = parseFloat(document.getElementById("stockCostInput").value) || 0;
 
@@ -1157,7 +1202,7 @@
         qty: 1,
         cost,
         status,
-        owner,
+        owner: ownerName,
         date: getTodayStr()
       });
 
@@ -1207,11 +1252,51 @@
 
       const freshL = getDefaultLedger(ledger.name);
       freshL.id = ledger.id;
+      freshL.partnerA = ledger.partnerA;
+      freshL.partnerB = ledger.partnerB;
       appState.ledgers[ledger.id] = freshL;
 
       saveState();
       showToast("✅ 當前帳戶已清空並重新開始！");
       setTimeout(() => { isResetting = false; }, 3000);
+    }
+
+    function exportJsonBackup() {
+      try {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `claw_ledger_backup_${getTodayStr()}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        showToast("📤 備份檔案已成功下載！");
+      } catch (err) {
+        alert("備份失敗：" + err.message);
+      }
+    }
+
+    function importJsonBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (parsed && parsed.ledgers) {
+            appState = normalizeState(parsed);
+            saveState();
+            renderAll();
+            showToast("📥 成功還原所有合夥帳戶資料！");
+          } else {
+            alert("備份檔案格式不正確！");
+          }
+        } catch (err) {
+          alert("解析備份檔案失敗：" + err.message);
+        }
+        event.target.value = "";
+      };
+      reader.readAsText(file);
     }
 
     function handleExcelUpload(event) {
@@ -1223,6 +1308,7 @@
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: 'array' });
           const loc = getCurrentLocation();
+          const ledger = getCurrentLedger();
 
           loc.goodsList = [];
           loc.monthlyStats = {};
@@ -1235,14 +1321,17 @@
             const jsonRows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
             jsonRows.forEach((row, idx) => {
               if (idx < 6) return;
-              let owner = String(row[0] || "").trim();
-              if (owner !== "Amzi" && owner !== "Dennis") return;
+              let rawOwner = String(row[0] || "").trim();
+              if (!rawOwner) return;
+
+              let owner = rawOwner;
+              if (rawOwner.toLowerCase() === "amzi") owner = ledger.partnerA;
+              else if (rawOwner.toLowerCase() === "dennis") owner = ledger.partnerB;
 
               let name = String(row[1] || "").trim();
               let cost = parseFloat(row[2]) || 0;
               let rawStatus = String(row[3] || "出貨").trim();
               
-              // 支援「存貨」、「貨存」、「入機」、「出貨」
               let status = "出貨";
               if (rawStatus === "存貨" || rawStatus === "貨存") {
                 status = "貨存";
@@ -1272,8 +1361,12 @@
             const jsonRows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
             jsonRows.forEach((row, idx) => {
               if (idx < 2) return;
-              let owner = String(row[0] || "").trim();
-              if (owner !== "Amzi" && owner !== "Dennis") return;
+              let rawOwner = String(row[0] || "").trim();
+              if (!rawOwner) return;
+
+              let owner = rawOwner;
+              if (rawOwner.toLowerCase() === "amzi") owner = ledger.partnerA;
+              else if (rawOwner.toLowerCase() === "dennis") owner = ledger.partnerB;
 
               let inc = parseFloat(row[3]) || 0;
               let dateVal = parseExcelDate(row[4]);
@@ -1314,7 +1407,7 @@
       ledger.logs.unshift({
         id: Date.now(),
         time: timeStr,
-        operator: currentOperator,
+        operator: currentOperator === "partnerA" ? ledger.partnerA : ledger.partnerB,
         locationName: loc ? loc.name : "",
         text
       });
@@ -1407,6 +1500,18 @@
 
       const ledger = getCurrentLedger();
       document.getElementById("workspaceLedgerTitle").textContent = ledger.name;
+      document.getElementById("settingNameA").value = ledger.partnerA;
+      document.getElementById("settingNameB").value = ledger.partnerB;
+
+      document.getElementById("optPartnerA").textContent = ledger.partnerA;
+      document.getElementById("optPartnerA").value = ledger.partnerA;
+      document.getElementById("optPartnerB").textContent = ledger.partnerB;
+      document.getElementById("optPartnerB").value = ledger.partnerB;
+
+      document.getElementById("labelNetA").textContent = `${ledger.partnerA} 淨利（收入 - 總成本）`;
+      document.getElementById("labelNetB").textContent = `${ledger.partnerB} 淨利（收入 - 總成本）`;
+      document.getElementById("labelCardA").textContent = `${ledger.partnerA} 統計`;
+      document.getElementById("labelCardB").textContent = `${ledger.partnerB} 統計`;
 
       const locIds = Object.keys(ledger.locations);
       const locSelect = document.getElementById("locationSelect");
@@ -1418,35 +1523,35 @@
 
       const loc = getCurrentLocation();
 
-      let amziInc = 0, dennisInc = 0;
-      let amziShippedCost = 0, dennisShippedCost = 0;
-      let amziStockCost = 0, dennisStockCost = 0;
+      let partnerAInc = 0, partnerBInc = 0;
+      let partnerAShippedCost = 0, partnerBShippedCost = 0;
+      let partnerAStockCost = 0, partnerBStockCost = 0;
 
       Object.values(loc.monthlyStats || {}).forEach(bucket => {
         (bucket.records || []).forEach(r => {
-          if (r.type === "legacy") {
-            if (r.owner === "Amzi") amziInc += (r.cash || 0);
-            if (r.owner === "Dennis") dennisInc += (r.cash || 0);
+          if (r.type === "legacy" || r.type === "manual") {
+            if (r.owner === ledger.partnerA) partnerAInc += (r.cash || 0);
+            if (r.owner === ledger.partnerB) partnerBInc += (r.cash || 0);
           }
         });
       });
 
       (loc.goodsList || []).forEach(g => {
         const c = g.cost || 0;
-        if (g.owner === "Amzi") {
-          if (g.status === "出貨") amziShippedCost += c;
-          else if (g.status === "入機" || g.status === "貨存" || g.status === "存貨") amziStockCost += c;
-        } else if (g.owner === "Dennis") {
-          if (g.status === "出貨") dennisShippedCost += c;
-          else if (g.status === "入機" || g.status === "貨存" || g.status === "存貨") dennisStockCost += c;
+        if (g.owner === ledger.partnerA) {
+          if (g.status === "出貨") partnerAShippedCost += c;
+          else if (g.status === "入機" || g.status === "貨存" || g.status === "存貨") partnerAStockCost += c;
+        } else if (g.owner === ledger.partnerB) {
+          if (g.status === "出貨") partnerBShippedCost += c;
+          else if (g.status === "入機" || g.status === "貨存" || g.status === "存貨") partnerBStockCost += c;
         }
       });
 
-      const amziTotalCost = amziShippedCost + amziStockCost;
-      const dennisTotalCost = dennisShippedCost + dennisStockCost;
-      const amziProfit = amziInc - amziTotalCost;
-      const dennisProfit = dennisInc - dennisTotalCost;
-      const totalAllInc = amziInc + dennisInc;
+      const partnerATotalCost = partnerAShippedCost + partnerAStockCost;
+      const partnerBTotalCost = partnerBShippedCost + partnerBStockCost;
+      const partnerAProfit = partnerAInc - partnerATotalCost;
+      const partnerBProfit = partnerBInc - partnerBTotalCost;
+      const totalAllInc = partnerAInc + partnerBInc;
 
       // 總覽
       document.getElementById("statCoins").textContent = `${loc.unredeemedCoins || 0} 幣`;
@@ -1455,11 +1560,11 @@
       document.getElementById("statHalfRedeemed").textContent = `雙方總累計營收`;
       document.getElementById("statStock").textContent = `庫存 ${loc.stockCount || 0} 隻`;
 
-      document.getElementById("statNetAmzi").textContent = `$${amziProfit}`;
-      document.getElementById("statDetailAmzi").textContent = `收入 $${amziInc} · 總成本 $${amziTotalCost}`;
-      document.getElementById("statNetDennis").textContent = `$${dennisProfit}`;
-      document.getElementById("statDetailDennis").textContent = `收入 $${dennisInc} · 總成本 $${dennisTotalCost}`;
-      document.getElementById("statCostTotal").textContent = `$${amziTotalCost + dennisTotalCost}`;
+      document.getElementById("statNetA").textContent = `$${partnerAProfit}`;
+      document.getElementById("statDetailA").textContent = `收入 $${partnerAInc} · 總成本 $${partnerATotalCost}`;
+      document.getElementById("statNetB").textContent = `$${partnerBProfit}`;
+      document.getElementById("statDetailB").textContent = `收入 $${partnerBInc} · 總成本 $${partnerBTotalCost}`;
+      document.getElementById("statCostTotal").textContent = `$${partnerATotalCost + partnerBTotalCost}`;
       document.getElementById("statCostShared").textContent = `$0`;
 
       // 點幣頁面
@@ -1474,17 +1579,17 @@
       document.getElementById("coinPageMonthlySummary").classList.toggle("hidden", !coinPageMonthlyExpanded);
 
       // 結算分頁上方統計
-      document.getElementById("amziTotalInc").textContent = `$${amziInc}`;
-      document.getElementById("amziShippedCost").textContent = `$${amziShippedCost}`;
-      document.getElementById("amziStockCost").textContent = `$${amziStockCost}`;
-      document.getElementById("amziTotalCost").textContent = `$${amziTotalCost}`;
-      document.getElementById("amziShare").textContent = `$${amziProfit}`;
+      document.getElementById("partnerATotalInc").textContent = `$${partnerAInc}`;
+      document.getElementById("partnerAShippedCost").textContent = `$${partnerAShippedCost}`;
+      document.getElementById("partnerAStockCost").textContent = `$${partnerAStockCost}`;
+      document.getElementById("partnerATotalCost").textContent = `$${partnerATotalCost}`;
+      document.getElementById("partnerAShare").textContent = `$${partnerAProfit}`;
 
-      document.getElementById("dennisTotalInc").textContent = `$${dennisInc}`;
-      document.getElementById("dennisShippedCost").textContent = `$${dennisShippedCost}`;
-      document.getElementById("dennisStockCost").textContent = `$${dennisStockCost}`;
-      document.getElementById("dennisTotalCost").textContent = `$${dennisTotalCost}`;
-      document.getElementById("dennisShare").textContent = `$${dennisProfit}`;
+      document.getElementById("partnerBTotalInc").textContent = `$${partnerBInc}`;
+      document.getElementById("partnerBShippedCost").textContent = `$${partnerBShippedCost}`;
+      document.getElementById("partnerBStockCost").textContent = `$${partnerBStockCost}`;
+      document.getElementById("partnerBTotalCost").textContent = `$${partnerBTotalCost}`;
+      document.getElementById("partnerBShare").textContent = `$${partnerBProfit}`;
 
       // 各分店帳目明細列表
       const summaryDiv = document.getElementById("allLocationsSummary");
@@ -1493,23 +1598,23 @@
         const l = ledger.locations[id];
         const isExpanded = !!expandedSettlementLocIds[id];
 
-        let lAmziInc = 0, lDennisInc = 0;
-        let lAmziCost = 0, lDennisCost = 0;
+        let lAInc = 0, lBInc = 0;
+        let lACost = 0, lBCost = 0;
         Object.values(l.monthlyStats || {}).forEach(bucket => {
           (bucket.records || []).forEach(r => {
-            if (r.type === "legacy") {
-              if (r.owner === "Amzi") lAmziInc += (r.cash || 0);
-              if (r.owner === "Dennis") lDennisInc += (r.cash || 0);
+            if (r.type === "legacy" || r.type === "manual") {
+              if (r.owner === ledger.partnerA) lAInc += (r.cash || 0);
+              if (r.owner === ledger.partnerB) lBInc += (r.cash || 0);
             }
           });
         });
         (l.goodsList || []).forEach(g => {
           const c = g.cost || 0;
-          if (g.owner === "Amzi") lAmziCost += c;
-          else if (g.owner === "Dennis") lDennisCost += c;
+          if (g.owner === ledger.partnerA) lACost += c;
+          else if (g.owner === ledger.partnerB) lBCost += c;
         });
-        const lAmziProfit = lAmziInc - lAmziCost;
-        const lDennisProfit = lDennisInc - lDennisCost;
+        const lAProfit = lAInc - lACost;
+        const lBProfit = lBInc - lBCost;
 
         const wrapper = document.createElement("div");
         wrapper.className = "py-3 border-b border-slate-100 last:border-b-0";
@@ -1525,8 +1630,8 @@
               <div class="text-slate-500 text-[11px]">庫存 ${l.stockCount || 0} 隻 · 未兌 ${l.unredeemedCoins || 0} 幣</div>
             </div>
             <div class="text-right text-xs space-y-0.5">
-              <div><strong class="text-blue-900">Amzi利潤 :</strong> <span class="font-extrabold text-emerald-700">$${lAmziProfit}</span></div>
-              <div><strong class="text-purple-900">Dennis利潤 :</strong> <span class="font-extrabold text-emerald-700">$${lDennisProfit}</span></div>
+              <div><strong class="text-blue-900">${ledger.partnerA}利潤 :</strong> <span class="font-extrabold text-emerald-700">$${lAProfit}</span></div>
+              <div><strong class="text-purple-900">${ledger.partnerB}利潤 :</strong> <span class="font-extrabold text-emerald-700">$${lBProfit}</span></div>
             </div>
           </div>
           ${isExpanded ? `<div class="mt-2 pl-2 pr-1 py-2 bg-slate-50 rounded-xl border border-slate-200 divide-y divide-slate-200">${renderMonthlyHtml(l, id)}</div>` : ""}
@@ -1648,7 +1753,7 @@
               <div class="flex justify-between items-start mb-2">
                 <div onclick="selectLedgerAccount('${ledger.id}')" class="flex-1">
                   <h3 class="font-extrabold text-blue-950 text-base">${ledger.name}</h3>
-                  <p class="text-xs text-slate-500 mt-0.5">包含 ${totalLocs} 個分店場地</p>
+                  <p class="text-xs text-slate-500 mt-0.5">包含 ${totalLocs} 個分店場地（台主：${ledger.partnerA} / ${ledger.partnerB}）</p>
                 </div>
                 <div class="flex gap-1.5">
                   <button onclick="renameLedgerAccount('${ledger.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg font-bold text-slate-700">✏️改名</button>
