@@ -99,10 +99,10 @@
               </div>
             </div>
           </div>
-          <!-- 操作人切換 (美觀排版修正) -->
-          <div class="bg-blue-900 p-1 rounded-xl flex items-center gap-1 border border-blue-700 shadow-inner">
-            <button id="userAmzi" onclick="setOperator('Amzi')" class="px-3 py-1 rounded-lg text-xs font-extrabold transition">Amzi</button>
-            <button id="userDennis" onclick="setOperator('Dennis')" class="px-3 py-1 rounded-lg text-xs font-extrabold transition">Dennis</button>
+          <!-- 操作人切換 -->
+          <div class="bg-blue-900/80 p-1 rounded-xl flex items-center text-xs border border-blue-700">
+            <button id="userAmzi" onclick="setOperator('Amzi')" class="px-2 py-0.5 rounded-lg font-bold transition">Amzi</button>
+            <button id="userDennis" onclick="setOperator('Dennis')" class="px-2 py-0.5 rounded-lg font-bold transition">Dennis</button>
           </div>
         </div>
 
@@ -143,15 +143,15 @@
           </div>
           <div class="card !mb-0 border-l-4 border-emerald-600">
             <div class="text-xs text-slate-500">本場累計已兌現金</div>
-            <div id="statRedeemed" class="text-base font-extrabold text-emerald-700 mt-1 leading-tight">$0</div>
-            <div class="text-[10px] text-emerald-600 mt-0.5 font-bold">與 Excel 統計表完全吻合</div>
+            <div id="statRedeemed" class="text-2xl font-extrabold text-emerald-700 mt-1">$0</div>
+            <div id="statHalfRedeemed" class="text-xs text-slate-500 mt-0.5">雙方總累計營收</div>
           </div>
         </div>
 
         <!-- 台主獨立損益與庫存 -->
         <div class="card border border-slate-200">
           <div class="flex justify-between items-center mb-2">
-            <span class="text-sm font-bold text-slate-800">💳 本場台主獨立損益與庫存（完美對應 Excel）</span>
+            <span class="text-sm font-bold text-slate-800">💳 本場台主獨立損益與庫存</span>
             <span id="statStock" class="text-sm font-extrabold text-indigo-700">庫存 0 隻</span>
           </div>
           <div class="grid grid-cols-2 gap-2.5 mt-2">
@@ -175,7 +175,7 @@
         <!-- 機台管理與刪除機台 -->
         <div class="card">
           <div class="flex justify-between items-center mb-3">
-            <h2 class="font-bold text-slate-800 text-sm">🎰 本場機台清單（可改名/刪除/四合一）</h2>
+            <h2 class="font-bold text-slate-800 text-sm">🎰 本場機台清單</h2>
             <button onclick="addNewMachine()" class="bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg font-bold">＋新增機台</button>
           </div>
           <div id="machineListContainer" class="space-y-2.5"></div>
@@ -195,7 +195,7 @@
       <section id="tab-coins" class="hidden">
         <div class="card bg-blue-900 text-white flex justify-between items-center">
           <div>
-            <div class="text-xs text-blue-200">同場未兌機數總和</div>
+            <div class="text-xs text-blue-200">同場未兌機數總和（直到場主兌幣歸零）</div>
             <div id="coinPageTotalCount" class="text-2xl font-extrabold mt-0.5">0 機</div>
           </div>
           <div class="text-right">
@@ -205,7 +205,8 @@
         </div>
 
         <div class="card">
-          <h2 class="font-bold text-base text-blue-950 mb-1">🪙 巡機點幣</h2>
+          <h2 class="font-bold text-base text-blue-950 mb-1">🪙 巡機點幣（輸入機台當前「面板累計數值」）</h2>
+          <p class="text-xs text-slate-500 mb-3">確認並儲存後數值會自動歸零，等待下一次輸入。</p>
           <div class="space-y-3">
             <div class="grid grid-cols-2 gap-3">
               <div>
@@ -222,7 +223,7 @@
               <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="block text-xs font-bold text-slate-600 mb-1">面板當前累計數值</label>
-                  <input type="number" id="coinCountInput" oninput="onPanelCountInput()" placeholder="請輸入累計數" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+                  <input type="number" id="coinCountInput" oninput="onPanelCountInput()" placeholder="請輸入當前累計數" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
                 </div>
                 <div>
                   <label class="block text-xs font-bold text-slate-600 mb-1">每幣面值 (HK$)</label>
@@ -235,20 +236,20 @@
               <label class="block text-xs font-bold text-indigo-900 mb-2">四合一迷你機格位讀數</label>
               <div class="grid grid-cols-2 gap-2.5 mb-2">
                 <div>
-                  <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">左上</label>
-                  <input type="number" id="slot-lt" oninput="onPanelCountInput()" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
+                  <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">左上格讀數</label>
+                  <input type="number" id="slot-lt" oninput="onPanelCountInput()" placeholder="左上" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
                 </div>
                 <div>
-                  <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">右上</label>
-                  <input type="number" id="slot-rt" oninput="onPanelCountInput()" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
+                  <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">右上格讀數</label>
+                  <input type="number" id="slot-rt" oninput="onPanelCountInput()" placeholder="右上" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
                 </div>
                 <div>
-                  <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">左下</label>
-                  <input type="number" id="slot-lb" oninput="onPanelCountInput()" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
+                  <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">左下格讀數</label>
+                  <input type="number" id="slot-lb" oninput="onPanelCountInput()" placeholder="左下" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
                 </div>
                 <div>
-                  <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">右下</label>
-                  <input type="number" id="slot-rb" oninput="onPanelCountInput()" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
+                  <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">右下格讀數</label>
+                  <input type="number" id="slot-rb" oninput="onPanelCountInput()" placeholder="右下" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
                 </div>
               </div>
               <div>
@@ -267,7 +268,7 @@
           <h2 class="font-bold text-base text-amber-900 mb-1">💰 場主兌幣結算</h2>
           <div class="space-y-3 mb-3">
             <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">兌幣日期</label>
+              <label class="block text-xs font-bold text-slate-600 mb-1">場主兌幣日期</label>
               <input type="date" id="redeemDateInput" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white" />
             </div>
             <div class="grid grid-cols-2 gap-3">
@@ -288,7 +289,7 @@
 
         <div class="card">
           <div class="flex justify-between items-center mb-2">
-            <h2 class="font-bold text-base text-slate-800">📅 各月機數與兌幣入帳 Record List</h2>
+            <h2 class="font-bold text-base text-slate-800">📅 本場各月機數與兌幣入帳 Record List</h2>
             <button onclick="toggleCoinPageMonthly()" id="toggleCoinMonthlyBtn" class="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">▼ 展開月覽</button>
           </div>
           <div id="coinPageMonthlySummary" class="divide-y divide-slate-100 text-xs"></div>
@@ -310,7 +311,7 @@
                 </select>
               </div>
               <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">貨物擁有人</label>
+                <label class="block text-xs font-bold text-slate-600 mb-1">貨物擁有人 / 墊付人</label>
                 <select id="stockOwnerSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white">
                   <option value="Amzi">Amzi</option>
                   <option value="Dennis">Dennis</option>
@@ -361,9 +362,9 @@
       <!-- 4. 全場總結算分頁 -->
       <section id="tab-settlement" class="hidden">
         <div class="card bg-gradient-to-br from-slate-900 to-blue-950 text-white">
-          <div class="text-xs text-blue-300 mb-2">台主各自總結算（完全對應 Excel 統計表：收入 - 總成本 = 利潤）</div>
+          <div class="text-xs text-blue-300">台主各自總結算（收入 - 總成本 = 利潤）</div>
 
-          <div class="grid grid-cols-2 gap-3 text-xs">
+          <div class="grid grid-cols-2 gap-3 mt-3 text-xs">
             <div class="bg-blue-900/50 p-3 rounded-xl border border-blue-700/50">
               <div class="text-blue-200 font-bold text-sm mb-1">Amzi 統計</div>
               <div class="text-slate-300 text-[11px] space-y-0.5">
@@ -405,7 +406,7 @@
         <div class="card border-2 border-emerald-300 bg-emerald-50/40">
           <h2 class="font-bold text-base text-emerald-900 mb-1">📁 匯入 Excel 帳目檔案 (.xlsx)</h2>
           <p class="text-xs text-emerald-800 mb-3">
-            完美過濾彙總列：自動排除「月出貨/Rental」等加總行，確保成本與收入與 Excel 統計表 100% 吻合。
+            完美適配：所有貨物數量固定為 1 隻，對應 cost 列為成本；收入自動對應台主總收入。
           </p>
           <label class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow text-center cursor-pointer flex items-center justify-center">
             📂 選擇並匯入 Excel 檔案
@@ -432,7 +433,7 @@
 
         <div class="card border-2 border-rose-200 bg-rose-50/30">
           <h2 class="font-bold text-base text-rose-700 mb-1">⚠️ 危險操作區</h2>
-          <p class="text-xs text-slate-600 mb-4">如需重新開帳，可一鍵清空所有場地、貨物清單與點幣紀錄。</p>
+          <p class="text-xs text-slate-600 mb-4">如需重新開帳，可一鍵清空所有場地、貨物清單、點幣紀錄與台主成本。</p>
           <button onclick="resetAllData()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl text-sm shadow">
             全部數目歸零重新開始
           </button>
@@ -462,6 +463,7 @@
     let goodsFilterMode = "ACTIVE";
     let allGoodsExpanded = false;
     let coinPageMonthlyExpanded = false;
+    let expandedMonthlyKeys = {};
     let isResetting = false;
 
     function getTodayStr() {
@@ -759,6 +761,14 @@
         loc.unredeemedCoins = totalUnred;
         loc.unredeemedCash = totalUnred * 5;
 
+        let totalRedeem = 0;
+        Object.values(loc.monthlyStats || {}).forEach(bucket => {
+          (bucket.records || []).forEach(r => {
+            if (r.type === "redeem") totalRedeem += (r.cash || 0);
+          });
+        });
+        loc.totalRedeemedCash = totalRedeem;
+
         let activeCount = 0;
         (loc.goodsList || []).forEach(g => {
           if (g.status === "入機" || g.status === "貨存") {
@@ -780,11 +790,11 @@
       const btnA = document.getElementById("userAmzi");
       const btnD = document.getElementById("userDennis");
       if (currentOperator === "Amzi") {
-        btnA.className = "px-3 py-1 rounded-lg text-xs font-extrabold bg-white text-blue-950 shadow";
-        btnD.className = "px-3 py-1 rounded-lg text-xs font-extrabold text-blue-200";
+        btnA.className = "px-2 py-0.5 rounded-lg font-bold bg-white text-blue-950 shadow";
+        btnD.className = "px-2 py-0.5 rounded-lg font-bold text-blue-200";
       } else {
-        btnD.className = "px-3 py-1 rounded-lg text-xs font-extrabold bg-white text-blue-950 shadow";
-        btnA.className = "px-3 py-1 rounded-lg text-xs font-extrabold text-blue-200";
+        btnD.className = "px-2 py-0.5 rounded-lg font-bold bg-white text-blue-950 shadow";
+        btnA.className = "px-2 py-0.5 rounded-lg font-bold text-blue-200";
       }
     }
 
@@ -820,3 +830,776 @@
         } else {
           nav.className = "py-2 rounded-lg text-blue-100 font-semibold transition";
         }
+      });
+    }
+
+    function selectLedgerAccount(ledgerId) {
+      appState.currentLedgerId = ledgerId;
+      currentView = "workspace";
+      renderAll();
+      showToast("✅ 已進入帳戶：" + getCurrentLedger().name);
+    }
+
+    function backToLanding() {
+      currentView = "landing";
+      renderAll();
+    }
+
+    function addNewLedgerAccount() {
+      const name = prompt("請輸入新的合夥帳戶名稱：");
+      if (!name || !name.trim()) return;
+      const newL = getDefaultLedger(name.trim());
+      appState.ledgers[newL.id] = newL;
+      appState.currentLedgerId = newL.id;
+      currentView = "workspace";
+      saveState();
+      showToast("✅ 新合夥帳戶已建立並進入");
+    }
+
+    function renameLedgerAccount(ledgerId) {
+      const l = appState.ledgers[ledgerId];
+      if (!l) return;
+      const newName = prompt("請輸入新的帳戶名稱：", l.name);
+      if (!newName || !newName.trim() || newName.trim() === l.name) return;
+      l.name = newName.trim();
+      saveState();
+      showToast("✅ 帳戶名稱已更新");
+    }
+
+    function deleteLedgerAccount(ledgerId) {
+      const keys = Object.keys(appState.ledgers);
+      if (keys.length <= 1) {
+        alert("必須至少保留一個合夥帳戶，無法刪除！");
+        return;
+      }
+      const l = appState.ledgers[ledgerId];
+      if (!confirm(`⚠️ 確定要刪除合夥帳戶「${l.name}」嗎？`)) return;
+
+      delete appState.ledgers[ledgerId];
+      appState.currentLedgerId = Object.keys(appState.ledgers)[0];
+      currentView = "landing";
+      saveState();
+      showToast("✅ 合夥帳戶已刪除");
+    }
+
+    function switchLocation(locId) {
+      const ledger = getCurrentLedger();
+      ledger.currentLocationId = locId;
+      saveState();
+    }
+
+    function renameCurrentLocation() {
+      const loc = getCurrentLocation();
+      const newName = prompt("請輸入新的場地名稱：", loc.name);
+      if (!newName || !newName.trim() || newName.trim() === loc.name) return;
+      loc.name = newName.trim();
+      saveState();
+      showToast("✅ 場地名稱已更新");
+    }
+
+    function deleteCurrentLocation() {
+      const ledger = getCurrentLedger();
+      const locIds = Object.keys(ledger.locations);
+      if (locIds.length <= 1) {
+        alert("必須至少保留一個場地，無法刪除！");
+        return;
+      }
+      const loc = getCurrentLocation();
+      if (!confirm(`⚠️ 確定要刪除場地「${loc.name}」嗎？`)) return;
+
+      delete ledger.locations[ledger.currentLocationId];
+      ledger.currentLocationId = Object.keys(ledger.locations)[0];
+      saveState();
+      showToast("✅ 場地已刪除");
+    }
+
+    function addNewLocation() {
+      const name = prompt("請輸入新場地名稱：");
+      if (!name || !name.trim()) return;
+      const ledger = getCurrentLedger();
+      const id = "loc_" + Date.now();
+      ledger.locations[id] = {
+        id,
+        name: name.trim(),
+        unredeemedCoins: 0,
+        unredeemedCash: 0,
+        totalRedeemedCash: 0,
+        costAmzi: 0,
+        costDennis: 0,
+        goodsList: [],
+        monthlyStats: {},
+        machines: [
+          { id: "m_" + Date.now(), name: "1號機", isFourInOne: false, panelTotal: 0, lastRedeemedPanel: 0, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }, slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } }
+        ]
+      };
+      ledger.currentLocationId = id;
+      saveState();
+      showToast("✅ 新場地已建立");
+    }
+
+    function addNewMachine() {
+      const loc = getCurrentLocation();
+      const name = prompt("請輸入機台名稱：");
+      if (!name || !name.trim()) return;
+      const isFour = confirm("這台是「四合一迷你機」嗎？\n\n按「確定」= 四合一迷你機\n按「取消」= 一般單格機台");
+      loc.machines.push({
+        id: "m_" + Date.now(),
+        name: name.trim(),
+        isFourInOne: isFour,
+        panelTotal: 0,
+        lastRedeemedPanel: 0,
+        coins: 0,
+        slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 },
+        slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }
+      });
+      saveState();
+      showToast("✅ 新機台已新增");
+    }
+
+    function renameMachine(machineId) {
+      const loc = getCurrentLocation();
+      const m = loc.machines.find(item => item.id === machineId);
+      if (!m) return;
+      const newName = prompt("請輸入新的機台名稱：", m.name);
+      if (!newName || !newName.trim() || newName.trim() === m.name) return;
+      m.name = newName.trim();
+      saveState();
+      showToast("✅ 機台名稱已更新");
+    }
+
+    function deleteMachine(machineId) {
+      const loc = getCurrentLocation();
+      const m = loc.machines.find(item => item.id === machineId);
+      if (!m) return;
+      if (!confirm(`⚠️ 確定要刪除機台「${m.name}」嗎？`)) return;
+
+      loc.machines = loc.machines.filter(item => item.id !== machineId);
+      saveState();
+      showToast("✅ 機台已刪除");
+    }
+
+    function onCoinMachineChange() {
+      const loc = getCurrentLocation();
+      const mId = document.getElementById("coinMachineSelect").value;
+      const machine = loc.machines.find(m => m.id === mId);
+      const singleWrapper = document.getElementById("singlePanelWrapper");
+      const fourWrapper = document.getElementById("fourInOneWrapper");
+
+      if (machine && machine.isFourInOne) {
+        singleWrapper.classList.add("hidden");
+        fourWrapper.classList.remove("hidden");
+        document.getElementById("slot-lt").value = "";
+        document.getElementById("slot-rt").value = "";
+        document.getElementById("slot-lb").value = "";
+        document.getElementById("slot-rb").value = "";
+      } else {
+        singleWrapper.classList.remove("hidden");
+        fourWrapper.classList.add("hidden");
+        document.getElementById("coinCountInput").value = "";
+      }
+      onPanelCountInput();
+    }
+
+    function onPanelCountInput() {
+      const loc = getCurrentLocation();
+      const mId = document.getElementById("coinMachineSelect").value;
+      const machine = loc.machines.find(m => m.id === mId);
+      if (!machine) return;
+
+      let simulatedUnred = 0;
+      let rate = 5;
+
+      if (machine.isFourInOne) {
+        rate = parseFloat(document.getElementById("coinRateInputFour").value) || 5;
+        const lt = parseInt(document.getElementById("slot-lt").value, 10) || 0;
+        const rt = parseInt(document.getElementById("slot-rt").value, 10) || 0;
+        const lb = parseInt(document.getElementById("slot-lb").value, 10) || 0;
+        const rb = parseInt(document.getElementById("slot-rb").value, 10) || 0;
+
+        loc.machines.forEach(m => {
+          if (m.id === machine.id) {
+            let mSum = 
+              Math.max(0, lt - (m.slotLast["左上"] || 0)) +
+              Math.max(0, rt - (m.slotLast["右上"] || 0)) +
+              Math.max(0, lb - (m.slotLast["左下"] || 0)) +
+              Math.max(0, rb - (m.slotLast["右下"] || 0));
+            simulatedUnred += mSum;
+          } else {
+            simulatedUnred += (m.coins || 0);
+          }
+        });
+      } else {
+        rate = parseFloat(document.getElementById("coinRateInput").value) || 5;
+        const val = parseInt(document.getElementById("coinCountInput").value, 10) || 0;
+
+        loc.machines.forEach(m => {
+          if (m.id === machine.id) {
+            const last = m.lastRedeemedPanel || 0;
+            simulatedUnred += Math.max(0, val - last);
+          } else {
+            simulatedUnred += (m.coins || 0);
+          }
+        });
+      }
+
+      document.getElementById("coinPageTotalCount").textContent = `${simulatedUnred} 機`;
+      document.getElementById("coinPageTotalCash").textContent = `HK$ ${simulatedUnred * rate}`;
+      document.getElementById("redeemCoinInput").value = simulatedUnred;
+      document.getElementById("redeemCashInput").value = simulatedUnred * rate;
+    }
+
+    function recordCoins() {
+      const loc = getCurrentLocation();
+      const mId = document.getElementById("coinMachineSelect").value;
+      const machine = loc.machines.find(m => m.id === mId);
+
+      if (!machine) {
+        alert("請選擇機台！");
+        return;
+      }
+
+      if (machine.isFourInOne) {
+        const lt = parseInt(document.getElementById("slot-lt").value, 10);
+        const rt = parseInt(document.getElementById("slot-rt").value, 10);
+        const lb = parseInt(document.getElementById("slot-lb").value, 10);
+        const rb = parseInt(document.getElementById("slot-rb").value, 10);
+
+        if (isNaN(lt) || isNaN(rt) || isNaN(lb) || isNaN(rb)) {
+          alert("請填齊四個格位的面板當前數值！");
+          return;
+        }
+
+        machine.slots["左上"] = lt;
+        machine.slots["右上"] = rt;
+        machine.slots["左下"] = lb;
+        machine.slots["右下"] = rb;
+        
+        document.getElementById("slot-lt").value = "";
+        document.getElementById("slot-rt").value = "";
+        document.getElementById("slot-lb").value = "";
+        document.getElementById("slot-rb").value = "";
+      } else {
+        const panelVal = parseInt(document.getElementById("coinCountInput").value, 10);
+        if (isNaN(panelVal) || panelVal < 0) {
+          alert("請輸入有效的面板累計數值！");
+          return;
+        }
+        machine.panelTotal = panelVal;
+        document.getElementById("coinCountInput").value = "";
+      }
+
+      saveState();
+      showToast(`✅ 機台累計讀數已記錄`);
+    }
+
+    function redeemAndReset() {
+      const loc = getCurrentLocation();
+      const dateVal = document.getElementById("redeemDateInput").value || getTodayStr();
+      const monthKey = getMonthKey(dateVal);
+      const coins = parseInt(document.getElementById("redeemCoinInput").value, 10) || 0;
+      const cash = parseFloat(document.getElementById("redeemCashInput").value);
+
+      if (isNaN(cash) || cash < 0) {
+        alert("請輸入實收現金金額！");
+        return;
+      }
+
+      loc.machines.forEach(m => {
+        if (m.isFourInOne) {
+          ["左上", "右上", "左下", "右下"].forEach(slot => {
+            m.slotLast[slot] = m.slots[slot] || 0;
+          });
+        } else {
+          m.lastRedeemedPanel = m.panelTotal || 0;
+        }
+      });
+
+      const mBucket = ensureMonthlyBucket(loc, monthKey);
+      mBucket.records = mBucket.records || [];
+      mBucket.records.push({
+        id: "r_" + Date.now(),
+        type: "redeem",
+        coins: coins,
+        cash: cash,
+        date: dateVal
+      });
+
+      saveState();
+      showToast(`✅ 兌幣 HK$${cash} 已入帳並歸零機數`);
+    }
+
+    function ensureMonthlyBucket(loc, monthKey) {
+      loc.monthlyStats = loc.monthlyStats || {};
+      if (!loc.monthlyStats[monthKey]) {
+        loc.monthlyStats[monthKey] = { records: [] };
+      }
+      return loc.monthlyStats[monthKey];
+    }
+
+    function deleteRecord(monthKey, recordId) {
+      if (!confirm("確定要刪除這筆紀錄嗎？")) return;
+      const loc = getCurrentLocation();
+      const bucket = loc.monthlyStats[monthKey];
+      if (bucket && bucket.records) {
+        bucket.records = bucket.records.filter(r => r.id !== recordId);
+        if (bucket.records.length === 0) delete loc.monthlyStats[monthKey];
+      }
+      saveState();
+      showToast("✅ 紀錄已刪除");
+    }
+
+    function recordGoodsItem() {
+      const loc = getCurrentLocation();
+      const status = document.getElementById("stockStatusSelect").value;
+      const owner = document.getElementById("stockOwnerSelect").value;
+      const name = document.getElementById("stockNoteInput").value.trim() || "未命名貨物";
+      const cost = parseFloat(document.getElementById("stockCostInput").value) || 0;
+
+      loc.goodsList = loc.goodsList || [];
+      loc.goodsList.unshift({
+        id: "g_" + Date.now(),
+        name,
+        qty: 1,
+        cost,
+        status,
+        owner,
+        date: getTodayStr()
+      });
+
+      document.getElementById("stockNoteInput").value = "";
+      document.getElementById("stockCostInput").value = "";
+      saveState();
+      showToast(`✅ 已新增「${name}」`);
+    }
+
+    function cycleGoodsStatus(goodsId, newStatus) {
+      const loc = getCurrentLocation();
+      const item = (loc.goodsList || []).find(g => g.id === goodsId);
+      if (!item || item.status === newStatus) return;
+
+      item.status = newStatus;
+      saveState();
+      showToast(`✅ 已切換為【${newStatus}】`);
+    }
+
+    function deleteGoodsItem(goodsId) {
+      if (!confirm("確定刪除此筆貨物紀錄嗎？")) return;
+      const loc = getCurrentLocation();
+      loc.goodsList = (loc.goodsList || []).filter(g => g.id !== goodsId);
+      saveState();
+    }
+
+    function toggleSettlementLocation(locId) {
+      expandedSettlementLocIds[locId] = !expandedSettlementLocIds[locId];
+      renderAllWithoutViewReset();
+    }
+
+    function resetAllData() {
+      if (!confirm("確定要清空所有合夥帳戶與數據嗎？")) return;
+      isResetting = true;
+      const defaultL = getDefaultLedger("Dennis & Amzi 夾娃娃合夥");
+      appState = {
+        currentLedgerId: defaultL.id,
+        ledgers: { [defaultL.id]: defaultL },
+        logs: []
+      };
+      currentView = "landing";
+      localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
+      renderAll();
+      
+      pushToCloud(true).then(() => {
+        showToast("✅ 全部數目已歸零！");
+        setTimeout(() => { isResetting = false; }, 3000);
+      });
+    }
+
+    function handleExcelUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const loc = getCurrentLocation();
+
+          loc.goodsList = [];
+          loc.monthlyStats = {};
+
+          let totalImportedGoods = 0;
+          let totalImportedIncome = 0;
+
+          if (workbook.Sheets["標機"]) {
+            const sheet = workbook.Sheets["標機"];
+            const jsonRows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            jsonRows.forEach((row, idx) => {
+              if (idx < 6) return;
+              let owner = String(row[0] || "").trim();
+              if (owner !== "Amzi" && owner !== "Dennis") return;
+
+              let name = String(row[1] || "").trim();
+              let cost = parseFloat(row[2]) || 0;
+              let status = String(row[3] || "出貨").trim();
+              if (status !== "出貨" && status !== "存貨" && status !== "入機") status = "出貨";
+
+              if (name || cost > 0) {
+                loc.goodsList.push({
+                  id: "g_ex_" + idx + "_" + Date.now(),
+                  owner: owner,
+                  name: name || `項目 ${idx}`,
+                  qty: 1,
+                  cost: cost,
+                  status: status,
+                  date: getTodayStr()
+                });
+                totalImportedGoods++;
+              }
+            });
+          }
+
+          if (workbook.Sheets["租金&收入"]) {
+            const sheet = workbook.Sheets["租金&收入"];
+            const jsonRows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            jsonRows.forEach((row, idx) => {
+              if (idx < 2) return;
+              let owner = String(row[0] || "").trim();
+              if (owner !== "Amzi" && owner !== "Dennis") return;
+
+              let inc = parseFloat(row[3]) || 0;
+              let dateVal = parseExcelDate(row[4]);
+
+              if (inc > 0) {
+                const monthKey = getMonthKey(dateVal);
+                const bucket = ensureMonthlyBucket(loc, monthKey);
+                bucket.records = bucket.records || [];
+                bucket.records.push({
+                  id: "r_ex_inc_" + idx + "_" + Date.now(),
+                  type: "legacy",
+                  owner: owner,
+                  cash: inc,
+                  date: dateVal
+                });
+                totalImportedIncome++;
+              }
+            });
+          }
+
+          addLog(`上傳 Excel 檔案 (${file.name})：成功匯入 ${totalImportedGoods} 筆貨物與 ${totalImportedIncome} 筆收入`);
+          saveState();
+          showToast(`✅ 成功匯入 Excel！所有成本與收入已更新。`);
+          event.target.value = "";
+        } catch (err) {
+          alert("解析 Excel 檔案失敗：" + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function addLog(text) {
+      const now = new Date();
+      const timeStr = `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      const loc = getCurrentLocation();
+      appState.logs = appState.logs || [];
+      appState.logs.unshift({
+        id: Date.now(),
+        time: timeStr,
+        operator: currentOperator,
+        locationName: loc ? loc.name : "",
+        text
+      });
+      if (appState.logs.length > 100) appState.logs.length = 100;
+    }
+
+    // 渲染各月明細清單 (包含各台主收入記錄)
+    function renderMonthlyHtml(loc, locId) {
+      const stats = loc.monthlyStats || {};
+      const months = Object.keys(stats).sort().reverse();
+      if (months.length === 0) {
+        return `<div class="py-3 text-center text-slate-400">尚無各月紀錄</div>`;
+      }
+      return months.map(m => {
+        const bucket = stats[m];
+        const records = bucket.records || [];
+        let monthTotal = 0;
+        records.forEach(r => { monthTotal += (r.cash || 0); });
+        const isExp = !!expandedMonthlyKeys[m + "_" + locId];
+
+        const recHtml = records.map(r => {
+          const isRedeem = r.type === "redeem";
+          const title = isRedeem ? `💰 場主兌現入帳` : `💵 台主收入入帳 (${r.owner || '共同'})`;
+          const detailStr = isRedeem ? `兌幣機數：${r.coins || 0} 機 · 現金：HK$ ${r.cash}` : `擁有人：${r.owner} · 金額：HK$ ${r.cash}`;
+          return `
+            <div class="flex justify-between items-center py-2 pl-2 pr-1 border-b border-slate-100 last:border-b-0 text-xs">
+              <div>
+                <div class="font-bold text-slate-800">${title}</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">📅 日期：${r.date || "未填"} | ${detailStr}</div>
+              </div>
+              <div class="flex gap-1.5 ml-2">
+                <button onclick="deleteRecord('${m}', '${r.id}')" class="text-rose-600 font-bold px-2 py-1 bg-rose-50 rounded">刪除</button>
+              </div>
+            </div>`;
+        }).join("") || `<div class="text-slate-400 py-1 pl-2">無明細紀錄</div>`;
+
+        return `
+          <div class="py-2">
+            <div onclick="toggleSettlementMonth('${locId}', '${m}')" class="flex justify-between items-center font-bold text-slate-800 bg-slate-100 px-3 py-2 rounded-xl cursor-pointer hover:bg-slate-200 transition">
+              <span>🗓️ ${m} 月份明細（總計 HK$ ${monthTotal}）</span>
+              <span class="text-xs text-blue-700 font-bold px-2 py-0.5 bg-blue-50 rounded border border-blue-200">${isExp ? "▲ 收起月覽" : "▼ 展開月覽"}</span>
+            </div>
+            ${isExp ? `<div class="mt-2 space-y-1 pl-2 bg-white p-2 rounded-xl border border-slate-200">${recHtml}</div>` : ""}
+          </div>`;
+      }).join("");
+    }
+
+    function toggleSettlementMonth(locId, mk) {
+      const key = mk + "_" + locId;
+      expandedMonthlyKeys[key] = !expandedMonthlyKeys[key];
+      renderAllWithoutViewReset();
+    }
+
+    function renderAllWithoutViewReset() {
+      recalculateLocationTotals();
+      renderOperatorUI();
+
+      if (currentView === "landing") return;
+
+      const ledger = getCurrentLedger();
+      document.getElementById("workspaceLedgerTitle").textContent = ledger.name;
+
+      const locIds = Object.keys(ledger.locations);
+      const locSelect = document.getElementById("locationSelect");
+      locSelect.innerHTML = "";
+      locIds.forEach(id => {
+        const l = ledger.locations[id];
+        locSelect.add(new Option(l.name, id, false, id === ledger.currentLocationId));
+      });
+
+      const loc = getCurrentLocation();
+
+      let amziInc = 0, dennisInc = 0;
+      let amziShippedCost = 0, dennisShippedCost = 0;
+      let amziStockCost = 0, dennisStockCost = 0;
+
+      Object.values(loc.monthlyStats || {}).forEach(bucket => {
+        (bucket.records || []).forEach(r => {
+          if (r.type === "legacy") {
+            if (r.owner === "Amzi") amziInc += (r.cash || 0);
+            if (r.owner === "Dennis") dennisInc += (r.cash || 0);
+          }
+        });
+      });
+
+      (loc.goodsList || []).forEach(g => {
+        const c = g.cost || 0;
+        if (g.owner === "Amzi") {
+          if (g.status === "出貨") amziShippedCost += c;
+          else if (g.status === "入機" || g.status === "貨存") amziStockCost += c;
+        } else if (g.owner === "Dennis") {
+          if (g.status === "出貨") dennisShippedCost += c;
+          else if (g.status === "入機" || g.status === "貨存") dennisStockCost += c;
+        }
+      });
+
+      const amziTotalCost = amziShippedCost + amziStockCost;
+      const dennisTotalCost = dennisShippedCost + dennisStockCost;
+      const amziProfit = amziInc - amziTotalCost;
+      const dennisProfit = dennisInc - dennisTotalCost;
+      const totalAllInc = amziInc + dennisInc;
+
+      // 總覽已兌現金只需顯示總數
+      document.getElementById("statCoins").textContent = `${loc.unredeemedCoins || 0} 機`;
+      document.getElementById("statCoinCash").textContent = `約 HK$ ${loc.unredeemedCash || 0}`;
+      document.getElementById("statRedeemed").textContent = `$${totalAllInc}`;
+      document.getElementById("statHalfRedeemed").textContent = `雙方總累計營收`;
+      document.getElementById("statStock").textContent = `庫存 ${loc.stockCount || 0} 隻`;
+
+      document.getElementById("statNetAmzi").textContent = `$${amziProfit}`;
+      document.getElementById("statDetailAmzi").textContent = `收入 $${amziInc} · 總成本 $${amziTotalCost}`;
+      document.getElementById("statNetDennis").textContent = `$${dennisProfit}`;
+      document.getElementById("statDetailDennis").textContent = `收入 $${dennisInc} · 總成本 $${dennisTotalCost}`;
+      document.getElementById("statCostTotal").textContent = `$${amziTotalCost + dennisTotalCost}`;
+      document.getElementById("statCostShared").textContent = `$0`;
+
+      // 點幣分頁的月覽
+      document.getElementById("coinPageMonthlySummary").innerHTML = renderMonthlyHtml(loc, loc.id);
+      document.getElementById("toggleCoinMonthlyBtn").textContent = coinPageMonthlyExpanded ? "▲ 收起月覽" : "▼ 展開月覽";
+
+      // 結算分頁數值填入
+      document.getElementById("amziTotalInc").textContent = `$${amziInc}`;
+      document.getElementById("amziShippedCost").textContent = `$${amziShippedCost}`;
+      document.getElementById("amziStockCost").textContent = `$${amziStockCost}`;
+      document.getElementById("amziTotalCost").textContent = `$${amziTotalCost}`;
+      document.getElementById("amziShare").textContent = `$${amziProfit}`;
+
+      document.getElementById("dennisTotalInc").textContent = `$${dennisInc}`;
+      document.getElementById("dennisShippedCost").textContent = `$${dennisShippedCost}`;
+      document.getElementById("dennisStockCost").textContent = `$${dennisStockCost}`;
+      document.getElementById("dennisTotalCost").textContent = `$${dennisTotalCost}`;
+      document.getElementById("dennisShare").textContent = `$${dennisProfit}`;
+
+      // 機台清單渲染
+      const mContainer = document.getElementById("machineListContainer");
+      const coinMSelect = document.getElementById("coinMachineSelect");
+      const prevMId = coinMSelect.value;
+      mContainer.innerHTML = "";
+      coinMSelect.innerHTML = "";
+
+      (loc.machines || []).forEach(m => {
+        coinMSelect.add(new Option(m.name + (m.isFourInOne ? " [四合一]" : ""), m.id));
+        const div = document.createElement("div");
+        div.className = "p-3 rounded-xl bg-slate-50 border border-slate-200";
+        if (m.isFourInOne) {
+          const s = m.slots || { "左上": 0, "右上": 0, "左下": 0, "右下": 0 };
+          div.innerHTML = `
+            <div class="flex justify-between items-center font-bold text-xs text-slate-800 mb-2">
+              <div class="flex items-center gap-1.5">
+                <span>${m.name} <span class="text-indigo-600">[四合一]</span></span>
+                <button onclick="renameMachine('${m.id}')" class="text-[11px] bg-white border border-slate-300 px-1.5 py-0.5 rounded text-slate-600">✏️改名</button>
+                <button onclick="deleteMachine('${m.id}')" class="text-[11px] bg-rose-50 border border-rose-200 text-rose-600 px-1.5 py-0.5 rounded">🗑️刪除</button>
+              </div>
+              <span class="text-blue-800">未兌 ${m.coins || 0} 機</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5 text-center text-xs">
+              <div class="bg-white py-1 rounded border border-slate-200">左上讀數: <strong>${s["左上"] || 0}</strong></div>
+              <div class="bg-white py-1 rounded border border-slate-200">右上讀數: <strong>${s["右上"] || 0}</strong></div>
+              <div class="bg-white py-1 rounded border border-slate-200">左下讀數: <strong>${s["左下"] || 0}</strong></div>
+              <div class="bg-white py-1 rounded border border-slate-200">右下讀數: <strong>${s["右下"] || 0}</strong></div>
+            </div>`;
+        } else {
+          div.innerHTML = `
+            <div class="flex justify-between items-center text-xs">
+              <div class="flex items-center gap-1.5">
+                <span class="font-bold text-slate-800">${m.name} (面板讀數:${m.panelTotal || 0})</span>
+                <button onclick="renameMachine('${m.id}')" class="text-[11px] bg-white border border-slate-300 px-1.5 py-0.5 rounded text-slate-600">✏️改名</button>
+                <button onclick="deleteMachine('${m.id}')" class="text-[11px] bg-rose-50 border border-rose-200 text-rose-600 px-1.5 py-0.5 rounded">🗑️刪除</button>
+              </div>
+              <span class="font-bold text-blue-800">未兌：${m.coins || 0} 機</span>
+            </div>`;
+        }
+        mContainer.appendChild(div);
+      });
+
+      if (prevMId && Array.from(coinMSelect.options).some(o => o.value === prevMId)) {
+        coinMSelect.value = prevMId;
+      }
+
+      // 貨物清單渲染
+      const rawGoodsList = loc.goodsList || [];
+      const filteredGoods = rawGoodsList.filter(g => {
+        if (goodsFilterMode === "ACTIVE") return g.status === "入機" || g.status === "貨存";
+        if (goodsFilterMode === "SHIPPED") return g.status === "出貨";
+        return true;
+      });
+      document.getElementById("goodsListCount").textContent = `顯示 ${filteredGoods.length} / 總共 ${rawGoodsList.length} 項`;
+      document.getElementById("toggleAllGoodsBtn").textContent = allGoodsExpanded ? "📂 收起全部貨物" : "📂 展開全部貨物";
+      
+      const previewEl = document.getElementById("goodsListPreview");
+      const containerEl = document.getElementById("goodsListContainer");
+
+      if (allGoodsExpanded) {
+        previewEl.classList.add("hidden");
+        containerEl.classList.remove("hidden");
+        containerEl.innerHTML = filteredGoods.map(g => {
+          const statusBadge = g.status === "入機"
+            ? "bg-emerald-100 text-emerald-800"
+            : (g.status === "貨存" ? "bg-blue-100 text-blue-800" : "bg-slate-200 text-slate-700");
+          return `
+            <div class="card !mb-1.5 !p-2.5 border border-slate-200">
+              <div class="flex justify-between items-center text-xs">
+                <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                  <span class="px-1.5 py-0.5 rounded ${statusBadge}">${g.status}</span>
+                  <span>${g.name}</span>
+                  <span class="text-slate-400">· 成本 $${g.cost || 0} · ${g.owner}</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button onclick="cycleGoodsStatus('${g.id}', '入機')" class="px-1.5 py-0.5 rounded border text-[10px] ${g.status === '入機' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white border-slate-300'}">入</button>
+                  <button onclick="cycleGoodsStatus('${g.id}', '貨存')" class="px-1.5 py-0.5 rounded border text-[10px] ${g.status === '貨存' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-slate-300'}">存</button>
+                  <button onclick="cycleGoodsStatus('${g.id}', '出貨')" class="px-1.5 py-0.5 rounded border text-[10px] ${g.status === '出貨' ? 'bg-slate-700 text-white border-slate-700' : 'bg-white border-slate-300'}">出</button>
+                  <button onclick="deleteGoodsItem('${g.id}')" class="text-rose-500 font-bold px-1.5 py-0.5 bg-rose-50 rounded">刪</button>
+                </div>
+              </div>
+            </div>`;
+        }).join("") || `<div class="py-3 text-center text-xs text-slate-400">此篩選下尚無貨物紀錄</div>`;
+      } else {
+        previewEl.classList.remove("hidden");
+        containerEl.classList.add("hidden");
+        previewEl.textContent = `（列表已收起，目前篩選共 ${filteredGoods.length} 項，點擊「展開全部貨物」可查看完整清單）`;
+      }
+
+      // 操作紀錄
+      const logsDiv = document.getElementById("recentLogs");
+      logsDiv.innerHTML = (appState.logs || []).slice(0, 15).map(log => `
+        <div class="py-2 flex justify-between items-start gap-2">
+          <div>
+            <span class="inline-block px-1.5 py-0.5 rounded bg-blue-100 text-blue-900 font-bold mr-1">${log.operator}</span>
+            <span class="text-slate-700">${log.text}</span>
+          </div>
+          <span class="text-slate-400 whitespace-nowrap">${log.time}</span>
+        </div>
+      `).join("") || `<div class="py-4 text-center text-slate-400">尚無紀錄</div>`;
+
+      // 分店摘要列表
+      const summaryDiv = document.getElementById("allLocationsSummary");
+      summaryDiv.innerHTML = "";
+      locIds.forEach(id => {
+        const l = ledger.locations[id];
+        const isExpanded = !!expandedSettlementLocIds[id];
+        const wrapper = document.createElement("div");
+        wrapper.className = "py-2.5";
+        wrapper.innerHTML = `
+          <div onclick="toggleSettlementLocation('${id}')" class="flex justify-between items-center cursor-pointer active:bg-slate-50 rounded-lg p-1">
+            <div>
+              <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                <span>${l.name}</span>
+                <span class="text-[11px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">${isExpanded ? "▲ 收起月覽" : "▼ 展開月覽"}</span>
+              </div>
+              <div class="text-slate-500 mt-0.5">庫存 ${l.stockCount || 0} 隻 · 未兌 ${l.unredeemedCoins || 0} 機</div>
+            </div>
+            <div class="text-right">
+              <div class="font-bold text-emerald-700">Amzi利潤:$${amziProfit} / D利潤:$${dennisProfit}</div>
+            </div>
+          </div>
+          ${isExpanded ? `<div class="mt-2 pl-3 pr-2 py-1 bg-slate-50 rounded-xl border border-slate-200 divide-y divide-slate-200">${renderMonthlyHtml(l, id)}</div>` : ""}
+        `;
+        summaryDiv.appendChild(wrapper);
+      });
+    }
+
+    function renderAll() {
+      if (currentView === "landing") {
+        document.getElementById("view-landing").classList.remove("hidden");
+        document.getElementById("view-workspace").classList.add("hidden");
+
+        const cardsContainer = document.getElementById("ledgerCardsContainer");
+        cardsContainer.innerHTML = Object.values(appState.ledgers).map(ledger => {
+          let totalLocs = Object.keys(ledger.locations).length;
+          return `
+            <div class="card border border-slate-200 hover:border-blue-500 transition cursor-pointer">
+              <div class="flex justify-between items-start mb-2">
+                <div onclick="selectLedgerAccount('${ledger.id}')" class="flex-1">
+                  <h3 class="font-extrabold text-blue-950 text-base">${ledger.name}</h3>
+                  <p class="text-xs text-slate-500 mt-0.5">包含 ${totalLocs} 個分店場地</p>
+                </div>
+                <div class="flex gap-1.5">
+                  <button onclick="renameLedgerAccount('${ledger.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg font-bold text-slate-700">✏️改名</button>
+                  <button onclick="deleteLedgerAccount('${ledger.id}')" class="text-xs bg-rose-50 hover:bg-rose-100 px-2 py-1 rounded-lg font-bold text-rose-600">🗑️刪除</button>
+                </div>
+              </div>
+              <div onclick="selectLedgerAccount('${ledger.id}')" class="flex justify-between items-center pt-2 border-t border-slate-100 text-xs">
+                <span class="text-slate-600">進入合夥帳戶管理</span>
+                <span class="bg-blue-900 text-white px-3 py-1.5 rounded-lg font-bold">進入帳戶 ➔</span>
+              </div>
+            </div>`;
+        }).join("");
+        return;
+      } else {
+        document.getElementById("view-landing").classList.add("hidden");
+        document.getElementById("view-workspace").classList.remove("hidden");
+      }
+      renderAllWithoutViewReset();
+    }
+
+    initCloud();
+  </script>
+</body>
+</html>
