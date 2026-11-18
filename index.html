@@ -33,7 +33,7 @@
     }
   </style>
 </head>
-<body class="pb-24">
+<body class="pb-28">
 
   <!-- 頂部狀態列 -->
   <header class="bg-blue-950 text-white px-4 pt-4 pb-3.5 sticky top-0 z-30 shadow-md">
@@ -178,17 +178,17 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-bold text-slate-600 mb-1">面板當前累計數值</label>
-              <input type="number" id="coinCountInput" placeholder="例如機台顯示 350" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
+              <input type="number" id="coinCountInput" placeholder="例如機台顯示 350" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
             </div>
             <div>
               <label class="block text-xs font-bold text-slate-600 mb-1">每幣面值 (HK$)</label>
-              <input type="number" step="0.5" id="coinRateInput" value="5" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
+              <input type="number" step="0.5" id="coinRateInput" value="5" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
             </div>
           </div>
 
           <div>
             <label class="block text-xs font-bold text-slate-600 mb-1">備註（選填）</label>
-            <input type="text" id="coinNoteInput" placeholder="例如：清箱點數" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
+            <input type="text" id="coinNoteInput" placeholder="例如：清箱點數" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
           </div>
 
           <button onclick="recordCoins()" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 rounded-xl shadow">
@@ -222,7 +222,7 @@
         </button>
       </div>
 
-      <!-- 本場該月幣數兌幣總覽與 Record List（帶各月展開收起） -->
+      <!-- 本場該月幣數兌幣總覽與 Record List（仿總結算各月總覽可展開收起） -->
       <div class="card">
         <div class="flex justify-between items-center mb-2">
           <h2 class="font-bold text-base text-slate-800">📅 本場各月機數與兌幣入帳 Record List</h2>
@@ -280,12 +280,12 @@
         </div>
       </div>
 
-      <!-- 貨物 List（簡潔清單 ＋ 全局展開／收起） -->
+      <!-- 貨物 List（仿總結算總覽：點擊可展開收起整張貨物表） -->
       <div class="card">
         <div class="flex justify-between items-center mb-2">
           <div class="flex items-center gap-2">
             <h2 class="font-bold text-base text-slate-800">📋 本場貨物 List</h2>
-            <button onclick="toggleAllGoodsExpand()" id="toggleAllGoodsBtn" class="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded-lg">📂 全部展開</button>
+            <button onclick="toggleAllGoodsExpand()" id="toggleAllGoodsBtn" class="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg">📂 展開全部貨物</button>
           </div>
           <span id="goodsListCount" class="text-xs text-slate-500">共 0 項</span>
         </div>
@@ -294,7 +294,10 @@
           <button onclick="setGoodsFilter('ALL')" id="filter-ALL" class="px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600">全部明細</button>
           <button onclick="setGoodsFilter('SHIPPED')" id="filter-SHIPPED" class="px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600">已出貨</button>
         </div>
-        <div id="goodsListContainer" class="space-y-1.5"></div>
+        <!-- 收起時的精簡列表預覽 -->
+        <div id="goodsListPreview" class="text-xs text-slate-500 py-1">（列表已收起，點擊上方按鈕可展開全部貨物明細）</div>
+        <!-- 展開後的完整貨物清單 -->
+        <div id="goodsListContainer" class="space-y-1.5 hidden mt-2"></div>
       </div>
 
       <!-- 跨店調貨 -->
@@ -414,8 +417,8 @@
 
   </main>
 
-  <!-- 底部導航欄 -->
-  <nav class="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-30">
+  <!-- 底部導航欄（絕對置底固定） -->
+  <nav class="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-50 shadow-lg">
     <div class="max-w-lg mx-auto grid grid-cols-5 gap-0.5 p-1 text-center text-[11px]">
       <button onclick="switchTab('dashboard')" id="nav-dashboard" class="tab-active py-2.5 rounded-xl">📊 總覽</button>
       <button onclick="switchTab('coins')" id="nav-coins" class="py-2.5 rounded-xl text-slate-600 font-semibold">🪙 點/兌幣</button>
@@ -437,7 +440,7 @@
     };
 
     const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v12";
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v13";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
     let selectedSlot = "左上";
@@ -446,6 +449,7 @@
     let allGoodsExpanded = false;
     let allMonthlyExpanded = false;
     let expandedMonthlyKeys = {};
+    let isResetting = false;
 
     const LICHENG_RAW_GOODS = [
       ["Dennis", "2月出貨", 6780, "出貨"],
@@ -814,6 +818,7 @@
     }
 
     async function pullFromCloud(silent) {
+      if (isResetting) return; // 重置鎖定中不自動拉取
       try {
         const headers = await getAuthHeaders();
         const res = await fetch(FIRESTORE_REST_URL, { method: "GET", headers });
@@ -1129,13 +1134,13 @@
       const mId = document.getElementById("coinMachineSelect").value;
       const machine = loc.machines.find(m => m.id === mId);
       const wrapper = document.getElementById("slotSelectWrapper");
+      const countInput = document.getElementById("coinCountInput");
       if (machine && machine.isFourInOne) {
         wrapper.classList.remove("hidden");
         selectSlot(selectedSlot);
-        document.getElementById("coinCountInput").value = machine.slots[selectedSlot] || 0;
       } else {
         wrapper.classList.add("hidden");
-        document.getElementById("coinCountInput").value = machine ? (machine.panelTotal || 0) : 0;
+        countInput.value = machine ? (machine.panelTotal || 0) : 0;
       }
     }
 
@@ -1413,12 +1418,14 @@
     }
 
     function resetAllData() {
-      if (!confirm("確定要清空所有場地帳目、貨物 List 與紀錄，全部數目歸零重新開始嗎？")) return;
+      if (!confirm("確定要清空所有場地帳目、貨物 List 與紀錄，全部數目歸零重新開始嗎？\n\n（點擊確定後，如需同步清空雲端，請手動按「立即推送至雲端」）")) return;
+      isResetting = true;
       appState = getDefaultState();
       localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
       renderAll();
       switchTab("dashboard");
-      showToast("✅ 全部數目已歸零（未自動上傳雲端，如需覆蓋請按「立即推送」）");
+      showToast("✅ 全部數目已歸零（已鎖定防雲端自動覆蓋）");
+      setTimeout(() => { isResetting = false; }, 10000); // 10秒後解除鎖定
     }
 
     function addLog(text) {
@@ -1603,34 +1610,40 @@
         return true;
       });
       document.getElementById("goodsListCount").textContent = `顯示 ${filteredGoods.length} / 總共 ${rawGoodsList.length} 項`;
-      document.getElementById("toggleAllGoodsBtn").textContent = allGoodsExpanded ? "📂 全部收起" : "📂 全部展開";
+      document.getElementById("toggleAllGoodsBtn").textContent = allGoodsExpanded ? "📂 收起全部貨物" : "📂 展開全部貨物";
+      
+      const previewEl = document.getElementById("goodsListPreview");
+      const containerEl = document.getElementById("goodsListContainer");
 
-      const gContainer = document.getElementById("goodsListContainer");
-      gContainer.innerHTML = filteredGoods.map(g => {
-        const statusBadge = g.status === "入機"
-          ? "bg-emerald-100 text-emerald-800"
-          : (g.status === "貨存" ? "bg-blue-100 text-blue-800" : "bg-slate-200 text-slate-700");
-        return `
-          <div class="card !mb-1.5 !p-3 border border-slate-200">
-            <div class="flex justify-between items-center">
-              <div class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
-                <span class="px-1.5 py-0.5 rounded ${statusBadge}">${g.status}</span>
-                <span>${g.name} (${g.qty}隻)</span>
-                <span class="text-[11px] text-slate-500 font-normal">· $${g.cost || 0} · ${g.owner}</span>
-              </div>
-              <button onclick="deleteGoodsItem('${g.id}')" class="text-rose-500 text-[11px] font-bold px-1.5 py-0.5 bg-rose-50 rounded">刪除</button>
-            </div>
-            ${allGoodsExpanded ? `
-              <div class="mt-2 pt-2 border-t border-slate-100 text-xs flex justify-between items-center">
-                <span class="text-slate-400">建檔：${g.date || ""}</span>
-                <div class="flex gap-1">
-                  <button onclick="cycleGoodsStatus('${g.id}', '入機')" class="px-2 py-0.5 rounded border text-[11px] ${g.status === '入機' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white border-slate-300'}">入機</button>
-                  <button onclick="cycleGoodsStatus('${g.id}', '貨存')" class="px-2 py-0.5 rounded border text-[11px] ${g.status === '貨存' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-slate-300'}">貨存</button>
-                  <button onclick="cycleGoodsStatus('${g.id}', '出貨')" class="px-2 py-0.5 rounded border text-[11px] ${g.status === '出貨' ? 'bg-slate-700 text-white border-slate-700' : 'bg-white border-slate-300'}">出貨</button>
+      if (allGoodsExpanded) {
+        previewEl.classList.add("hidden");
+        containerEl.classList.remove("hidden");
+        containerEl.innerHTML = filteredGoods.map(g => {
+          const statusBadge = g.status === "入機"
+            ? "bg-emerald-100 text-emerald-800"
+            : (g.status === "貨存" ? "bg-blue-100 text-blue-800" : "bg-slate-200 text-slate-700");
+          return `
+            <div class="card !mb-1.5 !p-2.5 border border-slate-200">
+              <div class="flex justify-between items-center text-xs">
+                <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                  <span class="px-1.5 py-0.5 rounded ${statusBadge}">${g.status}</span>
+                  <span>${g.name} (${g.qty}隻)</span>
+                  <span class="text-slate-400">· $${g.cost || 0} · ${g.owner}</span>
                 </div>
-              </div>` : ""}
-          </div>`;
-      }).join("") || `<div class="py-4 text-center text-xs text-slate-400">此篩選下尚無貨物紀錄</div>`;
+                <div class="flex items-center gap-1">
+                  <button onclick="cycleGoodsStatus('${g.id}', '入機')" class="px-1.5 py-0.5 rounded border text-[10px] ${g.status === '入機' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white border-slate-300'}">入</button>
+                  <button onclick="cycleGoodsStatus('${g.id}', '貨存')" class="px-1.5 py-0.5 rounded border text-[10px] ${g.status === '貨存' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-slate-300'}">存</button>
+                  <button onclick="cycleGoodsStatus('${g.id}', '出貨')" class="px-1.5 py-0.5 rounded border text-[10px] ${g.status === '出貨' ? 'bg-slate-700 text-white border-slate-700' : 'bg-white border-slate-300'}">出</button>
+                  <button onclick="deleteGoodsItem('${g.id}')" class="text-rose-500 font-bold px-1.5 py-0.5 bg-rose-50 rounded">刪</button>
+                </div>
+              </div>
+            </div>`;
+        }).join("") || `<div class="py-3 text-center text-xs text-slate-400">此篩選下尚無貨物紀錄</div>`;
+      } else {
+        previewEl.classList.remove("hidden");
+        containerEl.classList.add("hidden");
+        previewEl.textContent = `（列表已收起，目前篩選共 ${filteredGoods.length} 項，點擊「展開全部貨物」可查看完整清單）`;
+      }
 
       const logsDiv = document.getElementById("recentLogs");
       logsDiv.innerHTML = (appState.logs || []).slice(0, 15).map(log => `
