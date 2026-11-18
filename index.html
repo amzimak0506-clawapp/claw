@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>台主合夥雲端記帳 · Dennis & Amzi</title>
+  <title>台主合夥雲端記帳 D&A雲端記帳</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -40,7 +40,7 @@
     <div class="max-w-lg mx-auto">
       <div class="flex items-center justify-between mb-2">
         <div>
-          <h1 class="text-base font-bold tracking-wide">🕹️ 台主合夥雲端記帳</h1>
+          <h1 class="text-base font-bold tracking-wide">🕹️ 台主合夥雲端記帳 D&A雲端記帳</h1>
           <div class="flex items-center gap-1.5 mt-0.5 text-[11px]">
             <span id="syncDot" class="inline-block w-2 h-2 rounded-full bg-amber-400"></span>
             <span id="syncStatus" class="text-blue-200">正在連線雲端...</span>
@@ -53,19 +53,24 @@
         </div>
       </div>
 
-      <!-- 地點選擇與改名、刪除場地列 -->
-      <div class="flex items-center gap-1.5 mb-3">
-        <select id="locationSelect" onchange="switchLocation(this.value)" class="flex-1 bg-blue-900 text-white border border-blue-700 rounded-xl px-3 py-1.5 text-xs font-semibold focus:outline-none">
-        </select>
-        <button onclick="renameCurrentLocation()" class="bg-blue-800 hover:bg-blue-700 text-blue-100 border border-blue-600 px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap">
-          ✏️改名
-        </button>
-        <button onclick="deleteCurrentLocation()" class="bg-rose-900/80 hover:bg-rose-900 text-rose-100 border border-rose-700 px-2 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap">
-          🗑️刪場
-        </button>
-        <button onclick="addNewLocation()" class="bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap">
-          ＋新場地
-        </button>
+      <!-- 帳戶（合夥項目）與場地切換列 -->
+      <div class="bg-blue-900/90 border border-blue-700 rounded-xl p-2 mb-2 space-y-2">
+        <!-- 帳戶切換 -->
+        <div class="flex items-center gap-1.5">
+          <span class="text-[11px] text-blue-200 whitespace-nowrap font-bold">📂 選擇合夥帳戶：</span>
+          <select id="ledgerAccountSelect" onchange="switchLedgerAccount(this.value)" class="flex-1 bg-blue-950 text-white border border-blue-600 rounded-lg px-2 py-1 text-xs font-bold focus:outline-none"></select>
+          <button onclick="addNewLedgerAccount()" class="bg-indigo-700 hover:bg-indigo-600 text-white px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap">
+            ＋新帳戶
+          </button>
+        </div>
+        <!-- 場地切換 -->
+        <div class="flex items-center gap-1.5 pt-1 border-t border-blue-800/80">
+          <span class="text-[11px] text-blue-200 whitespace-nowrap font-bold">📍 本帳戶分店：</span>
+          <select id="locationSelect" onchange="switchLocation(this.value)" class="flex-1 bg-blue-950 text-white border border-blue-600 rounded-lg px-2 py-1 text-xs font-bold focus:outline-none"></select>
+          <button onclick="renameCurrentLocation()" class="bg-blue-800 hover:bg-blue-700 text-blue-100 px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap">✏️改名</button>
+          <button onclick="deleteCurrentLocation()" class="bg-rose-900/80 hover:bg-rose-900 text-rose-100 px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap">🗑️刪場</button>
+          <button onclick="addNewLocation()" class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded-lg text-xs font-bold whitespace-nowrap">＋新場地</button>
+        </div>
       </div>
 
       <!-- 置頂導航分頁列 -->
@@ -161,7 +166,7 @@
       <!-- 巡機點幣（面板累計數值輸入） -->
       <div class="card">
         <h2 class="font-bold text-base text-blue-950 mb-1">🪙 巡機點幣（輸入機台當前「面板累計數值」）</h2>
-        <p class="text-xs text-slate-500 mb-3">系統會自動對比上次點數，計算本次新增機數並加入未兌總和。</p>
+        <p class="text-xs text-slate-500 mb-3">確認並儲存後數值會自動歸零，等待下一次輸入。</p>
         <div class="space-y-3">
           <div class="grid grid-cols-2 gap-3">
             <div>
@@ -215,11 +220,6 @@
             </div>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1">備註（選填）</label>
-            <input type="text" id="coinNoteInput" placeholder="例如：清箱點數" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
-          </div>
-
           <button onclick="recordCoins()" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 rounded-xl shadow">
             確認儲存點幣紀錄
           </button>
@@ -251,11 +251,11 @@
         </button>
       </div>
 
-      <!-- 本場各月機數與兌幣入帳 Record List（預設收起，可點擊展開月覽與明確顯示詳細） -->
+      <!-- 本場各月機數與兌幣入帳 Record List（樣式與結算分頁展開月覽完全一致） -->
       <div class="card">
         <div class="flex justify-between items-center mb-2">
           <h2 class="font-bold text-base text-slate-800">📅 本場各月機數與兌幣入帳 Record List</h2>
-          <button onclick="toggleAllMonthlyExpand()" id="toggleAllMonthlyBtn" class="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg">📂 全部展開</button>
+          <button onclick="toggleAllMonthlyExpand()" id="toggleAllMonthlyBtn" class="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">📂 全部展開月覽</button>
         </div>
         <div id="coinPageMonthlySummary" class="divide-y divide-slate-100 text-xs"></div>
       </div>
@@ -456,14 +456,14 @@
     };
 
     const FIRESTORE_REST_URL = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/DENNIS_AMZI_MAIN`;
-    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v19";
+    const LOCAL_BACKUP_KEY = "claw_ledger_backup_v20";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "Amzi";
     let expandedSettlementLocIds = {};
     let goodsFilterMode = "ACTIVE";
     let allGoodsExpanded = false;
     let allMonthlyExpanded = false;
-    let expandedMonthlyKeys = {}; // 預設全部收起 (false)
+    let expandedMonthlyKeys = {};
     let isResetting = false;
 
     const LICHENG_RAW_GOODS = [
@@ -620,137 +620,31 @@
       return dateStr.slice(0, 7);
     }
 
-    function getDefaultState() {
+    function getDefaultLedger(name) {
+      const locId = "loc_" + Date.now();
+      const accounts = {};
+      accounts[locId] = {
+        id: locId,
+        name: "1號場地（預設）",
+        unredeemedCoins: 0,
+        unredeemedCash: 0,
+        totalRedeemedCash: 0,
+        costAmzi: 0,
+        costDennis: 0,
+        costShared: 0,
+        stockCount: 0,
+        goodsList: [],
+        monthlyStats: {},
+        machines: [
+          { id: "m_1", name: "1號標準機", isFourInOne: false, panelTotal: 0, lastRedeemedPanel: 0, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }, slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } }
+        ]
+      };
       return {
-        updatedAt: Date.now(),
-        currentLocationId: "loc_1",
-        locations: {
-          loc_1: {
-            id: "loc_1",
-            name: "1號場地（預設）",
-            unredeemedCoins: 0,
-            unredeemedCash: 0,
-            totalRedeemedCash: 0,
-            costAmzi: 0,
-            costDennis: 0,
-            costShared: 0,
-            stockCount: 0,
-            goodsList: [],
-            monthlyStats: {},
-            machines: [
-              { id: "m_1", name: "1號標準機", isFourInOne: false, panelTotal: 0, lastRedeemedPanel: 0, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }, slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } }
-            ]
-          }
-        },
-        logs: []
+        id: "ledger_" + Date.now(),
+        name: name || "Dennis & Amzi 夾娃娃合夥",
+        currentLocationId: locId,
+        locations: accounts
       };
-    }
-
-    function exportJsonBackup() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
-      const dlAnchor = document.createElement('a');
-      dlAnchor.setAttribute("href", dataStr);
-      dlAnchor.setAttribute("download", `claw_ledger_backup_${getTodayStr()}.json`);
-      document.body.appendChild(dlAnchor);
-      dlAnchor.click();
-      dlAnchor.remove();
-      showToast("✅ 本地備份 JSON 檔案已下載保存！");
-    }
-
-    function importJsonBackup(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const parsed = JSON.parse(e.target.result);
-          if (parsed && parsed.locations) {
-            appState = normalizeState(parsed);
-            saveState();
-            showToast("✅ 成功還原本地備份資料！");
-          } else {
-            alert("備份檔案格式不正確！");
-          }
-        } catch (err) {
-          alert("解析備份檔案失敗：" + err.message);
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    function importLichengExcelData() {
-      let loc = appState.locations["loc_licheng"];
-      if (!loc) {
-        loc = {
-          id: "loc_licheng",
-          name: "麗城夾（標機＋海濱迷你機）",
-          unredeemedCoins: 0,
-          unredeemedCash: 0,
-          totalRedeemedCash: 0,
-          costAmzi: 3000,
-          costDennis: 0,
-          costShared: 0,
-          stockCount: 0,
-          goodsList: [],
-          monthlyStats: {},
-          machines: [
-            { id: "m_lc_std", name: "麗城標機", isFourInOne: false, panelTotal: 0, lastRedeemedPanel: 0, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }, slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } },
-            { id: "m_lc_mini", name: "海濱迷你機（四合一）", isFourInOne: true, panelTotal: 0, lastRedeemedPanel: 0, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }, slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } }
-          ]
-        };
-        appState.locations["loc_licheng"] = loc;
-      }
-
-      if (!loc.machines || loc.machines.length === 0) {
-        loc.machines = [
-          { id: "m_lc_std", name: "麗城標機", isFourInOne: false, panelTotal: 0, lastRedeemedPanel: 0, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }, slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } },
-          { id: "m_lc_mini", name: "海濱迷你機（四合一）", isFourInOne: true, panelTotal: 0, lastRedeemedPanel: 0, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }, slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } }
-        ];
-      }
-
-      const existingNames = new Set((loc.goodsList || []).map(g => g.name + "_" + g.cost));
-      let addedCount = 0;
-      LICHENG_RAW_GOODS.forEach((row, idx) => {
-        const key = row[1] + "_" + row[2];
-        if (!existingNames.has(key)) {
-          loc.goodsList.push({
-            id: "g_lc_smart_" + Date.now() + "_" + idx,
-            owner: row[0],
-            name: row[1],
-            qty: 1,
-            cost: row[2],
-            status: row[3],
-            date: "2026-11-10"
-          });
-          addedCount++;
-        }
-      });
-
-      loc.monthlyStats = loc.monthlyStats || {};
-      Object.keys(LICHENG_LEGACY_RECORDS).forEach(mk => {
-        if (!loc.monthlyStats[mk]) {
-          loc.monthlyStats[mk] = { records: JSON.parse(JSON.stringify(LICHENG_LEGACY_RECORDS[mk])) };
-        } else {
-          loc.monthlyStats[mk].records = loc.monthlyStats[mk].records || [];
-          LICHENG_LEGACY_RECORDS[mk].forEach(defRec => {
-            const exists = loc.monthlyStats[mk].records.some(r => r.cash === defRec.cash && r.type === defRec.type && r.date === defRec.date);
-            if (!exists) {
-              loc.monthlyStats[mk].records.push(JSON.parse(JSON.stringify(defRec)));
-            }
-          });
-        }
-      });
-
-      let amziGoodsCost = loc.goodsList.filter(g => g.owner === "Amzi").reduce((acc, g) => acc + (g.cost || 0), 0);
-      let dennisGoodsCost = loc.goodsList.filter(g => g.owner === "Dennis").reduce((acc, g) => acc + (g.cost || 0), 0);
-      if (loc.costAmzi < amziGoodsCost + 3000) loc.costAmzi = amziGoodsCost + 3000;
-      if (loc.costDennis < dennisGoodsCost) loc.costDennis = dennisGoodsCost;
-
-      appState.currentLocationId = "loc_licheng";
-      addLog(`智能匯入 Excel 帳目 (新增 ${addedCount} 筆)`);
-      saveState();
-      switchTab("dashboard");
-      showToast(`✅ 智能匯入完成！成功載入機台與帳目（新增 ${addedCount} 筆貨物）`);
     }
 
     function loadLocalBackup() {
@@ -758,53 +652,96 @@
         const raw = localStorage.getItem(LOCAL_BACKUP_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (parsed && parsed.locations) return parsed;
+          if (parsed && parsed.ledgers) return parsed;
+          if (parsed && parsed.locations) {
+            // Migrate old single ledger to multi-ledger format
+            return {
+              currentLedgerId: "ledger_main",
+              ledgers: {
+                ledger_main: {
+                  id: "ledger_main",
+                  name: "Dennis & Amzi 夾娃娃合夥",
+                  currentLocationId: parsed.currentLocationId,
+                  locations: parsed.locations
+                }
+              },
+              logs: parsed.logs || []
+            };
+          }
         }
       } catch (e) {}
-      return getDefaultState();
+      const defaultL = getDefaultLedger("Dennis & Amzi 夾娃娃合夥");
+      return {
+        currentLedgerId: defaultL.id,
+        ledgers: { [defaultL.id]: defaultL },
+        logs: []
+      };
     }
 
     let appState = loadLocalBackup();
 
     function normalizeState(data) {
-      if (!data || !data.locations || Object.keys(data.locations).length === 0) {
-        return getDefaultState();
+      if (!data || (!data.ledgers && !data.locations)) {
+        const defaultL = getDefaultLedger("Dennis & Amzi 夾娃娃合夥");
+        return {
+          currentLedgerId: defaultL.id,
+          ledgers: { [defaultL.id]: defaultL },
+          logs: []
+        };
       }
-      if (!data.locations[data.currentLocationId]) {
-        data.currentLocationId = Object.keys(data.locations)[0];
+      if (data.locations && !data.ledgers) {
+        return {
+          currentLedgerId: "ledger_main",
+          ledgers: {
+            ledger_main: {
+              id: "ledger_main",
+              name: "Dennis & Amzi 夾娃娃合夥",
+              currentLocationId: data.currentLocationId,
+              locations: data.locations
+            }
+          },
+          logs: data.logs || []
+        };
       }
-      Object.values(data.locations).forEach(l => {
-        if (typeof l.costAmzi !== "number") l.costAmzi = 0;
-        if (typeof l.costDennis !== "number") l.costDennis = 0;
-        if (typeof l.costShared !== "number") l.costShared = l.totalCost || 0;
-        if (!Array.isArray(l.goodsList)) l.goodsList = [];
-        if (!l.monthlyStats || typeof l.monthlyStats !== "object") l.monthlyStats = {};
-        Object.keys(l.monthlyStats).forEach(mk => {
-          let bucket = l.monthlyStats[mk];
-          if (!bucket.records) {
-            bucket.records = [];
-            if (bucket.redeemedCash5050 > 0) {
-              bucket.records.push({ id: "r_" + Math.random(), type: "redeem", coins: bucket.redeemedCoins || 0, cash: bucket.redeemedCash5050, date: mk + "-01" });
-            }
-            if (bucket.legacyCashAmzi > 0) {
-              bucket.records.push({ id: "r_" + Math.random(), type: "legacy", owner: "Amzi", cash: bucket.legacyCashAmzi, date: mk + "-01" });
-            }
-            if (bucket.legacyCashDennis > 0) {
-              bucket.records.push({ id: "r_" + Math.random(), type: "legacy", owner: "Dennis", cash: bucket.legacyCashDennis, date: mk + "-01" });
-            }
-          }
-        });
-        (l.machines || []).forEach(m => {
-          if (typeof m.panelTotal !== "number") m.panelTotal = m.coins || 0;
-          if (typeof m.lastRedeemedPanel !== "number") m.lastRedeemedPanel = 0;
-          if (!m.slots) m.slots = { "左上": 0, "右上": 0, "左下": 0, "右下": 0 };
-          if (!m.slotLast) m.slotLast = { "左上": 0, "右上": 0, "左下": 0, "右下": 0 };
+      if (!data.currentLedgerId || !data.ledgers[data.currentLedgerId]) {
+        data.currentLedgerId = Object.keys(data.ledgers)[0];
+      }
+      Object.values(data.ledgers).forEach(ledger => {
+        if (!ledger.locations || Object.keys(ledger.locations).length === 0) {
+          const defLoc = getDefaultLedger();
+          ledger.locations = defLoc.locations;
+          ledger.currentLocationId = Object.keys(ledger.locations)[0];
+        }
+        if (!ledger.locations[ledger.currentLocationId]) {
+          ledger.currentLocationId = Object.keys(ledger.locations)[0];
+        }
+        Object.values(ledger.locations).forEach(l => {
+          if (typeof l.costAmzi !== "number") l.costAmzi = 0;
+          if (typeof l.costDennis !== "number") l.costDennis = 0;
+          if (typeof l.costShared !== "number") l.costShared = l.totalCost || 0;
+          if (!Array.isArray(l.goodsList)) l.goodsList = [];
+          if (!l.monthlyStats || typeof l.monthlyStats !== "object") l.monthlyStats = {};
+          (l.machines || []).forEach(m => {
+            if (typeof m.panelTotal !== "number") m.panelTotal = m.coins || 0;
+            if (typeof m.lastRedeemedPanel !== "number") m.lastRedeemedPanel = 0;
+            if (!m.slots) m.slots = { "左上": 0, "右上": 0, "左下": 0, "右下": 0 };
+            if (!m.slotLast) m.slotLast = { "左上": 0, "右上": 0, "左下": 0, "右下": 0 };
+          });
         });
       });
       return data;
     }
 
     appState = normalizeState(appState);
+
+    function getCurrentLedger() {
+      return appState.ledgers[appState.currentLedgerId] || Object.values(appState.ledgers)[0];
+    }
+
+    function getCurrentLocation() {
+      const ledger = getCurrentLedger();
+      return ledger.locations[ledger.currentLocationId] || Object.values(ledger.locations)[0];
+    }
 
     function showToast(msg, isError) {
       const el = document.getElementById("toastBanner");
@@ -851,7 +788,7 @@
         const rawStr = docJson.fields && docJson.fields.payloadJson && docJson.fields.payloadJson.stringValue;
         if (rawStr) {
           const cloudState = JSON.parse(rawStr);
-          if (cloudState && cloudState.locations) {
+          if (cloudState && (cloudState.ledgers || cloudState.locations)) {
             appState = normalizeState(cloudState);
             localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
             renderAll();
@@ -937,7 +874,8 @@
     }
 
     function recalculateLocationTotals() {
-      Object.values(appState.locations).forEach(loc => {
+      const ledger = getCurrentLedger();
+      Object.values(ledger.locations).forEach(loc => {
         let totalUnred = 0;
         (loc.machines || []).forEach(m => {
           if (m.isFourInOne) {
@@ -1017,7 +955,7 @@
 
     function toggleAllMonthlyExpand() {
       allMonthlyExpanded = !allMonthlyExpanded;
-      const loc = appState.locations[appState.currentLocationId];
+      const loc = getCurrentLocation();
       Object.keys(loc.monthlyStats || {}).forEach(mk => {
         expandedMonthlyKeys[mk] = allMonthlyExpanded;
       });
@@ -1041,13 +979,31 @@
       });
     }
 
+    function switchLedgerAccount(ledgerId) {
+      appState.currentLedgerId = ledgerId;
+      saveState();
+      showToast("✅ 已切換至合夥帳戶：" + getCurrentLedger().name);
+    }
+
+    function addNewLedgerAccount() {
+      const name = prompt("請輸入新的合夥帳目名稱（例如：另一合夥項目 / 銅鑼灣夾公仔）：");
+      if (!name || !name.trim()) return;
+      const newL = getDefaultLedger(name.trim());
+      appState.ledgers[newL.id] = newL;
+      appState.currentLedgerId = newL.id;
+      addLog(`建立新合夥帳戶：「${name.trim()}」`);
+      saveState();
+      showToast("✅ 新合夥帳戶已建立並切換");
+    }
+
     function switchLocation(locId) {
-      appState.currentLocationId = locId;
+      const ledger = getCurrentLedger();
+      ledger.currentLocationId = locId;
       saveState();
     }
 
     function renameCurrentLocation() {
-      const loc = appState.locations[appState.currentLocationId];
+      const loc = getCurrentLocation();
       const newName = prompt("請輸入新的場地名稱：", loc.name);
       if (!newName || !newName.trim() || newName.trim() === loc.name) return;
       const oldName = loc.name;
@@ -1058,16 +1014,17 @@
     }
 
     function deleteCurrentLocation() {
-      const locIds = Object.keys(appState.locations);
+      const ledger = getCurrentLedger();
+      const locIds = Object.keys(ledger.locations);
       if (locIds.length <= 1) {
         alert("必須至少保留一個場地，無法刪除！");
         return;
       }
-      const loc = appState.locations[appState.currentLocationId];
+      const loc = getCurrentLocation();
       if (!confirm(`⚠️ 確定要刪除場地「${loc.name}」嗎？\n\n此操作會刪除該場地所有機台與貨物紀錄，且無法復原！`)) return;
 
-      delete appState.locations[appState.currentLocationId];
-      appState.currentLocationId = Object.keys(appState.locations)[0];
+      delete ledger.locations[ledger.currentLocationId];
+      ledger.currentLocationId = Object.keys(ledger.locations)[0];
       addLog(`刪除場地「${loc.name}」`);
       saveState();
       showToast("✅ 場地已刪除");
@@ -1076,8 +1033,9 @@
     function addNewLocation() {
       const name = prompt("請輸入新場地名稱（例如：麗城店 / 荃灣店）：");
       if (!name || !name.trim()) return;
+      const ledger = getCurrentLedger();
       const id = "loc_" + Date.now();
-      appState.locations[id] = {
+      ledger.locations[id] = {
         id,
         name: name.trim(),
         unredeemedCoins: 0,
@@ -1093,14 +1051,14 @@
           { id: "m_" + Date.now(), name: "1號機", isFourInOne: false, panelTotal: 0, lastRedeemedPanel: 0, coins: 0, slots: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 }, slotLast: { "左上": 0, "右上": 0, "左下": 0, "右下": 0 } }
         ]
       };
-      appState.currentLocationId = id;
+      ledger.currentLocationId = id;
       addLog(`新增場地「${name.trim()}」`);
       saveState();
       showToast("✅ 新場地已建立");
     }
 
     function addNewMachine() {
-      const loc = appState.locations[appState.currentLocationId];
+      const loc = getCurrentLocation();
       const name = prompt("請輸入機台名稱（例如：3號機）：");
       if (!name || !name.trim()) return;
       const isFour = confirm("這台是「四合一迷你機」（分左上/右上/左下/右下四格獨立點幣）嗎？\n\n按「確定」= 四合一迷你機\n按「取消」= 一般單格機台");
@@ -1120,7 +1078,7 @@
     }
 
     function renameMachine(machineId) {
-      const loc = appState.locations[appState.currentLocationId];
+      const loc = getCurrentLocation();
       const m = loc.machines.find(item => item.id === machineId);
       if (!m) return;
       const newName = prompt("請輸入新的機台名稱：", m.name);
@@ -1133,7 +1091,7 @@
     }
 
     function deleteMachine(machineId) {
-      const loc = appState.locations[appState.currentLocationId];
+      const loc = getCurrentLocation();
       const m = loc.machines.find(item => item.id === machineId);
       if (!m) return;
       if (!confirm(`⚠️ 確定要刪除機台「${m.name}」嗎？`)) return;
@@ -1145,7 +1103,7 @@
     }
 
     function onCoinMachineChange() {
-      const loc = appState.locations[appState.currentLocationId];
+      const loc = getCurrentLocation();
       const mId = document.getElementById("coinMachineSelect").value;
       const machine = loc.machines.find(m => m.id === mId);
       const singleWrapper = document.getElementById("singlePanelWrapper");
@@ -1154,20 +1112,21 @@
       if (machine && machine.isFourInOne) {
         singleWrapper.classList.add("hidden");
         fourWrapper.classList.remove("hidden");
-        document.getElementById("slot-lt").value = machine.slots["左上"] || "";
-        document.getElementById("slot-rt").value = machine.slots["右上"] || "";
-        document.getElementById("slot-lb").value = machine.slots["左下"] || "";
-        document.getElementById("slot-rb").value = machine.slots["右下"] || "";
+        // Clear inputs for fresh entry as requested
+        document.getElementById("slot-lt").value = "";
+        document.getElementById("slot-rt").value = "";
+        document.getElementById("slot-lb").value = "";
+        document.getElementById("slot-rb").value = "";
       } else {
         singleWrapper.classList.remove("hidden");
         fourWrapper.classList.add("hidden");
-        document.getElementById("coinCountInput").value = machine ? (machine.panelTotal || "") : "";
+        document.getElementById("coinCountInput").value = "";
       }
       onPanelCountInput();
     }
 
     function onPanelCountInput() {
-      const loc = appState.locations[appState.currentLocationId];
+      const loc = getCurrentLocation();
       const mId = document.getElementById("coinMachineSelect").value;
       const machine = loc.machines.find(m => m.id === mId);
       if (!machine) return;
@@ -1215,11 +1174,10 @@
     }
 
     function recordCoins() {
-      const loc = appState.locations[appState.currentLocationId];
+      const loc = getCurrentLocation();
       const dateVal = document.getElementById("coinDateInput").value || getTodayStr();
       const mId = document.getElementById("coinMachineSelect").value;
       const machine = loc.machines.find(m => m.id === mId);
-      const note = document.getElementById("coinNoteInput").value.trim();
 
       if (!machine) {
         alert("請選擇機台！");
@@ -1242,7 +1200,13 @@
         machine.slots["左下"] = lb;
         machine.slots["右下"] = rb;
 
-        addLog(`[${dateVal}] 點幣 ${machine.name}(四合一) 左上:${lt} 右上:${rt} 左下:${lb} 右下:${rb} ${note ? "· " + note : ""}`);
+        addLog(`[${dateVal}] 點幣 ${machine.name}(四合一) 左上:${lt} 右上:${rt} 左下:${lb} 右下:${rb}`);
+        
+        // Clear input fields immediately so they don't retain values
+        document.getElementById("slot-lt").value = "";
+        document.getElementById("slot-rt").value = "";
+        document.getElementById("slot-lb").value = "";
+        document.getElementById("slot-rb").value = "";
       } else {
         const panelVal = parseInt(document.getElementById("coinCountInput").value, 10);
         if (isNaN(panelVal) || panelVal < 0) {
@@ -1251,17 +1215,18 @@
         }
         const diff = panelVal - (machine.panelTotal || 0);
         machine.panelTotal = panelVal;
-        addLog(`[${dateVal}] 點幣 ${machine.name} 面板改為 ${panelVal} (變動 ${diff >= 0 ? "+" + diff : diff}) ${note ? "· " + note : ""}`);
+        addLog(`[${dateVal}] 點幣 ${machine.name} 面板改為 ${panelVal} (變動 ${diff >= 0 ? "+" + diff : diff})`);
+
+        // Clear input field immediately
+        document.getElementById("coinCountInput").value = "";
       }
 
-      document.getElementById("coinCountInput").value = "";
-      document.getElementById("coinNoteInput").value = "";
       saveState();
-      showToast(`✅ 機台累計讀數已更新`);
+      showToast(`✅ 機台累計讀數已記錄，輸入欄已歸零`);
     }
 
     function redeemAndReset() {
-      const loc = appState.locations[appState.currentLocationId];
+      const loc = getCurrentLocation();
       const dateVal = document.getElementById("redeemDateInput").value || getTodayStr();
       const monthKey = getMonthKey(dateVal);
       const coins = parseInt(document.getElementById("redeemCoinInput").value, 10) || 0;
@@ -1309,7 +1274,7 @@
 
     function deleteRecord(monthKey, recordId) {
       if (!confirm("確定要刪除這筆入帳紀錄嗎？")) return;
-      const loc = appState.locations[appState.currentLocationId];
+      const loc = getCurrentLocation();
       const bucket = loc.monthlyStats[monthKey];
       if (bucket && bucket.records) {
         bucket.records = bucket.records.filter(r => r.id !== recordId);
@@ -1321,7 +1286,7 @@
     }
 
     function editRecord(monthKey, recordId) {
-      const loc = appState.locations[appState.currentLocationId];
+      const loc = getCurrentLocation();
       const bucket = loc.monthlyStats[monthKey];
       const r = (bucket && bucket.records || []).find(item => item.id === recordId);
       if (!r) return;
@@ -1340,7 +1305,7 @@
     }
 
     function recordGoodsItem() {
-      const loc = appState.locations[appState.currentLocationId];
+      const loc = getCurrentLocation();
       const status = document.getElementById("stockStatusSelect").value;
       const owner = document.getElementById("stockOwnerSelect").value;
       const name = document.getElementById("stockNoteInput").value.trim() || (status === "雜費" ? "場租/雜費" : "未命名貨物");
@@ -1376,7 +1341,7 @@
     }
 
     function cycleGoodsStatus(goodsId, newStatus) {
-      const loc = appState.locations[appState.currentLocationId];
+      const loc = getCurrentLocation();
       const item = (loc.goodsList || []).find(g => g.id === goodsId);
       if (!item || item.status === newStatus) return;
 
@@ -1389,14 +1354,15 @@
 
     function deleteGoodsItem(goodsId) {
       if (!confirm("確定刪除此筆貨物紀錄嗎？")) return;
-      const loc = appState.locations[appState.currentLocationId];
+      const loc = getCurrentLocation();
       loc.goodsList = (loc.goodsList || []).filter(g => g.id !== goodsId);
       saveState();
     }
 
     function updateTransferGoodsDropdown() {
       const fromId = document.getElementById("transferFromSelect").value;
-      const fromLoc = appState.locations[fromId];
+      const ledger = getCurrentLedger();
+      const fromLoc = ledger.locations[fromId];
       const goodsSelect = document.getElementById("transferGoodsSelect");
       const qtyInput = document.getElementById("transferQtyInput");
       const prevSelectedGId = goodsSelect.value;
@@ -1423,7 +1389,8 @@
 
     function onTransferGoodsSelectChange() {
       const fromId = document.getElementById("transferFromSelect").value;
-      const fromLoc = appState.locations[fromId];
+      const ledger = getCurrentLedger();
+      const fromLoc = ledger.locations[fromId];
       const gId = document.getElementById("transferGoodsSelect").value;
       if (!fromLoc || !gId) return;
       const item = (fromLoc.goodsList || []).find(g => g.id === gId);
@@ -1447,8 +1414,9 @@
         return;
       }
 
-      const fromLoc = appState.locations[fromId];
-      const toLoc = appState.locations[toId];
+      const ledger = getCurrentLedger();
+      const fromLoc = ledger.locations[fromId];
+      const toLoc = ledger.locations[toId];
       const itemIdx = (fromLoc.goodsList || []).findIndex(g => g.id === gId);
       if (itemIdx === -1) return;
 
@@ -1488,7 +1456,12 @@
     function resetAllData() {
       if (!confirm("確定要清空所有場地帳目、貨物 List 與紀錄，全部數目歸零重新開始嗎？\n\n（點擊確定後，系統會自動將清空後的乾淨狀態同步至雲端）")) return;
       isResetting = true;
-      appState = getDefaultState();
+      const defaultL = getDefaultLedger("Dennis & Amzi 夾娃娃合夥");
+      appState = {
+        currentLedgerId: defaultL.id,
+        ledgers: { [defaultL.id]: defaultL },
+        logs: []
+      };
       localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
       renderAll();
       switchTab("dashboard");
@@ -1502,7 +1475,7 @@
     function addLog(text) {
       const now = new Date();
       const timeStr = `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-      const loc = appState.locations[appState.currentLocationId];
+      const loc = getCurrentLocation();
       appState.logs = appState.logs || [];
       appState.logs.unshift({
         id: Date.now(),
@@ -1548,7 +1521,7 @@
           <div class="py-2">
             <div onclick="toggleMonthlyKey('${m}')" class="flex justify-between items-center font-bold text-slate-800 bg-slate-100 px-3 py-2 rounded-xl cursor-pointer hover:bg-slate-200 transition">
               <span>🗓️ ${m} 月份明細（總計 HK$ ${monthTotal}）</span>
-              <span class="text-xs text-blue-700 font-bold">${isExp ? "▲ 收起" : "▼ 展開查看明細"}</span>
+              <span class="text-xs text-blue-700 font-bold px-2 py-0.5 bg-blue-50 rounded border border-blue-200">${isExp ? "▲ 收起月覽" : "▼ 展開月覽"}</span>
             </div>
             ${isExp ? `<div class="mt-2 space-y-1 pl-2 bg-white p-2 rounded-xl border border-slate-200">${recHtml}</div>` : ""}
           </div>`;
@@ -1558,7 +1531,16 @@
     function renderAll() {
       recalculateLocationTotals();
       renderOperatorUI();
-      const locIds = Object.keys(appState.locations);
+
+      // Render ledger account dropdown
+      const ledgerSelect = document.getElementById("ledgerAccountSelect");
+      ledgerSelect.innerHTML = "";
+      Object.values(appState.ledgers).forEach(l => {
+        ledgerSelect.add(new Option(l.name, l.id, false, l.id === appState.currentLedgerId));
+      });
+
+      const ledger = getCurrentLedger();
+      const locIds = Object.keys(ledger.locations);
       const locSelect = document.getElementById("locationSelect");
       const fromSelect = document.getElementById("transferFromSelect");
       const toSelect = document.getElementById("transferToSelect");
@@ -1570,14 +1552,14 @@
       toSelect.innerHTML = "";
 
       locIds.forEach(id => {
-        const l = appState.locations[id];
-        locSelect.add(new Option(l.name, id, false, id === appState.currentLocationId));
+        const l = ledger.locations[id];
+        locSelect.add(new Option(l.name, id, false, id === ledger.currentLocationId));
         fromSelect.add(new Option(l.name, id));
         toSelect.add(new Option(l.name, id));
       });
 
       if (prevFromId && locIds.includes(prevFromId)) fromSelect.value = prevFromId;
-      else fromSelect.value = appState.currentLocationId;
+      else fromSelect.value = ledger.currentLocationId;
 
       if (prevToId && locIds.includes(prevToId)) toSelect.value = prevToId;
       else if (locIds.length > 1) {
@@ -1587,7 +1569,7 @@
 
       updateTransferGoodsDropdown();
 
-      const loc = appState.locations[appState.currentLocationId];
+      const loc = getCurrentLocation();
       const redeemed5050 = loc.totalRedeemedCash || 0;
       const halfRedeemed = redeemed5050 / 2;
 
@@ -1627,8 +1609,8 @@
       document.getElementById("coinPageTotalCash").textContent = `HK$ ${loc.unredeemedCash || 0}`;
       document.getElementById("redeemCoinInput").value = loc.unredeemedCoins || 0;
       document.getElementById("redeemCashInput").value = loc.unredeemedCash || 0;
-      document.getElementById("coinPageMonthlySummary").innerHTML = renderMonthlyHtml(loc, appState.currentLocationId);
-      document.getElementById("toggleAllMonthlyBtn").textContent = allMonthlyExpanded ? "📂 全部收起" : "📂 全部展開";
+      document.getElementById("coinPageMonthlySummary").innerHTML = renderMonthlyHtml(loc, ledger.currentLocationId);
+      document.getElementById("toggleAllMonthlyBtn").textContent = allMonthlyExpanded ? "📂 全部收起月覽" : "📂 全部展開月覽";
 
       const mContainer = document.getElementById("machineListContainer");
       const coinMSelect = document.getElementById("coinMachineSelect");
@@ -1675,7 +1657,6 @@
         coinMSelect.value = prevMId;
       }
       
-      // Only update machine form inputs if user is NOT currently typing inside them
       const activeEl = document.activeElement;
       const isTypingInCoinForm = activeEl && (
         activeEl.id === "coinCountInput" || 
@@ -1752,7 +1733,7 @@
       summaryDiv.innerHTML = "";
 
       locIds.forEach(id => {
-        const l = appState.locations[id];
+        const l = ledger.locations[id];
         const r = l.totalRedeemedCash || 0;
         let la = 0, ld = 0;
         Object.values(l.monthlyStats || {}).forEach(bucket => {
