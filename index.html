@@ -434,7 +434,7 @@
         <div class="card border-2 border-emerald-300 bg-emerald-50/40">
           <h2 class="font-bold text-base text-emerald-900 mb-1">📁 匯入 Excel 帳目檔案 (.xlsx)</h2>
           <p class="text-xs text-emerald-800 mb-3">
-            已完美適配：所有貨物/標機金額皆視為成本；「租金&收入」分頁中含有 Rental 的金額會自動計入成本，含有 income 的金額會計入收入。
+            已完美適配：所有貨物數量固定為 1 隻，金額對應成本；「租金&收入」中 Rental 為租金成本，income 為現金收入。
           </p>
           <label class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow text-center cursor-pointer flex items-center justify-center">
             📂 選擇並匯入 Excel 檔案
@@ -1466,13 +1466,11 @@
 
                 if (amount > 0) {
                   const descLower = desc.toLowerCase();
-                  // 根據您的明確規定：「租金是成本計算，income欄才是收入」
                   if (descLower.includes("rental") || descLower.includes("租金")) {
                     if (owner === "Amzi") loc.costAmzi = (loc.costAmzi || 0) + amount;
                     else loc.costDennis = (loc.costDennis || 0) + amount;
                     totalImportedRent++;
                   } else if (descLower.includes("income") || descLower.includes("收入") || !descLower.includes("rental")) {
-                    // 視為現金收入 (legacy)
                     const monthKey = getMonthKey(dateVal);
                     const bucket = ensureMonthlyBucket(loc, monthKey);
                     bucket.records = bucket.records || [];
@@ -1489,14 +1487,18 @@
                 }
 
               } else {
-                // 「標機 / 貨物」分頁邏輯（所有金額皆視為成本）：
+                // 「標機 / 貨物」分頁邏輯：
+                // Col A (0): 擁有人 (Amzi / Dennis)
+                // Col B (1): 貨物名稱
+                // Col C (2): 成本金額
+                // Col D (3): 狀態 (出貨 / 存貨 / 入機)
+                // 數量固定為 1
                 let owner = String(row[0] || "").trim();
                 if (owner !== "Amzi" && owner !== "Dennis" && owner !== "共同") owner = "Amzi";
 
                 let name = String(row[1] || "").trim();
-                let qty = parseInt(row[2], 10) || 1;
-                let cost = parseFloat(row[3]) || 0;
-                let status = String(row[4] || "出貨").trim();
+                let cost = parseFloat(row[2]) || 0;
+                let status = String(row[3] || "出貨").trim();
                 if (status !== "出貨" && status !== "貨存" && status !== "入機") status = "出貨";
 
                 if (name || cost > 0) {
@@ -1504,7 +1506,7 @@
                     id: "g_excel_st_" + Date.now() + "_" + idx,
                     owner: owner,
                     name: name || `標機項目 ${idx}`,
-                    qty: qty,
+                    qty: 1,
                     cost: cost,
                     status: status,
                     date: getTodayStr()
@@ -1797,8 +1799,8 @@
               <div class="flex justify-between items-center text-xs">
                 <div class="font-bold text-slate-800 flex items-center gap-1.5">
                   <span class="px-1.5 py-0.5 rounded ${statusBadge}">${g.status}</span>
-                  <span>${g.name} (${g.qty}隻)</span>
-                  <span class="text-slate-400">· $${g.cost || 0} · ${g.owner}</span>
+                  <span>${g.name}</span>
+                  <span class="text-slate-400">· 成本 $${g.cost || 0} · ${g.owner}</span>
                 </div>
                 <div class="flex items-center gap-1">
                   <button onclick="cycleGoodsStatus('${g.id}', '入機')" class="px-1.5 py-0.5 rounded border text-[10px] ${g.status === '入機' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white border-slate-300'}">入</button>
