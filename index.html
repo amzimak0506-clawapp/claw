@@ -434,10 +434,10 @@
         <div class="card border-2 border-emerald-300 bg-emerald-50/40">
           <h2 class="font-bold text-base text-emerald-900 mb-1">📁 匯入 Excel 帳目檔案 (.xlsx)</h2>
           <p class="text-xs text-emerald-800 mb-3">
-            支援多分頁 Excel。系統會自動掃描**所有分頁**，並透過智慧關鍵字（收入、兌現、現金、收益、找數、實收、營業、總計、金額、交收）辨識營收與貨物成本！
+            已針對圖片結構優化：自動適配「標機」分頁（貨物與成本）與「租金&收入」分頁（台主專屬舊帳/收入與日期）。
           </p>
           <label class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow text-center cursor-pointer flex items-center justify-center">
-            📂 選擇並匯入 Excel 檔案（含智能關鍵字辨識）
+            📂 選擇並匯入 Excel 檔案（精準對應欄位）
             <input type="file" id="excelUploadInput" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(event)" class="hidden" />
           </label>
         </div>
@@ -497,6 +497,26 @@
     function getTodayStr() {
       const d = new Date();
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+
+    function parseExcelDate(val) {
+      if (!val) return getTodayStr();
+      if (typeof val === "number") {
+        const d = new Date((val - (25567 + 2)) * 86400 * 1000);
+        if (!isNaN(d.getTime())) {
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        }
+      }
+      const s = String(val).trim();
+      const parts = s.split(/[\/\-\.]/);
+      if (parts.length === 3) {
+        let y = parts[2], m = parts[1], d = parts[0];
+        if (y.length === 2) y = "20" + y;
+        if (y.length === 4 && m.length <= 2 && d.length <= 2) {
+          return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        }
+      }
+      return getTodayStr();
     }
 
     function getMonthKey(dateStr) {
@@ -1397,83 +1417,113 @@
           let totalImportCost = 0;
           let totalImportIncomeVal = 0;
 
-          // 擴大收入關鍵字集合
-          const incomeKeywords = ["收入", "兌現", "現金", "收益", "找數", "實收", "營業", "總計", "金額", "交收"];
-
-          // Loop through ALL worksheets (分頁) in the workbook
+          // 遍歷所有分頁
           workbook.SheetNames.forEach(sheetName => {
             const worksheet = workbook.Sheets[sheetName];
             const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            const sNameLower = sheetName.toLowerCase();
+            const isIncomeSheet = sNameLower.includes("收入") || sNameLower.includes("租金") || sNameLower.includes("income") || sNameLower.includes("rent");
 
             jsonRows.forEach((row, idx) => {
               if (!row || row.length === 0) return;
-              let owner = "Amzi";
-              let name = "";
-              let numbers = [];
-              let status = "出貨";
-              let isIncomeRow = false;
+              
+              // 過濾標題列
+              const rowStr = row.join(" ").toLowerCase();
+              if (rowStr.includes("item") && rowStr.includes("cost")) return;
+              if (rowStr.includes("feb rental") && idx < 3) return;
 
-              row.forEach(cell => {
-                if (cell === "Dennis" || cell === "Amzi" || cell === "共同") owner = cell;
-                else if (typeof cell === "string" && cell.trim().length > 0) {
-                  const s = cell.trim();
-                  if (s === "出貨" || s === "貨存" || s === "入機") status = s;
-                  else {
-                    // 檢查是否包含任何擴大收入關鍵字
-                    if (incomeKeywords.some(kw => s.includes(kw))) {
-                      isIncomeRow = true;
+              if (isIncomeSheet) {
+                // 圖片2「租金&收入」分頁結構：
+                // Col A (index 0): 擁有人 (Amzi / Dennis)
+                // Col B (index 1): 說明 (income / Feb Rental)
+                // Col D (index 3): 金額 (數字)
+                // Col E (index 4): 日期 (例如 15/3/2026)
+                let owner = String(row[0] || "").trim();
+                if (owner !== "Amzi" && owner !== "Dennis") owner = "Amzi";
+                
+                let desc = String(row[1] || "income").trim();
+                let amount = 0;
+                let dateVal = getTodayStr();
+
+                // 從整行尋找數值和日期
+                row.forEach((cell, cIdx) => {
+                  if (typeof cell === "number" && !isNaN(cell) && cIdx >= 2) {
+                    if (amount === 0) amount = cell;
+                  } else if (typeof cell === "string") {
+                    const cStr = cell.trim();
+                    if (/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/.test(cStr) || !isNaN(Date.parse(cStr))) {
+                      dateVal = parseExcelDate(cStr);
                     }
-                    if (!name && isNaN(Number(s))) name = s;
                   }
-                } else if (typeof cell === "number" && !isNaN(cell)) {
-                  numbers.push(cell);
-                }
-              });
-
-              if (isIncomeRow || (numbers.length > 0 && !name)) {
-                const cashVal = numbers.length > 0 ? Math.max(...numbers) : 0;
-                if (cashVal > 0) {
-                  const monthKey = getMonthKey(getTodayStr());
-                  const bucket = ensureMonthlyBucket(loc, monthKey);
-                  bucket.records = bucket.records || [];
-                  bucket.records.push({
-                    id: "r_excel_" + Date.now() + "_" + sheetName + "_" + idx,
-                    type: "redeem",
-                    coins: Math.round(cashVal / 5),
-                    cash: cashVal,
-                    date: getTodayStr()
-                  });
-                  totalImportIncomeVal += cashVal;
-                  totalImportedIncome++;
-                }
-              } else if (name || numbers.length > 0) {
-                const costVal = numbers.length > 0 ? numbers[numbers.length - 1] : 0;
-                const goodsName = name || `分頁[${sheetName}]項目`;
-
-                loc.goodsList.push({
-                  id: "g_excel_" + Date.now() + "_" + sheetName + "_" + idx,
-                  owner: owner,
-                  name: goodsName,
-                  qty: 1,
-                  cost: costVal,
-                  status: status,
-                  date: getTodayStr()
                 });
 
-                if (costVal > 0) {
-                  if (owner === "Amzi") loc.costAmzi = (loc.costAmzi || 0) + costVal;
-                  else if (owner === "Dennis") loc.costDennis = (loc.costDennis || 0) + costVal;
-                  else loc.costShared = (loc.costShared || 0) + costVal;
-                  totalImportCost += costVal;
+                // 如果 D 欄直接有數字
+                if (typeof row[3] === "number" && !isNaN(row[3])) {
+                  amount = row[3];
                 }
-                totalImportedGoods++;
+                if (row[4]) {
+                  dateVal = parseExcelDate(row[4]);
+                }
+
+                if (amount > 0) {
+                  const monthKey = getMonthKey(dateVal);
+                  const bucket = ensureMonthlyBucket(loc, monthKey);
+                  bucket.records = bucket.records || [];
+                  
+                  // 根據圖片，這是台主專屬舊帳/收入 (type: "legacy") 而非 50/50 兌現
+                  bucket.records.push({
+                    id: "r_excel_inc_" + Date.now() + "_" + idx,
+                    type: "legacy",
+                    owner: owner,
+                    cash: amount,
+                    date: dateVal
+                  });
+                  totalImportIncomeVal += amount;
+                  totalImportedIncome++;
+                }
+
+              } else {
+                // 圖片1「標機」分頁結構：
+                // Col A (index 0): 擁有人 (Amzi / Dennis)
+                // Col B (index 1): 貨物名稱
+                // Col C (index 2): 數量
+                // Col D (index 3): 成本
+                // Col E (index 4): 狀態 (出貨/貨存/入機) 或日期
+                let owner = String(row[0] || "").trim();
+                if (owner !== "Amzi" && owner !== "Dennis" && owner !== "共同") owner = "Amzi";
+
+                let name = String(row[1] || "").trim();
+                let qty = parseInt(row[2], 10) || 1;
+                let cost = parseFloat(row[3]) || 0;
+                let status = String(row[4] || "出貨").trim();
+                if (status !== "出貨" && status !== "貨存" && status !== "入機") status = "出貨";
+
+                if (name || cost > 0) {
+                  loc.goodsList.push({
+                    id: "g_excel_st_" + Date.now() + "_" + idx,
+                    owner: owner,
+                    name: name || `標機項目 ${idx}`,
+                    qty: qty,
+                    cost: cost,
+                    status: status,
+                    date: getTodayStr()
+                  });
+
+                  if (cost > 0) {
+                    if (owner === "Amzi") loc.costAmzi = (loc.costAmzi || 0) + cost;
+                    else if (owner === "Dennis") loc.costDennis = (loc.costDennis || 0) + cost;
+                    else loc.costShared = (loc.costShared || 0) + cost;
+                    totalImportCost += cost;
+                  }
+                  totalImportedGoods++;
+                }
               }
             });
           });
 
-          addLog(`上傳 Excel 檔案 (${file.name})：掃描 ${workbook.SheetNames.length} 個分頁，匯入 ${totalImportedGoods} 筆貨物(成本$${totalImportCost})，${totalImportedIncome} 筆收入($${totalImportIncomeVal})`);
+          addLog(`上傳 Excel 檔案 (${file.name})：匯入 ${totalImportedGoods} 筆貨物(成本$${totalImportCost})，${totalImportedIncome} 筆收入/舊帳($${totalImportIncomeVal})`);
           saveState();
-          showToast(`✅ 成功匯入 ${workbook.SheetNames.length} 個分頁：${totalImportedGoods}筆貨物($${totalImportCost})、${totalImportedIncome}筆收入($${totalImportIncomeVal})！`);
+          showToast(`✅ 成功匯入：${totalImportedGoods}筆貨物($${totalImportCost})、${totalImportedIncome}筆專屬收入/舊帳($${totalImportIncomeVal})！`);
           event.target.value = "";
         } catch (err) {
           alert("解析 Excel 檔案失敗：" + err.message);
