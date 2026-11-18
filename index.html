@@ -314,8 +314,8 @@
               <div>
                 <label class="block text-xs font-bold text-slate-600 mb-1">貨物擁有人 / 墊付人</label>
                 <select id="stockOwnerSelect" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white">
-                  <option id="optPartnerA" value="Amzi">Amzi</option>
-                  <option id="optPartnerB" value="Dennis">Dennis</option>
+                  <option id="optPartnerA" value="partnerA">Amzi</option>
+                  <option id="optPartnerB" value="partnerB">Dennis</option>
                 </select>
               </div>
             </div>
@@ -434,7 +434,7 @@
 
         <div class="card border-2 border-rose-200 bg-rose-50/30">
           <h2 class="font-bold text-base text-rose-700 mb-1">⚠️ 當前帳戶重置區</h2>
-          <p class="text-xs text-slate-600 mb-4">點擊下方按鈕只會清空**目前這個合夥帳戶**的場地與數據，不會影響其他帳戶。</p>
+          <p class="text-xs text-slate-600 mb-4">點擊下方按鈕只會清空**目前這個合夥帳戶**的場地與數據，不會影響其他合夥帳戶。</p>
           <button onclick="resetCurrentLedgerData()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl text-sm shadow">
             清空當前帳戶並重新開始
           </button>
@@ -455,7 +455,7 @@
       measurementId: "G-RPZDMHX5C1"
     };
 
-    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v36";
+    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v37";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "partnerA";
     let currentView = "landing";
@@ -781,7 +781,6 @@
       });
     }
 
-    // 點擊右上角按鈕：如果已是當前操作人則詢問改名，否則切換為當前操作人
     function handlePartnerClick(partnerKey) {
       const ledger = getCurrentLedger();
       const currentName = partnerKey === "partnerA" ? ledger.partnerA : ledger.partnerB;
@@ -802,10 +801,6 @@
         renderOperatorUI();
         showToast(`✅ 已切換操作人為：${partnerKey === "partnerA" ? ledger.partnerA : ledger.partnerB}`);
       }
-    }
-
-    function setOperator(name) {
-      // 保持向下相容
     }
 
     function renderOperatorUI() {
@@ -1197,7 +1192,7 @@
       document.getElementById("stockNoteInput").value = "";
       document.getElementById("stockCostInput").value = "";
       saveState();
-      showToast(`✅ 已新增「${name}」`);
+      showToast(`✅ 已新增「${name}」(${ownerName})`);
     }
 
     function cycleGoodsStatus(goodsId, newStatus) {
@@ -1489,10 +1484,16 @@
       const ledger = getCurrentLedger();
       document.getElementById("workspaceLedgerTitle").textContent = ledger.name;
 
-      document.getElementById("optPartnerA").textContent = ledger.partnerA;
-      document.getElementById("optPartnerA").value = ledger.partnerA;
-      document.getElementById("optPartnerB").textContent = ledger.partnerB;
-      document.getElementById("optPartnerB").value = ledger.partnerB;
+      const optA = document.getElementById("optPartnerA");
+      const optB = document.getElementById("optPartnerB");
+      if (optA) {
+        optA.textContent = ledger.partnerA;
+        optA.value = "partnerA";
+      }
+      if (optB) {
+        optB.textContent = ledger.partnerB;
+        optB.value = "partnerB";
+      }
 
       document.getElementById("labelNetA").textContent = `${ledger.partnerA} 淨利（收入 - 總成本）`;
       document.getElementById("labelNetB").textContent = `${ledger.partnerB} 淨利（收入 - 總成本）`;
@@ -1556,7 +1557,7 @@
       // 點幣頁面
       document.getElementById("coinPageLocationLabel").textContent = `【${loc.name}】未兌幣數總和`;
       document.getElementById("coinPageTotalCount").textContent = `${loc.unredeemedCoins || 0} 幣`;
-      document.getElementById("coinPageTotalCash").textContent = `HK$ ${loc.unredeemedCash || 0}`;
+      document.getElementById("coinPageTotalCash").textContent = `HK$ ${loc.unredeemedCoins * 5}`;
       document.getElementById("redeemCoinInput").value = loc.unredeemedCoins || 0;
       document.getElementById("redeemCashInput").value = loc.unredeemedCash || 0;
 
