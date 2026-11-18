@@ -434,10 +434,10 @@
         <div class="card border-2 border-emerald-300 bg-emerald-50/40">
           <h2 class="font-bold text-base text-emerald-900 mb-1">📁 匯入 Excel 帳目檔案 (.xlsx)</h2>
           <p class="text-xs text-emerald-800 mb-3">
-            已針對圖片結構優化：自動適配「標機」分頁（貨物與成本）與「租金&收入」分頁（台主專屬舊帳/收入與日期）。
+            已完美適配：「租金&收入」分頁中含有 Rental 的項目會自動判定為租金成本，含有 income 的項目會判定為現金收入。
           </p>
           <label class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow text-center cursor-pointer flex items-center justify-center">
-            📂 選擇並匯入 Excel 檔案（精準對應欄位）
+            📂 選擇並匯入 Excel 檔案
             <input type="file" id="excelUploadInput" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(event)" class="hidden" />
           </label>
         </div>
@@ -1210,7 +1210,7 @@
         bucket.records = bucket.records.filter(r => r.id !== recordId);
         if (bucket.records.length === 0) delete loc.monthlyStats[monthKey];
       }
-      addLog(`刪除 ${monthKey} 的兌幣紀錄`);
+      addLog(`刪除 ${monthKey} 的紀錄`);
       saveState();
       showToast("✅ 紀錄已刪除");
     }
@@ -1414,6 +1414,7 @@
 
           let totalImportedGoods = 0;
           let totalImportedIncome = 0;
+          let totalImportedRent = 0;
           let totalImportCost = 0;
           let totalImportIncomeVal = 0;
 
@@ -1430,18 +1431,17 @@
               // 過濾標題列
               const rowStr = row.join(" ").toLowerCase();
               if (rowStr.includes("item") && rowStr.includes("cost")) return;
-              if (rowStr.includes("feb rental") && idx < 3) return;
 
               if (isIncomeSheet) {
-                // 圖片2「租金&收入」分頁結構：
+                // 「租金&收入」分頁邏輯：
                 // Col A (index 0): 擁有人 (Amzi / Dennis)
-                // Col B (index 1): 說明 (income / Feb Rental)
+                // Col B (index 1): 說明 (income 或 Feb Rental 等)
                 // Col D (index 3): 金額 (數字)
                 // Col E (index 4): 日期 (例如 15/3/2026)
                 let owner = String(row[0] || "").trim();
                 if (owner !== "Amzi" && owner !== "Dennis") owner = "Amzi";
                 
-                let desc = String(row[1] || "income").trim();
+                let desc = String(row[1] || "").trim();
                 let amount = 0;
                 let dateVal = getTodayStr();
 
@@ -1457,7 +1457,6 @@
                   }
                 });
 
-                // 如果 D 欄直接有數字
                 if (typeof row[3] === "number" && !isNaN(row[3])) {
                   amount = row[3];
                 }
@@ -1466,29 +1465,31 @@
                 }
 
                 if (amount > 0) {
-                  const monthKey = getMonthKey(dateVal);
-                  const bucket = ensureMonthlyBucket(loc, monthKey);
-                  bucket.records = bucket.records || [];
-                  
-                  // 根據圖片，這是台主專屬舊帳/收入 (type: "legacy") 而非 50/50 兌現
-                  bucket.records.push({
-                    id: "r_excel_inc_" + Date.now() + "_" + idx,
-                    type: "legacy",
-                    owner: owner,
-                    cash: amount,
-                    date: dateVal
-                  });
-                  totalImportIncomeVal += amount;
-                  totalImportedIncome++;
+                  const descLower = desc.toLowerCase();
+                  // 判斷是否為租金成本 (Rental)
+                  if (descLower.includes("rental") || descLower.includes("租金")) {
+                    if (owner === "Amzi") loc.costAmzi = (loc.costAmzi || 0) + amount;
+                    else loc.costDennis = (loc.costDennis || 0) + amount;
+                    totalImportedRent++;
+                  } else {
+                    // 其他視為台主專屬收入 (legacy)
+                    const monthKey = getMonthKey(dateVal);
+                    const bucket = ensureMonthlyBucket(loc, monthKey);
+                    bucket.records = bucket.records || [];
+                    bucket.records.push({
+                      id: "r_excel_inc_" + Date.now() + "_" + idx,
+                      type: "legacy",
+                      owner: owner,
+                      cash: amount,
+                      date: dateVal
+                    });
+                    totalImportIncomeVal += amount;
+                    totalImportedIncome++;
+                  }
                 }
 
               } else {
-                // 圖片1「標機」分頁結構：
-                // Col A (index 0): 擁有人 (Amzi / Dennis)
-                // Col B (index 1): 貨物名稱
-                // Col C (index 2): 數量
-                // Col D (index 3): 成本
-                // Col E (index 4): 狀態 (出貨/貨存/入機) 或日期
+                // 「標機」分頁邏輯：
                 let owner = String(row[0] || "").trim();
                 if (owner !== "Amzi" && owner !== "Dennis" && owner !== "共同") owner = "Amzi";
 
@@ -1521,9 +1522,9 @@
             });
           });
 
-          addLog(`上傳 Excel 檔案 (${file.name})：匯入 ${totalImportedGoods} 筆貨物(成本$${totalImportCost})，${totalImportedIncome} 筆收入/舊帳($${totalImportIncomeVal})`);
+          addLog(`上傳 Excel 檔案 (${file.name})：匯入 ${totalImportedGoods} 筆貨物成本($${totalImportCost})，${totalImportedIncome} 筆收入($${totalImportIncomeVal})，${totalImportedRent} 筆租金成本`);
           saveState();
-          showToast(`✅ 成功匯入：${totalImportedGoods}筆貨物($${totalImportCost})、${totalImportedIncome}筆專屬收入/舊帳($${totalImportIncomeVal})！`);
+          showToast(`✅ 成功匯入：${totalImportedGoods}筆貨物、${totalImportedIncome}筆專屬收入、${totalImportedRent}筆租金成本！`);
           event.target.value = "";
         } catch (err) {
           alert("解析 Excel 檔案失敗：" + err.message);
