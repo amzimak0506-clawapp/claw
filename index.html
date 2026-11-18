@@ -465,7 +465,7 @@
       measurementId: "G-RPZDMHX5C1"
     };
 
-    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v39";
+    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v40";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "partnerA";
     let currentView = "landing";
@@ -1018,14 +1018,14 @@
       if (machine && machine.isFourInOne) {
         singleWrapper.classList.add("hidden");
         fourWrapper.classList.remove("hidden");
-        document.getElementById("slot-lt").value = "";
-        document.getElementById("slot-rt").value = "";
-        document.getElementById("slot-lb").value = "";
-        document.getElementById("slot-rb").value = "";
+        document.getElementById("slot-lt").value = machine.slots["左上"] || "";
+        document.getElementById("slot-rt").value = machine.slots["右上"] || "";
+        document.getElementById("slot-lb").value = machine.slots["左下"] || "";
+        document.getElementById("slot-rb").value = machine.slots["右下"] || "";
       } else {
         singleWrapper.classList.remove("hidden");
         fourWrapper.classList.add("hidden");
-        document.getElementById("coinCountInput").value = "";
+        document.getElementById("coinCountInput").value = machine.panelTotal || "";
       }
       onPanelCountInput();
     }
@@ -1105,29 +1105,23 @@
         }
 
         addedCoins = 
-          Math.max(0, lt - (machine.slotLast["左上"] || 0)) +
-          Math.max(0, rt - (machine.slotLast["右上"] || 0)) +
-          Math.max(0, lb - (machine.slotLast["左下"] || 0)) +
-          Math.max(0, rb - (machine.slotLast["右下"] || 0));
+          Math.max(0, lt - (machine.slots["左上"] || machine.slotLast["左上"] || 0)) +
+          Math.max(0, rt - (machine.slots["右上"] || machine.slotLast["右上"] || 0)) +
+          Math.max(0, lb - (machine.slots["左下"] || machine.slotLast["左下"] || 0)) +
+          Math.max(0, rb - (machine.slots["右下"] || machine.slotLast["右下"] || 0));
 
         machine.slots["左上"] = lt;
         machine.slots["右上"] = rt;
         machine.slots["左下"] = lb;
         machine.slots["右下"] = rb;
-        
-        document.getElementById("slot-lt").value = "";
-        document.getElementById("slot-rt").value = "";
-        document.getElementById("slot-lb").value = "";
-        document.getElementById("slot-rb").value = "";
       } else {
         const panelVal = parseInt(document.getElementById("coinCountInput").value, 10);
         if (isNaN(panelVal) || panelVal < 0) {
           alert("請輸入有效的面板累計數值！");
           return;
         }
-        addedCoins = Math.max(0, panelVal - (machine.panelTotal || 0));
+        addedCoins = Math.max(0, panelVal - (machine.panelTotal || machine.lastRedeemedPanel || 0));
         machine.panelTotal = panelVal;
-        document.getElementById("coinCountInput").value = "";
       }
 
       const mBucket = ensureMonthlyBucket(loc, monthKey);
@@ -1141,10 +1135,10 @@
       });
 
       saveState();
-      showToast(`✅ 已記錄點幣未入帳（${machine.name} +${addedCoins} 幣）`);
+      showToast(`✅ 已記錄點幣未入帳（${machine.name} 讀數已更新）`);
     }
 
-    // 2. 直接兌現入帳（全額結算，機數歸零）
+    // 2. 直接兌現入帳（全額結算，機數歸零，支援取消刪除）
     function recordCoinsDirectRedeem() {
       const loc = getCurrentLocation();
       const dateVal = document.getElementById("coinDateInput").value || getTodayStr();
@@ -1160,10 +1154,10 @@
       loc.machines.forEach(m => {
         if (m.isFourInOne) {
           ["左上", "右上", "左下", "右下"].forEach(slot => {
-            m.slotLast[slot] = m.slots[slot] || 0;
+            m.slotLast[slot] = m.slots[slot] || m.slotLast[slot] || 0;
           });
         } else {
-          m.lastRedeemedPanel = m.panelTotal || 0;
+          m.lastRedeemedPanel = m.panelTotal || m.lastRedeemedPanel || 0;
         }
       });
 
@@ -1202,22 +1196,17 @@
         return;
       }
 
-      // 計算本次實際抵銷了多少幣
-      // 假設每幣 $5，場主給現金 cashPaid，則抵銷了 paidCoins = cashPaid / 5
       const rate = 5;
       const paidCoins = Math.min(totalUnredCoins, Math.round(cashPaid / rate));
       const outstandingCash = Math.max(0, totalUnredCash - cashPaid);
       const outstandingCoins = Math.max(0, totalUnredCoins - paidCoins);
 
-      // 更新機台上次兌現面板讀數（只更新對應已付清比例的機台讀數，或按比例前進）
-      // 實務上：若全額付清則全部歸零/更新；若部分付清，則按比例更新 lastRedeemedPanel / slotLast
       loc.machines.forEach(m => {
         if (m.isFourInOne) {
           ["左上", "右上", "左下", "右下"].forEach(slot => {
             const cur = m.slots[slot] || 0;
             const last = m.slotLast[slot] || 0;
             const diff = Math.max(0, cur - last);
-            // 如果這次付清了全部，或者按比例推進
             m.slotLast[slot] = cur - Math.round(diff * (paidCoins / totalUnredCoins));
           });
         } else {
@@ -1258,7 +1247,7 @@
     }
 
     function deleteRecord(monthKey, recordId) {
-      if (!confirm("確定要刪除這筆紀錄嗎？")) return;
+      if (!confirm("確定要刪除/取消這筆紀錄嗎？（刪除後未兌現幣數將自動恢復）")) return;
       const loc = getCurrentLocation();
       const bucket = loc.monthlyStats[monthKey];
       if (bucket && bucket.records) {
@@ -1266,7 +1255,7 @@
         if (bucket.records.length === 0) delete loc.monthlyStats[monthKey];
       }
       saveState();
-      showToast("✅ 紀錄已刪除");
+      showToast("✅ 紀錄已刪除，數據已重新計算");
     }
 
     function recordGoodsItem() {
@@ -1515,7 +1504,7 @@
             return `
               <div class="flex justify-between items-center py-1.5 pl-2 pr-1 border-b border-slate-100 last:border-b-0 text-xs text-slate-600">
                 <div>
-                  <span class="font-bold text-blue-900">🔍 巡機點幣未入帳</span> [${r.machineName || '機台'}] 新增：<strong class="text-blue-800">${r.coins || 0} 幣</strong>
+                  <span class="font-bold text-blue-900">🔍 巡機點幣未入帳</span> [${r.machineName || '機台'}] 讀數更新 (+${r.coins || 0} 幣)
                   <div class="text-[10px] text-slate-400">${r.date || "未填"}</div>
                 </div>
                 <button onclick="deleteRecord('${m}', '${r.id}')" class="text-rose-600 font-bold px-2 py-0.5 bg-rose-50 rounded">刪除</button>
@@ -1531,7 +1520,7 @@
                 <div class="text-[11px] text-slate-500 mt-0.5">📅 日期：${r.date || "未填"} | ${detailStr}</div>
               </div>
               <div class="flex gap-1.5 ml-2">
-                <button onclick="deleteRecord('${m}', '${r.id}')" class="text-rose-600 font-bold px-2 py-1 bg-rose-50 rounded">刪除</button>
+                <button onclick="deleteRecord('${m}', '${r.id}')" class="text-rose-600 font-bold px-2 py-1 bg-rose-50 rounded">取消/刪除</button>
               </div>
             </div>`;
         }).join("") || `<div class="text-slate-400 py-1 pl-2">無明細紀錄</div>`;
@@ -1563,7 +1552,7 @@
             return `
               <div class="flex justify-between items-center py-1.5 pl-2 pr-1 border-b border-slate-100 last:border-b-0 text-xs text-slate-600">
                 <div>
-                  <span class="font-bold text-blue-900">🔍 巡機點幣未入帳</span> [${r.machineName || '機台'}] 新增：<strong class="text-blue-800">${r.coins || 0} 幣</strong>
+                  <span class="font-bold text-blue-900">🔍 巡機點幣未入帳</span> [${r.machineName || '機台'}] 讀數更新 (+${r.coins || 0} 幣)
                   <div class="text-[10px] text-slate-400">${r.date || "未填"}</div>
                 </div>
                 <button onclick="deleteRecord('${m}', '${r.id}')" class="text-rose-600 font-bold px-2 py-0.5 bg-rose-50 rounded">刪除</button>
@@ -1579,7 +1568,7 @@
                 <div class="text-[11px] text-slate-500 mt-0.5">📅 日期：${r.date || "未填"} | ${detailStr}</div>
               </div>
               <div class="flex gap-1.5 ml-2">
-                <button onclick="deleteRecord('${m}', '${r.id}')" class="text-rose-600 font-bold px-2 py-1 bg-rose-50 rounded">刪除</button>
+                <button onclick="deleteRecord('${m}', '${r.id}')" class="text-rose-600 font-bold px-2 py-1 bg-rose-50 rounded">取消/刪除</button>
               </div>
             </div>`;
         }).join("") || `<div class="text-slate-400 py-1 pl-2">無明細紀錄</div>`;
