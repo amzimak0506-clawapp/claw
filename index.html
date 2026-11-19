@@ -208,7 +208,7 @@
             <span class="text-[11px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">1 幣 = HK$5</span>
           </div>
           <p class="text-xs text-slate-500 mb-3">
-            兌幣後巡機數歸零重新累計，再次輸入可大於或少於上次數值；確認後顯示於介面 2。
+            同場每台機確認後，介面 2 顯示同場各機巡機數總和；確認兌幣（不論已入帳或未入帳）後歸零重新累計。
           </p>
 
           <div class="space-y-3">
@@ -224,7 +224,7 @@
             </div>
 
             <div id="prevReadingBox" class="text-xs bg-slate-100 text-slate-700 px-3 py-2 rounded-xl font-semibold">
-              上次紀錄數值：0 · 介面 2 待處理：0 幣
+              本機目前巡機數：0 · 同場總和（介面 2）：0 幣
             </div>
 
             <div id="singlePanelWrapper">
@@ -257,7 +257,7 @@
             </div>
 
             <button id="btnConfirmStep1" onclick="confirmStep1Inspection()" class="w-full bg-blue-900 hover:bg-blue-950 text-white font-bold py-3 rounded-xl text-sm shadow">
-              ✅ 確認巡點數值並傳到「介面 2 - 未兌幣記錄」➔
+              ✅ 確認巡點數值並更新「介面 2」同場總和 ➔
             </button>
           </div>
         </div>
@@ -268,11 +268,11 @@
             <h2 class="font-extrabold text-base text-indigo-950">步驟 2：介面 2 - 未兌幣記錄</h2>
             <span id="step2LockBadge" class="text-[11px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">待處理</span>
           </div>
-          <p id="step2LocationLabel" class="text-xs text-slate-500 mb-2">【當前分店】來自介面 1 的未兌幣記錄</p>
+          <p id="step2LocationLabel" class="text-xs text-slate-500 mb-2">【當前分店】同場各機巡機數總和</p>
 
-          <div class="bg-white border border-indigo-100 rounded-xl p-3 mb-3 flex justify-between items-center">
+          <div class="bg-white border border-indigo-100 rounded-xl p-3 mb-2 flex justify-between items-center">
             <div>
-              <div class="text-xs text-slate-500">目前未兌幣數</div>
+              <div class="text-xs text-slate-500">同場巡機數總和（未兌幣數）</div>
               <div id="step2CoinsDisplay" class="text-2xl font-extrabold text-indigo-900">0 幣</div>
             </div>
             <div class="text-right">
@@ -280,10 +280,13 @@
               <div id="step2CashDisplay" class="text-xl font-extrabold text-emerald-700">HK$ 0</div>
             </div>
           </div>
+          <div id="step2MachineBreakdown" class="text-[11px] text-slate-600 bg-white/80 border border-indigo-100 rounded-xl px-3 py-2 mb-3">
+            各機明細：尚無巡機數
+          </div>
 
           <div class="grid grid-cols-1 gap-2.5">
             <button id="btnChoiceUnpaidToStep3" onclick="chooseUnredeemedToStep3()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl text-sm shadow">
-              1️⃣ 確認場主兌幣未入帳 ➔ 傳到「介面 3 - 兌幣未入帳紀錄」
+              1️⃣ 確認場主兌幣未入帳 ➔ 傳到「介面 3 - 兌幣未入帳紀錄」（同場歸零）
             </button>
             <button id="btnChoicePaidDirect" onclick="choosePaidDirectInStep2()" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 rounded-xl text-sm shadow">
               2️⃣ 確認場主兌幣已入帳（計算收入並歸零重新累計）
@@ -519,7 +522,7 @@
       measurementId: "G-RPZDMHX5C1"
     };
 
-    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v43";
+    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v44";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "partnerA";
     let currentView = "landing";
@@ -592,7 +595,7 @@
 
     function loadLocalBackup() {
       try {
-        const raw = localStorage.getItem(LOCAL_BACKUP_KEY) || localStorage.getItem("claw_ledger_independent_v42") || localStorage.getItem("claw_ledger_independent_v41") || localStorage.getItem("claw_ledger_independent_v40");
+        const raw = localStorage.getItem(LOCAL_BACKUP_KEY) || localStorage.getItem("claw_ledger_independent_v43") || localStorage.getItem("claw_ledger_independent_v42");
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed && parsed.ledgers) return parsed;
@@ -652,7 +655,7 @@
           (l.machines || []).forEach(m => {
             if (typeof m.panelTotal !== "number") m.panelTotal = Number(m.coins) || 0;
             if (typeof m.lastRedeemedPanel !== "number") m.lastRedeemedPanel = 0;
-            if (typeof m.step2Coins !== "number") m.step2Coins = 0;
+            if (typeof m.step2Coins !== "number") m.step2Coins = Number(m.coins) || 0;
             if (!m.slots) m.slots = { "左上": 0, "右上": 0, "左下": 0, "右下": 0 };
             if (!m.slotLast) m.slotLast = { "左上": 0, "右上": 0, "左下": 0, "右下": 0 };
           });
@@ -869,13 +872,30 @@
       pushToCloud(true);
     }
 
+    // 介面 2 顯示同場所有機台目前巡機數之總和
+    function getLocationStep2Sum(loc) {
+      return (loc.machines || []).reduce((acc, m) => acc + Math.max(0, Number(m.step2Coins) || 0), 0);
+    }
+
+    function resetLocationStep2AndMachines(loc) {
+      (loc.machines || []).forEach(m => {
+        m.step2Coins = 0;
+        m.coins = 0;
+        m.panelTotal = 0;
+        m.slots = { "左上": 0, "右上": 0, "左下": 0, "右下": 0 };
+      });
+      loc.pendingStep2Coins = 0;
+      loc.unredeemedCoins = 0;
+      loc.unredeemedCash = 0;
+    }
+
     function recalculateLocationTotals() {
       const ledger = getCurrentLedger();
       Object.values(ledger.locations).forEach(loc => {
-        const totalUnred = Math.max(0, Number(loc.pendingStep2Coins) || 0);
-        loc.pendingStep2Coins = totalUnred;
-        loc.unredeemedCoins = totalUnred;
-        loc.unredeemedCash = totalUnred * COIN_RATE;
+        const sumCoins = getLocationStep2Sum(loc);
+        loc.pendingStep2Coins = sumCoins;
+        loc.unredeemedCoins = sumCoins;
+        loc.unredeemedCash = sumCoins * COIN_RATE;
         if (typeof loc.step3CoinsTotal !== "number") loc.step3CoinsTotal = 0;
 
         let totalRedeem = 0;
@@ -945,12 +965,13 @@
     function updatePrevReadingInfo(machine, loc) {
       const box = document.getElementById("prevReadingBox");
       if (!box || !machine) return;
-      const pCoins = (loc && loc.pendingStep2Coins) || 0;
+      const locSum = getLocationStep2Sum(loc);
+      const mCoins = Number(machine.step2Coins) || 0;
       if (machine.isFourInOne) {
         const s = machine.slots || {};
-        box.textContent = `上次格位：左上 ${s["左上"] || 0} / 右上 ${s["右上"] || 0} / 左下 ${s["左下"] || 0} / 右下 ${s["右下"] || 0} · 介面 2 待處理：${pCoins} 幣`;
+        box.textContent = `本機目前：${mCoins} 幣 (${s["左上"] || 0},${s["右上"] || 0},${s["左下"] || 0},${s["右下"] || 0}) · 同場總和（介面 2）：${locSum} 幣`;
       } else {
-        box.textContent = `上次紀錄數值：${machine.panelTotal || 0} · 介面 2 待處理：${pCoins} 幣 (HK$${pCoins * COIN_RATE})`;
+        box.textContent = `本機目前：${mCoins} 幣 · 同場總和（介面 2）：${locSum} 幣 (HK$${locSum * COIN_RATE})`;
       }
     }
 
@@ -971,13 +992,18 @@
         enteredCoins = Math.max(0, parseInt(document.getElementById("coinCountInput").value, 10) || 0);
       }
 
+      const otherMachinesSum = (loc.machines || [])
+        .filter(m => m.id !== machine.id)
+        .reduce((acc, m) => acc + Math.max(0, Number(m.step2Coins) || 0), 0);
+      const projectedTotal = otherMachinesSum + enteredCoins;
+
       const box = document.getElementById("prevReadingBox");
       if (box) {
-        box.textContent = `本次確認巡點數：${enteredCoins} 幣（約 HK$ ${enteredCoins * COIN_RATE}，可大於或少於上次數值）`;
+        box.textContent = `本機輸入：${enteredCoins} 幣 · 確認後同場總和（介面 2）：${projectedTotal} 幣（HK$ ${projectedTotal * COIN_RATE}）`;
       }
     }
 
-    // 介面 1：兌幣後已歸零重新累計，再次輸入可大於或少於上次數值，確認後顯示於介面 2
+    // 介面 1：更新此台機的巡機數，介面 2 顯示同場所有機台巡機數總和
     function confirmStep1Inspection() {
       const loc = getCurrentLocation();
       const mId = document.getElementById("coinMachineSelect").value;
@@ -1026,9 +1052,11 @@
 
       machine.coins = confirmedCoins;
       machine.step2Coins = confirmedCoins;
-      loc.pendingStep2Coins = confirmedCoins;
-      loc.unredeemedCoins = confirmedCoins;
-      loc.unredeemedCash = confirmedCoins * COIN_RATE;
+
+      const totalLocCoins = getLocationStep2Sum(loc);
+      loc.pendingStep2Coins = totalLocCoins;
+      loc.unredeemedCoins = totalLocCoins;
+      loc.unredeemedCash = totalLocCoins * COIN_RATE;
       loc.coinSettledLocked = false;
 
       const mBucket = ensureMonthlyBucket(loc, monthKey);
@@ -1038,28 +1066,22 @@
         type: "inspect",
         machineName: machine.name,
         coins: confirmedCoins,
+        totalCoins: totalLocCoins,
         date: dateVal
       });
 
       clearStep1Inputs();
-      addLog(`介面1 巡點確認「${machine.name}」${confirmedCoins} 幣，顯示於介面2`);
+      addLog(`介面1 巡點「${machine.name}」${confirmedCoins} 幣，同場總和 ${totalLocCoins} 幣`);
       saveState();
 
-      const s2Coins = document.getElementById("step2CoinsDisplay");
-      const s2Cash = document.getElementById("step2CashDisplay");
-      if (s2Coins) s2Coins.textContent = `${loc.unredeemedCoins} 幣`;
-      if (s2Cash) s2Cash.textContent = `HK$ ${loc.unredeemedCash}`;
-      applyCoinLockState(loc);
-      updatePrevReadingInfo(machine, loc);
-
       focusStep(2);
-      showToast(`✅ 已確認巡點 ${confirmedCoins} 幣，顯示於「介面 2 - 未兌幣記錄」`);
+      showToast(`✅ 「${machine.name}」${confirmedCoins} 幣，介面 2 同場總和：${totalLocCoins} 幣`);
     }
 
-    // 介面 2 選擇 1：確認場主兌幣未入帳 -> 數值傳到介面 3，介面 2 歸零重新累計
+    // 介面 2 選擇 1：確認場主兌幣未入帳 -> 同場總和傳到介面 3，介面 2 與各機巡機數歸零
     function chooseUnredeemedToStep3() {
       const loc = getCurrentLocation();
-      const unredCoins = loc.unredeemedCoins || 0;
+      const unredCoins = getLocationStep2Sum(loc);
       if (unredCoins <= 0) {
         alert("介面 2 目前沒有未兌幣數可供傳送！");
         return;
@@ -1068,10 +1090,7 @@
       const addedCash = unredCoins * COIN_RATE;
       loc.step3CoinsTotal = (loc.step3CoinsTotal || 0) + unredCoins;
       loc.step3ConfirmedUnpaid = true;
-      loc.pendingStep2Coins = 0;
-      loc.unredeemedCoins = 0;
-      loc.unredeemedCash = 0;
-      (loc.machines || []).forEach(m => { m.step2Coins = 0; });
+      resetLocationStep2AndMachines(loc);
       loc.coinSettledLocked = false;
 
       const dateVal = document.getElementById("coinDateInput").value || getTodayStr();
@@ -1086,19 +1105,19 @@
         date: dateVal
       });
 
-      addLog(`介面2 確認兌幣未入帳 ${unredCoins} 幣 (HK$${addedCash}) 傳至介面3，介面2 已歸零`);
+      addLog(`介面2 確認兌幣未入帳 ${unredCoins} 幣 (HK$${addedCash}) 傳至介面3，同場已歸零`);
       saveState();
       focusStep(3);
       showToast(`➡️ 已將 ${unredCoins} 幣 (HK$${addedCash}) 傳到介面 3，介面 2 已歸零`);
     }
 
-    // 介面 2 選擇 2：確認場主兌幣已入帳 -> 直接計算收入（入帳），介面 2 歸零重新累計
+    // 介面 2 選擇 2：確認場主兌幣已入帳 -> 計算收入，介面 2 與各機巡機數歸零重新累計
     function choosePaidDirectInStep2() {
       const loc = getCurrentLocation();
       const ledger = getCurrentLedger();
       const dateVal = document.getElementById("redeemDateInput").value || document.getElementById("coinDateInput").value || getTodayStr();
       const monthKey = getMonthKey(dateVal);
-      const unredCoins = loc.unredeemedCoins || 0;
+      const unredCoins = getLocationStep2Sum(loc);
 
       if (unredCoins <= 0) {
         alert("介面 2 目前沒有可入帳的未兌幣數！");
@@ -1127,13 +1146,10 @@
         date: dateVal
       });
 
-      loc.pendingStep2Coins = 0;
-      loc.unredeemedCoins = 0;
-      loc.unredeemedCash = 0;
-      (loc.machines || []).forEach(m => { m.step2Coins = 0; });
+      resetLocationStep2AndMachines(loc);
       loc.coinSettledLocked = false;
       clearStep1Inputs();
-      addLog(`介面2 確認兌幣已入帳 HK$${cash} (${unredCoins}幣)，介面2 已歸零重新累計`);
+      addLog(`介面2 確認兌幣已入帳 HK$${cash} (${unredCoins}幣)，同場已歸零重新累計`);
       saveState();
       showToast(`✅ 兌幣已入帳 HK$${cash}，介面 2 已歸零可重新巡點累計`);
     }
@@ -1746,7 +1762,7 @@
         return `
           <div class="flex justify-between items-center py-1.5 pl-2 pr-1 border-b border-slate-100 last:border-b-0 text-xs text-slate-600">
             <div>
-              <span class="font-bold text-blue-900">🔍 介面1 巡點確認</span> [${r.machineName || '機台'}] (${r.coins || 0} 幣)
+              <span class="font-bold text-blue-900">🔍 介面1 巡點確認</span> [${r.machineName || '機台'}] ${r.coins || 0} 幣（同場總和 ${r.totalCoins || r.coins || 0} 幣）
               <div class="text-[10px] text-slate-400">${r.date || "未填"}</div>
             </div>
             <button onclick="deleteRecord('${m}', '${r.id}')" class="text-rose-600 font-bold px-2 py-0.5 bg-rose-50 rounded">刪除</button>
@@ -1902,11 +1918,17 @@
       document.getElementById("statCostTotal").textContent = `$${partnerATotalCost + partnerBTotalCost}`;
       document.getElementById("statCostShared").textContent = `$0`;
 
-      const unredCoins = loc.unredeemedCoins || 0;
+      const unredCoins = getLocationStep2Sum(loc);
       const unredCash = unredCoins * COIN_RATE;
-      document.getElementById("step2LocationLabel").textContent = `【${loc.name}】來自介面 1 的未兌幣記錄`;
+      document.getElementById("step2LocationLabel").textContent = `【${loc.name}】同場各機巡機數總和`;
       document.getElementById("step2CoinsDisplay").textContent = `${unredCoins} 幣`;
       document.getElementById("step2CashDisplay").textContent = `HK$ ${unredCash}`;
+
+      const breakdownEl = document.getElementById("step2MachineBreakdown");
+      if (breakdownEl) {
+        const items = (loc.machines || []).map(m => `${m.name}: ${Number(m.step2Coins) || 0} 幣`);
+        breakdownEl.textContent = items.length ? `各機明細：${items.join(" · ")}` : "各機明細：尚無巡機數";
+      }
 
       const step3Coins = loc.step3CoinsTotal || 0;
       const step3Cash = step3Coins * COIN_RATE;
@@ -1967,7 +1989,7 @@
                   ${isExpanded ? "▲ 收起月覽" : "▼ 展開月覽"}
                 </button>
               </div>
-              <div class="text-slate-500 text-[11px]">庫存 ${l.stockCount || 0} 隻 · 未兌 ${l.unredeemedCoins || 0} 幣 · 介面3總和 ${l.step3CoinsTotal || 0} 幣</div>
+              <div class="text-slate-500 text-[11px]">庫存 ${l.stockCount || 0} 隻 · 未兌 ${getLocationStep2Sum(l)} 幣 · 介面3總和 ${l.step3CoinsTotal || 0} 幣</div>
             </div>
             <div class="text-right text-xs space-y-0.5">
               <div><strong class="text-blue-900">${ledger.partnerA}利潤 :</strong> <span class="font-extrabold text-emerald-700">$${lAProfit}</span></div>
@@ -1998,7 +2020,7 @@
                 <button onclick="renameMachine('${m.id}')" class="text-[11px] bg-white border border-slate-300 px-1.5 py-0.5 rounded text-slate-600">✏️改名</button>
                 <button onclick="deleteMachine('${m.id}')" class="text-[11px] bg-rose-50 border border-rose-200 text-rose-600 px-1.5 py-0.5 rounded">🗑️刪除</button>
               </div>
-              <span class="text-blue-800">最近巡點 ${m.coins || 0} 幣</span>
+              <span class="text-blue-800">本輪巡機 ${Number(m.step2Coins) || 0} 幣</span>
             </div>
             <div class="grid grid-cols-2 gap-1.5 text-center text-xs">
               <div class="bg-white py-1 rounded border border-slate-200">左上讀數: <strong>${s["左上"] || 0}</strong></div>
@@ -2010,11 +2032,11 @@
           div.innerHTML = `
             <div class="flex justify-between items-center text-xs">
               <div class="flex items-center gap-1.5">
-                <span class="font-bold text-slate-800">${m.name} (上次數值:${m.panelTotal || 0})</span>
+                <span class="font-bold text-slate-800">${m.name}</span>
                 <button onclick="renameMachine('${m.id}')" class="text-[11px] bg-white border border-slate-300 px-1.5 py-0.5 rounded text-slate-600">✏️改名</button>
                 <button onclick="deleteMachine('${m.id}')" class="text-[11px] bg-rose-50 border border-rose-200 text-rose-600 px-1.5 py-0.5 rounded">🗑️刪除</button>
               </div>
-              <span class="font-bold text-blue-800">最近巡點：${m.coins || 0} 幣</span>
+              <span class="font-bold text-blue-800">本輪巡機：${Number(m.step2Coins) || 0} 幣</span>
             </div>`;
         }
         mContainer.appendChild(div);
