@@ -414,6 +414,35 @@
           </div>
         </div>
 
+        <!-- 同帳戶調貨（跨分店） -->
+        <div class="card border-2 border-indigo-200 bg-indigo-50/30">
+          <div class="flex justify-between items-center mb-2">
+            <h2 class="font-bold text-base text-indigo-950">🔄 同帳戶調貨（跨分店）</h2>
+            <span id="transferSelectedCount" class="text-xs font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">已選 0 件</span>
+          </div>
+          <p class="text-xs text-slate-600 mb-3">
+            從目前帳戶內其他分店調入庫存（入機／貨存）至本場，或將本場庫存調往同帳戶其他分店。
+          </p>
+
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">來源分店</label>
+              <select id="transferFromLocSelect" onchange="onTransferSourceChange()" class="w-full border border-slate-300 rounded-xl px-2.5 py-2 bg-white text-xs font-bold"></select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">目標分店</label>
+              <select id="transferToLocSelect" class="w-full border border-slate-300 rounded-xl px-2.5 py-2 bg-white text-xs font-bold"></select>
+            </div>
+          </div>
+
+          <div id="transferCandidatesList" class="max-h-48 overflow-y-auto space-y-1.5 bg-white border border-indigo-100 rounded-xl p-2.5 mb-3 text-xs">
+          </div>
+
+          <button onclick="executeSameAccountTransfer()" class="w-full bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-2.5 rounded-xl text-sm shadow">
+            🔄 確認同帳戶調貨
+          </button>
+        </div>
+
         <div class="card">
           <div class="flex justify-between items-center mb-2">
             <div class="flex items-center gap-2">
@@ -535,7 +564,7 @@
       measurementId: "G-RPZDMHX5C1"
     };
 
-    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v46";
+    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v47";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "partnerA";
     let currentView = "landing";
@@ -545,6 +574,9 @@
     let coinPageMonthlyExpanded = false;
     let expandedMonthlyKeys = {};
     let isResetting = false;
+    let selectedTransferIds = {};
+    let transferFromIdCache = "";
+    let transferToIdCache = "";
 
     function getTodayStr() {
       const d = new Date();
@@ -608,7 +640,7 @@
 
     function loadLocalBackup() {
       try {
-        const raw = localStorage.getItem(LOCAL_BACKUP_KEY) || localStorage.getItem("claw_ledger_independent_v45") || localStorage.getItem("claw_ledger_independent_v44");
+        const raw = localStorage.getItem(LOCAL_BACKUP_KEY) || localStorage.getItem("claw_ledger_independent_v46") || localStorage.getItem("claw_ledger_independent_v45");
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed && parsed.ledgers) return parsed;
@@ -1394,6 +1426,145 @@
           nav.className = "py-2 rounded-lg text-blue-100 font-semibold transition";
         }
       });
+      if (tab === "stock") {
+        syncTransferSelectors();
+        renderTransferCandidates();
+      }
+    }
+
+    function syncTransferSelectors() {
+      const ledger = getCurrentLedger();
+      const locIds = Object.keys(ledger.locations || {});
+      const fromSel = document.getElementById("transferFromLocSelect");
+      const toSel = document.getElementById("transferToLocSelect");
+      if (!fromSel || !toSel || locIds.length === 0) return;
+
+      if (!transferFromIdCache || !ledger.locations[transferFromIdCache]) {
+        const otherLocId = locIds.find(id => id !== ledger.currentLocationId);
+        const hasCurrentStock = ((ledger.locations[ledger.currentLocationId] || {}).goodsList || [])
+          .some(g => g.status === "入機" || g.status === "貨存" || g.status === "存貨");
+        transferFromIdCache = hasCurrentStock ? ledger.currentLocationId : (otherLocId || ledger.currentLocationId);
+      }
+
+      if (!transferToIdCache || !ledger.locations[transferToIdCache] || transferToIdCache === transferFromIdCache) {
+        transferToIdCache = locIds.find(id => id !== transferFromIdCache) || ledger.currentLocationId;
+      }
+
+      fromSel.innerHTML = "";
+      toSel.innerHTML = "";
+      locIds.forEach(id => {
+        const l = ledger.locations[id];
+        fromSel.add(new Option(l.name, id, false, id === transferFromIdCache));
+        toSel.add(new Option(l.name, id, false, id === transferToIdCache));
+      });
+    }
+
+    function onTransferSourceChange() {
+      const ledger = getCurrentLedger();
+      const locIds = Object.keys(ledger.locations || {});
+      const fromSel = document.getElementById("transferFromLocSelect");
+      const toSel = document.getElementById("transferToLocSelect");
+      transferFromIdCache = fromSel.value;
+      if (toSel.value === transferFromIdCache) {
+        const fallback = locIds.find(id => id !== transferFromIdCache);
+        if (fallback) {
+          toSel.value = fallback;
+          transferToIdCache = fallback;
+        }
+      }
+      selectedTransferIds = {};
+      renderTransferCandidates();
+    }
+
+    function toggleTransferItem(goodsId) {
+      selectedTransferIds[goodsId] = !selectedTransferIds[goodsId];
+      renderTransferCandidates();
+    }
+
+    function renderTransferCandidates() {
+      const ledger = getCurrentLedger();
+      const fromSel = document.getElementById("transferFromLocSelect");
+      const listEl = document.getElementById("transferCandidatesList");
+      const countEl = document.getElementById("transferSelectedCount");
+      if (!fromSel || !listEl) return;
+
+      const fromLoc = ledger.locations[fromSel.value];
+      const candidates = (fromLoc && fromLoc.goodsList ? fromLoc.goodsList : [])
+        .filter(g => g.status === "入機" || g.status === "貨存" || g.status === "存貨");
+
+      const validIds = new Set(candidates.map(g => g.id));
+      Object.keys(selectedTransferIds).forEach(id => {
+        if (!validIds.has(id)) delete selectedTransferIds[id];
+      });
+
+      const checkedCount = candidates.filter(g => !!selectedTransferIds[g.id]).length;
+      if (countEl) countEl.textContent = `已選 ${checkedCount} 件`;
+
+      if (candidates.length === 0) {
+        listEl.innerHTML = `<div class="py-3 text-center text-slate-400">此來源分店目前無「入機」或「貨存」可調撥貨物</div>`;
+        return;
+      }
+
+      listEl.innerHTML = candidates.map(g => {
+        const checked = !!selectedTransferIds[g.id];
+        return `
+          <label class="flex items-center justify-between p-2 rounded-lg border ${checked ? 'border-indigo-400 bg-indigo-50/70' : 'border-slate-200 bg-white'} cursor-pointer">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleTransferItem('${g.id}')" class="w-4 h-4 accent-indigo-700" />
+              <div>
+                <span class="font-bold text-slate-800">${g.name}</span>
+                <span class="text-[11px] text-slate-500">· ${g.owner} · 成本 $${g.cost || 0}</span>
+              </div>
+            </div>
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${g.status === '入機' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">${g.status}</span>
+          </label>`;
+      }).join("");
+    }
+
+    function executeSameAccountTransfer() {
+      const ledger = getCurrentLedger();
+      const fromId = document.getElementById("transferFromLocSelect").value;
+      const toId = document.getElementById("transferToLocSelect").value;
+      const fromLoc = ledger.locations[fromId];
+      const toLoc = ledger.locations[toId];
+
+      if (!fromLoc || !toLoc) {
+        alert("請選擇來源與目標分店！");
+        return;
+      }
+      if (fromId === toId) {
+        alert("來源分店與目標分店不能相同！");
+        return;
+      }
+
+      const movingItems = (fromLoc.goodsList || []).filter(g =>
+        (g.status === "入機" || g.status === "貨存" || g.status === "存貨") && !!selectedTransferIds[g.id]
+      );
+
+      if (movingItems.length === 0) {
+        alert("請先勾選要調撥的貨物！");
+        return;
+      }
+
+      const movingIdSet = new Set(movingItems.map(g => g.id));
+      fromLoc.goodsList = (fromLoc.goodsList || []).filter(g => !movingIdSet.has(g.id));
+
+      toLoc.goodsList = toLoc.goodsList || [];
+      movingItems.forEach(item => {
+        toLoc.goodsList.unshift({
+          ...item,
+          id: "g_tr_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+          status: item.status === "入機" ? "貨存" : item.status,
+          date: getTodayStr()
+        });
+      });
+
+      selectedTransferIds = {};
+      const namesPreview = movingItems.map(i => i.name).slice(0, 3).join("、");
+      const suffix = movingItems.length > 3 ? `等 ${movingItems.length} 件` : `（${movingItems.length} 件）`;
+      addLog(`同帳戶調貨：從「${fromLoc.name}」調往「${toLoc.name}」${namesPreview}${suffix}`);
+      saveState();
+      showToast(`✅ 已從「${fromLoc.name}」調撥 ${movingItems.length} 件至「${toLoc.name}」`);
     }
 
     async function selectLedgerAccount(ledgerId) {
@@ -1449,6 +1620,9 @@
     function switchLocation(locId) {
       const ledger = getCurrentLedger();
       ledger.currentLocationId = locId;
+      selectedTransferIds = {};
+      transferFromIdCache = "";
+      transferToIdCache = "";
       saveState();
     }
 
@@ -2152,6 +2326,9 @@
         containerEl.classList.add("hidden");
         previewEl.textContent = `（列表已收起，目前篩選共 ${filteredGoods.length} 項，點擊「展開全部貨物」可查看完整清單）`;
       }
+
+      syncTransferSelectors();
+      renderTransferCandidates();
 
       const logsDiv = document.getElementById("recentLogs");
       logsDiv.innerHTML = (ledger.logs || []).slice(0, 15).map(log => `
