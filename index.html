@@ -46,13 +46,13 @@
 
     <!-- 雲端同步狀態列 -->
     <div class="card bg-blue-950 text-white mb-4 flex justify-between items-center py-3">
-      <div>
+      <div class="flex-1 pr-2">
         <div class="flex items-center gap-1.5 text-xs">
           <span id="landingSyncDot" class="inline-block w-2.5 h-2.5 rounded-full bg-amber-400"></span>
-          <span id="landingSyncStatus" class="font-bold text-blue-200">雲端連線中...</span>
+          <span id="landingSyncStatus" class="font-bold text-blue-200 break-all">雲端連線中...</span>
         </div>
       </div>
-      <button onclick="pullFromCloud(false)" class="bg-blue-800 hover:bg-blue-700 text-xs px-3 py-1.5 rounded-xl font-bold">
+      <button onclick="manualRetryCloud()" class="bg-blue-800 hover:bg-blue-700 text-xs px-3 py-1.5 rounded-xl font-bold whitespace-nowrap">
         🔄 雲端同步
       </button>
     </div>
@@ -455,6 +455,11 @@
   </div>
 
   <script>
+    window.onerror = function(msg, url, line) {
+      const el = document.getElementById("landingSyncStatus");
+      if (el) el.textContent = "程式錯誤(L" + line + "): " + msg;
+    };
+
     const firebaseConfig = {
       apiKey: "AIzaSyAPuMg_-MQoPySnmEpCfbFi_0sN088t-kQ",
       authDomain: "dennis-amzi-5b413.firebaseapp.com",
@@ -612,8 +617,13 @@
       return `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/${ledgerId}`;
     }
 
+    function getCollectionUrl() {
+      return `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers`;
+    }
+
     function showToast(msg, isError) {
       const el = document.getElementById("toastBanner");
+      if (!el) return;
       el.textContent = msg;
       el.className = `fixed top-36 inset-x-4 max-w-lg mx-auto z-40 ${isError ? "bg-rose-600" : "bg-emerald-600"} text-white text-center text-sm font-bold py-2.5 px-4 rounded-xl shadow-lg`;
       clearTimeout(window._toastTimer);
@@ -644,11 +654,65 @@
       return headers;
     }
 
-    async function pullFromCloud(silent) {
+    function fetchWithTimeout(url, options, ms = 6000) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), ms);
+      return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
+    }
+
+    async function syncAllLedgersFromCloud(silent) {
       if (isResetting) return;
       try {
         const headers = await getAuthHeaders();
-        const res = await fetch(getFirestoreUrl(), { method: "GET", headers });
+        const res = await fetchWithTimeout(getCollectionUrl(), { method: "GET", headers }, 6000);
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          const msg = (errJson.error && errJson.error.message) || `HTTP ${res.status}`;
+          setSyncUI(false, "讀取被拒：" + msg);
+          return;
+        }
+        const json = await res.json();
+        const docs = json.documents || [];
+        let loadedCount = 0;
+        docs.forEach(doc => {
+          const rawStr = doc.fields && doc.fields.payloadJson && doc.fields.payloadJson.stringValue;
+          if (rawStr) {
+            try {
+              const cloudLedger = JSON.parse(rawStr);
+              if (cloudLedger && cloudLedger.id) {
+                appState.ledgers[cloudLedger.id] = cloudLedger;
+                loadedCount++;
+              }
+            } catch (e) {}
+          }
+        });
+        if (loadedCount > 0) {
+          appState = normalizeState(appState);
+          localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
+          renderAll();
+        }
+        const t = new Date();
+        const ts = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}:${String(t.getSeconds()).padStart(2, "0")}`;
+        setSyncUI(true, "雲端已同步 (" + ts + ")");
+        const dw = document.getElementById("diagWriteText");
+        if (dw) dw.textContent = "正常 (" + ts + ")";
+        if (!silent) showToast("☁️ 已同步雲端全部帳戶（共 " + loadedCount + " 個）");
+      } catch (err) {
+        const reason = err.name === "AbortError" ? "連線逾時（請檢查網路）" : err.message;
+        setSyncUI(false, "同步異常：" + reason);
+        if (!silent) showToast("❌ 同步失敗：" + reason, true);
+      }
+    }
+
+    async function pullFromCloud(silent) {
+      if (isResetting) return;
+      if (currentView === "landing") {
+        await syncAllLedgersFromCloud(silent);
+        return;
+      }
+      try {
+        const headers = await getAuthHeaders();
+        const res = await fetchWithTimeout(getFirestoreUrl(), { method: "GET", headers }, 6000);
         if (res.status === 404) {
           await pushToCloud(true);
           return;
@@ -665,20 +729,23 @@
           const cloudLedger = JSON.parse(rawStr);
           if (cloudLedger && cloudLedger.id) {
             appState.ledgers[cloudLedger.id] = cloudLedger;
+            appState = normalizeState(appState);
             localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
             renderAll();
             const t = new Date();
             const ts = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}:${String(t.getSeconds()).padStart(2, "0")}`;
             setSyncUI(true, "雲端已同步 (" + ts + ")");
-            document.getElementById("diagWriteText").textContent = "正常 (" + ts + ")";
-            if (!silent) showToast("☁️ 已成功從雲端拉取當前帳戶最新資料！");
+            const dw = document.getElementById("diagWriteText");
+            if (dw) dw.textContent = "正常 (" + ts + ")";
+            if (!silent) showToast("☁️ 已成功從雲端拉取最新資料！");
             return;
           }
         }
         await pushToCloud(true);
       } catch (err) {
-        setSyncUI(false, "網絡異常：" + err.message);
-        if (!silent) showToast("❌ 拉取失敗：" + err.message, true);
+        const reason = err.name === "AbortError" ? "連線逾時" : err.message;
+        setSyncUI(false, "網絡異常：" + reason);
+        if (!silent) showToast("❌ 拉取失敗：" + reason, true);
       }
     }
 
@@ -694,11 +761,11 @@
             updatedAt: { integerValue: String(ledger.updatedAt) }
           }
         });
-        const res = await fetch(getFirestoreUrl(), {
+        const res = await fetchWithTimeout(getFirestoreUrl(), {
           method: "PATCH",
           headers,
           body
-        });
+        }, 6000);
         if (!res.ok) {
           const errJson = await res.json().catch(() => ({}));
           const msg = (errJson.error && errJson.error.message) || `HTTP ${res.status}`;
@@ -709,35 +776,70 @@
         const t = new Date();
         const ts = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}:${String(t.getSeconds()).padStart(2, "0")}`;
         setSyncUI(true, "雲端已同步 (" + ts + ")");
-        document.getElementById("diagWriteText").textContent = "成功寫入 (" + ts + ")";
+        const dw = document.getElementById("diagWriteText");
+        if (dw) dw.textContent = "成功寫入 (" + ts + ")";
         const lw = document.getElementById("lastCloudWriteTime");
         if (lw) lw.textContent = "☁️ 雲端已存 " + ts;
         if (!silent) showToast("☁️ 當前帳戶已成功寫入雲端！");
       } catch (err) {
-        setSyncUI(false, "寫入異常：" + err.message);
-        showToast("❌ 網絡異常（已存本機）：" + err.message, true);
+        const reason = err.name === "AbortError" ? "寫入逾時" : err.message;
+        setSyncUI(false, "寫入異常：" + reason);
+        showToast("❌ 網絡異常（已存本機）：" + reason, true);
+      }
+    }
+
+    function manualRetryCloud() {
+      setSyncUI(true, "重新連線中...");
+      if (!authUser && typeof firebase !== "undefined") {
+        initCloud();
+      } else {
+        pullFromCloud(false);
       }
     }
 
     function initCloud() {
       const today = getTodayStr();
-      document.getElementById("coinDateInput").value = today;
-      document.getElementById("redeemDateInput").value = today;
+      const cd = document.getElementById("coinDateInput");
+      const rd = document.getElementById("redeemDateInput");
+      if (cd) cd.value = today;
+      if (rd) rd.value = today;
       renderAll();
 
-      firebase.initializeApp(firebaseConfig);
+      if (typeof firebase === "undefined") {
+        setSyncUI(false, "Firebase 腳本載入失敗（請檢查網路或廣告封鎖）");
+        return;
+      }
+
+      try {
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+      } catch (e) {}
+
+      const authTimeout = setTimeout(() => {
+        if (!authUser) {
+          setSyncUI(false, "驗證逾時（請關閉廣告封鎖或檢查網路後點雲端同步）");
+        }
+      }, 7000);
+
       firebase.auth().signInAnonymously()
         .then(async (cred) => {
+          clearTimeout(authTimeout);
           authUser = cred.user;
-          document.getElementById("diagAuthText").textContent = "已匿名登入 (" + authUser.uid.slice(0, 6) + "...)";
-          await pullFromCloud(true);
-          setInterval(() => {
-            if (document.visibilityState === "visible") pullFromCloud(true);
-          }, 5000);
+          const da = document.getElementById("diagAuthText");
+          if (da) da.textContent = "已匿名登入 (" + authUser.uid.slice(0, 6) + "...)";
+          await syncAllLedgersFromCloud(true);
+          if (!window._syncInterval) {
+            window._syncInterval = setInterval(() => {
+              if (document.visibilityState === "visible") pullFromCloud(true);
+            }, 6000);
+          }
         })
         .catch((err) => {
-          document.getElementById("diagAuthText").textContent = "登入失敗：" + err.code;
-          setSyncUI(false, "登入失敗：" + err.code);
+          clearTimeout(authTimeout);
+          const da = document.getElementById("diagAuthText");
+          if (da) da.textContent = "登入失敗：" + (err.code || err.message);
+          setSyncUI(false, "登入失敗：" + (err.code || err.message));
         });
     }
 
@@ -1079,7 +1181,6 @@
       document.getElementById("redeemCashInput").value = simulatedUnred * rate;
     }
 
-    // 1. 確認兌幣未入帳（僅儲存點幣紀錄，機數不歸零，幣數累積）
     function recordCoinsUnredeemed() {
       const loc = getCurrentLocation();
       const mId = document.getElementById("coinMachineSelect").value;
@@ -1138,7 +1239,6 @@
       showToast(`✅ 已記錄點幣未入帳（${machine.name} 讀數已更新）`);
     }
 
-    // 2. 直接兌現入帳（全額結算，機數歸零，支援取消刪除）
     function recordCoinsDirectRedeem() {
       const loc = getCurrentLocation();
       const dateVal = document.getElementById("coinDateInput").value || getTodayStr();
@@ -1176,7 +1276,6 @@
       showToast(`✅ 直接兌現 HK$${cash} (${unredCoins}幣) 已入帳並歸零機數`);
     }
 
-    // 3. 支援部份付款與 Outstanding 計算的兌幣結算
     function redeemWithPartialPayment() {
       const loc = getCurrentLocation();
       const dateVal = document.getElementById("redeemDateInput").value || getTodayStr();
@@ -1649,7 +1748,6 @@
       const partnerBProfit = partnerBInc - partnerBTotalCost;
       const totalAllInc = partnerAInc + partnerBInc;
 
-      // 總覽
       document.getElementById("statCoins").textContent = `${loc.unredeemedCoins || 0} 幣`;
       document.getElementById("statCoinCash").textContent = `約 HK$ ${loc.unredeemedCash || 0}`;
       document.getElementById("statRedeemed").textContent = `$${totalAllInc}`;
@@ -1663,7 +1761,6 @@
       document.getElementById("statCostTotal").textContent = `$${partnerATotalCost + partnerBTotalCost}`;
       document.getElementById("statCostShared").textContent = `$0`;
 
-      // 點幣頁面
       document.getElementById("coinPageLocationLabel").textContent = `【${loc.name}】未兌幣數總和`;
       document.getElementById("coinPageTotalCount").textContent = `${loc.unredeemedCoins || 0} 幣`;
       document.getElementById("coinPageTotalCash").textContent = `HK$ ${loc.unredeemedCash || 0}`;
@@ -1673,7 +1770,6 @@
       document.getElementById("toggleCoinMonthlyBtn").textContent = coinPageMonthlyExpanded ? "▲ 收起月覽" : "▼ 展開月覽";
       document.getElementById("coinPageMonthlySummary").classList.toggle("hidden", !coinPageMonthlyExpanded);
 
-      // 結算分頁上方統計
       document.getElementById("partnerATotalInc").textContent = `$${partnerAInc}`;
       document.getElementById("partnerAShippedCost").textContent = `$${partnerAShippedCost}`;
       document.getElementById("partnerAStockCost").textContent = `$${partnerAStockCost}`;
@@ -1686,7 +1782,6 @@
       document.getElementById("partnerBTotalCost").textContent = `$${partnerBTotalCost}`;
       document.getElementById("partnerBShare").textContent = `$${partnerBProfit}`;
 
-      // 各分店帳目明細列表
       const summaryDiv = document.getElementById("allLocationsSummary");
       summaryDiv.innerHTML = "";
       locIds.forEach(id => {
@@ -1734,7 +1829,6 @@
         summaryDiv.appendChild(wrapper);
       });
 
-      // 機台清單渲染
       const mContainer = document.getElementById("machineListContainer");
       const coinMSelect = document.getElementById("coinMachineSelect");
       const prevMId = coinMSelect.value;
@@ -1780,7 +1874,6 @@
         coinMSelect.value = prevMId;
       }
 
-      // 貨物清單渲染
       const rawGoodsList = loc.goodsList || [];
       const filteredGoods = rawGoodsList.filter(g => {
         if (goodsFilterMode === "ACTIVE") return g.status === "入機" || g.status === "貨存" || g.status === "存貨";
