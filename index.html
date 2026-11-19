@@ -33,7 +33,7 @@
       font-size: 16px !important;
     }
     input:disabled, button:disabled {
-      opacity: 0.55;
+      opacity: 0.5;
       cursor: not-allowed;
     }
   </style>
@@ -189,7 +189,6 @@
       <!-- 2. 巡點兌幣三步分頁 -->
       <section id="tab-coins" class="hidden">
 
-        <!-- 步驟進度指示列 -->
         <div class="grid grid-cols-3 gap-2 mb-3 text-center text-xs font-bold">
           <button id="stepBadge1" onclick="focusStep(1)" class="py-2 px-2 rounded-xl bg-blue-900 text-white shadow">
             ① 巡點機數
@@ -209,7 +208,7 @@
             <span class="text-[11px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">1 幣 = HK$5</span>
           </div>
           <p class="text-xs text-slate-500 mb-3">
-            保持巡點機數累計（保留舊讀數供對照）；資料輸入及確認後，數據將傳到「介面 2 - 未兌幣記錄」。
+            輸入本次面板累計數值並確認（保持累計，輸入框不會殘留上次輸入）；確認後傳到「介面 2 - 未兌幣記錄」。
           </p>
 
           <div class="space-y-3">
@@ -225,13 +224,13 @@
             </div>
 
             <div id="prevReadingBox" class="text-xs bg-slate-100 text-slate-700 px-3 py-2 rounded-xl font-semibold">
-              上次累計讀數：0 · 目前累計差額：0 幣
+              已存累計讀數：0 · 目前未兌差額：0 幣
             </div>
 
             <div id="singlePanelWrapper">
               <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">面板累計數值（保持累計）</label>
-                <input type="number" id="coinCountInput" oninput="onPanelCountInput()" placeholder="輸入當前累計面板數" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
+                <label class="block text-xs font-bold text-slate-600 mb-1">本次面板累計數值</label>
+                <input type="number" id="coinCountInput" oninput="onPanelCountInput()" placeholder="請輸入本次面板累計數" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white" />
               </div>
             </div>
 
@@ -240,19 +239,19 @@
               <div class="grid grid-cols-2 gap-2.5">
                 <div>
                   <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">左上格讀數</label>
-                  <input type="number" id="slot-lt" oninput="onPanelCountInput()" placeholder="左上" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
+                  <input type="number" id="slot-lt" oninput="onPanelCountInput()" placeholder="輸入左上累計" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
                 </div>
                 <div>
                   <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">右上格讀數</label>
-                  <input type="number" id="slot-rt" oninput="onPanelCountInput()" placeholder="右上" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
+                  <input type="number" id="slot-rt" oninput="onPanelCountInput()" placeholder="輸入右上累計" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
                 </div>
                 <div>
                   <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">左下格讀數</label>
-                  <input type="number" id="slot-lb" oninput="onPanelCountInput()" placeholder="左下" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
+                  <input type="number" id="slot-lb" oninput="onPanelCountInput()" placeholder="輸入左下累計" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
                 </div>
                 <div>
                   <label class="block text-[11px] font-bold text-indigo-800 mb-0.5">右下格讀數</label>
-                  <input type="number" id="slot-rb" oninput="onPanelCountInput()" placeholder="右下" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
+                  <input type="number" id="slot-rb" oninput="onPanelCountInput()" placeholder="輸入右下累計" class="w-full border border-indigo-300 rounded-xl px-3 py-2 bg-white text-sm" />
                 </div>
               </div>
             </div>
@@ -287,7 +286,7 @@
               1️⃣ 確認場主兌幣未入帳 ➔ 傳到「介面 3 - 兌幣未入帳紀錄」
             </button>
             <button id="btnChoicePaidDirect" onclick="choosePaidDirectInStep2()" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 rounded-xl text-sm shadow">
-              2️⃣ 確認場主兌幣已入帳（全額入帳並鎖定輸入）
+              2️⃣ 確認場主兌幣已入帳（存幣入帳並鎖定輸入）
             </button>
           </div>
         </div>
@@ -299,44 +298,50 @@
             <span class="text-[11px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">1 幣 = HK$5</span>
           </div>
           <p class="text-xs text-slate-600 mb-3">
-            顯示未兌現幣數及金額；輸入兌現金額後按「確認兌現」，系統會計算 Outstanding 並即時反映在未兌幣數與金額。
+            僅在「介面 2」點選「確認場主兌幣未入帳」後顯示未兌現數據與兌現操作。
           </p>
 
-          <div class="grid grid-cols-2 gap-2.5 mb-3">
-            <div class="bg-white border border-amber-200 rounded-xl p-3">
-              <div class="text-xs text-slate-500">未兌現幣數</div>
-              <div id="step3UnpaidCoins" class="text-xl font-extrabold text-amber-900 mt-0.5">0 幣</div>
-            </div>
-            <div class="bg-white border border-amber-200 rounded-xl p-3">
-              <div class="text-xs text-slate-500">未兌現金額 (HK$)</div>
-              <div id="step3UnpaidCash" class="text-xl font-extrabold text-rose-700 mt-0.5">HK$ 0</div>
-            </div>
+          <div id="step3LockedNotice" class="text-xs bg-white border border-amber-200 rounded-xl p-3 text-slate-600 font-semibold">
+            尚未確認兌幣未入帳。請先在「介面 2 - 未兌幣記錄」點選「1️⃣ 確認場主兌幣未入帳」，此處才會顯示數據。
           </div>
 
-          <div class="space-y-3">
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">兌現日期</label>
-                <input type="date" id="redeemDateInput" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white" />
+          <div id="step3ActivePanel" class="hidden">
+            <div class="grid grid-cols-2 gap-2.5 mb-3">
+              <div class="bg-white border border-amber-200 rounded-xl p-3">
+                <div class="text-xs text-slate-500">未兌現幣數</div>
+                <div id="step3UnpaidCoins" class="text-xl font-extrabold text-amber-900 mt-0.5">0 幣</div>
               </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-600 mb-1">兌現金額 (HK$)</label>
-                <input type="number" id="redeemCashInput" oninput="previewOutstanding()" placeholder="輸入兌現金額" class="w-full border border-amber-400 rounded-xl px-3 py-2.5 bg-white font-extrabold text-emerald-700" />
+              <div class="bg-white border border-amber-200 rounded-xl p-3">
+                <div class="text-xs text-slate-500">未兌現金額 (HK$)</div>
+                <div id="step3UnpaidCash" class="text-xl font-extrabold text-rose-700 mt-0.5">HK$ 0</div>
               </div>
             </div>
 
-            <div id="outstandingPreviewBox" class="text-xs bg-white border border-amber-200 rounded-xl p-2.5 text-slate-700">
-              Outstanding 試算：尚未輸入兌現金額
-            </div>
+            <div class="space-y-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-600 mb-1">兌現日期</label>
+                  <input type="date" id="redeemDateInput" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white" />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-600 mb-1">兌現金額 (HK$)</label>
+                  <input type="number" id="redeemCashInput" oninput="previewOutstanding()" placeholder="輸入兌現金額" class="w-full border border-amber-400 rounded-xl px-3 py-2.5 bg-white font-extrabold text-emerald-700" />
+                </div>
+              </div>
 
-            <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">備註說明（選填）</label>
-              <input type="text" id="redeemNoteInput" placeholder="例如：部分兌現，餘額下次補" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white text-xs" />
-            </div>
+              <div id="outstandingPreviewBox" class="text-xs bg-white border border-amber-200 rounded-xl p-2.5 text-slate-700">
+                Outstanding 試算：請輸入兌現金額
+              </div>
 
-            <button id="btnConfirmStep3Redeem" onclick="confirmStep3Redeem()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl text-sm shadow">
-              ✔️ 確認兌現（計算 Outstanding 並更新未兌幣數/金額）
-            </button>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">備註說明（選填）</label>
+                <input type="text" id="redeemNoteInput" placeholder="例如：部分兌現，餘額下次補" class="w-full border border-slate-300 rounded-xl px-3 py-2 bg-white text-xs" />
+              </div>
+
+              <button id="btnConfirmStep3Redeem" onclick="confirmStep3Redeem()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl text-sm shadow">
+                ✔️ 確認兌現（計算 Outstanding 並更新未兌幣數/金額）
+              </button>
+            </div>
           </div>
         </div>
 
@@ -565,7 +570,7 @@
         unredeemedCash: 0,
         totalRedeemedCash: 0,
         coinSettledLocked: false,
-        step3Active: false,
+        step3ConfirmedUnpaid: false,
         goodsList: [],
         monthlyStats: {},
         machines: [
@@ -627,7 +632,7 @@
           if (!Array.isArray(l.goodsList)) l.goodsList = [];
           if (!l.monthlyStats || typeof l.monthlyStats !== "object") l.monthlyStats = {};
           if (typeof l.coinSettledLocked !== "boolean") l.coinSettledLocked = false;
-          if (typeof l.step3Active !== "boolean") l.step3Active = false;
+          if (typeof l.step3ConfirmedUnpaid !== "boolean") l.step3ConfirmedUnpaid = false;
           (l.goodsList || []).forEach(g => {
             if (g.owner === "Amzi") g.owner = ledger.partnerA;
             if (g.owner === "Dennis") g.owner = ledger.partnerB;
@@ -871,11 +876,7 @@
         loc.unredeemedCoins = totalUnred;
         loc.unredeemedCash = totalUnred * COIN_RATE;
 
-        // 若有新增未兌幣，自動解除「已結算鎖定」以便處理新批次
-        if (totalUnred > 0 && loc.coinSettledLocked) {
-          loc.coinSettledLocked = false;
-        }
-
+        // 保留存幣後的鎖定狀態，直到介面 1 重新確認新讀數才解鎖
         let totalRedeem = 0;
         Object.values(loc.monthlyStats || {}).forEach(bucket => {
           (bucket.records || []).forEach(r => {
@@ -891,6 +892,15 @@
           }
         });
         loc.stockCount = activeCount;
+      });
+    }
+
+    function clearStep1Inputs() {
+      const singleInp = document.getElementById("coinCountInput");
+      if (singleInp) singleInp.value = "";
+      ["lt", "rt", "lb", "rb"].forEach(k => {
+        const el = document.getElementById("slot-" + k);
+        if (el) el.value = "";
       });
     }
 
@@ -918,18 +928,15 @@
 
       if (!machine) return;
 
-      // 保持巡點機數累計：帶入目前保留的累計讀數，不洗掉舊數值
+      // 切換機台時清空輸入框，不讓上次輸入的面板累計數殘留在輸入欄
+      clearStep1Inputs();
+
       if (machine.isFourInOne) {
         singleWrapper.classList.add("hidden");
         fourWrapper.classList.remove("hidden");
-        document.getElementById("slot-lt").value = machine.slots["左上"] ?? 0;
-        document.getElementById("slot-rt").value = machine.slots["右上"] ?? 0;
-        document.getElementById("slot-lb").value = machine.slots["左下"] ?? 0;
-        document.getElementById("slot-rb").value = machine.slots["右下"] ?? 0;
       } else {
         singleWrapper.classList.remove("hidden");
         fourWrapper.classList.add("hidden");
-        document.getElementById("coinCountInput").value = machine.panelTotal ?? 0;
       }
       updatePrevReadingInfo(machine);
     }
@@ -939,9 +946,9 @@
       if (!box || !machine) return;
       if (machine.isFourInOne) {
         const s = machine.slots || {};
-        box.textContent = `保留累計讀數：左上 ${s["左上"] || 0} / 右上 ${s["右上"] || 0} / 左下 ${s["左下"] || 0} / 右下 ${s["右下"] || 0} · 未兌差額：${machine.coins || 0} 幣 (HK$${(machine.coins || 0) * COIN_RATE})`;
+        box.textContent = `已存累計：左上 ${s["左上"] || 0} / 右上 ${s["右上"] || 0} / 左下 ${s["左下"] || 0} / 右下 ${s["右下"] || 0} · 未兌差額：${machine.coins || 0} 幣 (HK$${(machine.coins || 0) * COIN_RATE})`;
       } else {
-        box.textContent = `保留面板累計：${machine.panelTotal || 0}（上次兌現基準：${machine.lastRedeemedPanel || 0}）· 未兌差額：${machine.coins || 0} 幣 (HK$${(machine.coins || 0) * COIN_RATE})`;
+        box.textContent = `已存面板累計：${machine.panelTotal || 0}（上次兌現基準：${machine.lastRedeemedPanel || 0}）· 未兌差額：${machine.coins || 0} 幣 (HK$${(machine.coins || 0) * COIN_RATE})`;
       }
     }
 
@@ -973,7 +980,7 @@
       }
     }
 
-    // 介面 1 確認：保持巡點機數累計，並傳到介面 2
+    // 介面 1 確認：保持巡點機數累計、清空輸入框，並解鎖下一輪並傳到介面 2
     function confirmStep1Inspection() {
       const loc = getCurrentLocation();
       const mId = document.getElementById("coinMachineSelect").value;
@@ -997,15 +1004,16 @@
           return;
         }
         const prevSum = machine.coins || 0;
-        machine.slots["左上"] = lt;
-        machine.slots["右上"] = rt;
-        machine.slots["左下"] = lb;
-        machine.slots["右下"] = rb;
+        machine.slots["左上"] = Math.max(machine.slots["左上"] || 0, lt);
+        machine.slots["右上"] = Math.max(machine.slots["右上"] || 0, rt);
+        machine.slots["左下"] = Math.max(machine.slots["左下"] || 0, lb);
+        machine.slots["右下"] = Math.max(machine.slots["右下"] || 0, rb);
+
         const newSum =
-          Math.max(0, lt - (machine.slotLast["左上"] || 0)) +
-          Math.max(0, rt - (machine.slotLast["右上"] || 0)) +
-          Math.max(0, lb - (machine.slotLast["左下"] || 0)) +
-          Math.max(0, rb - (machine.slotLast["右下"] || 0));
+          Math.max(0, machine.slots["左上"] - (machine.slotLast["左上"] || 0)) +
+          Math.max(0, machine.slots["右上"] - (machine.slotLast["右上"] || 0)) +
+          Math.max(0, machine.slots["左下"] - (machine.slotLast["左下"] || 0)) +
+          Math.max(0, machine.slots["右下"] - (machine.slotLast["右下"] || 0));
         deltaCoins = Math.max(0, newSum - prevSum);
       } else {
         const panelVal = parseInt(document.getElementById("coinCountInput").value, 10);
@@ -1014,13 +1022,14 @@
           return;
         }
         const prevCoins = machine.coins || 0;
-        // 保持巡點機數累計（若輸入較小值仍保留累計不退回）
         machine.panelTotal = Math.max(machine.panelTotal || 0, panelVal);
         const newCoins = Math.max(0, machine.panelTotal - (machine.lastRedeemedPanel || 0));
         deltaCoins = Math.max(0, newCoins - prevCoins);
       }
 
       loc.coinSettledLocked = false;
+      loc.step3ConfirmedUnpaid = false;
+
       const mBucket = ensureMonthlyBucket(loc, monthKey);
       mBucket.records = mBucket.records || [];
       mBucket.records.push({
@@ -1031,34 +1040,34 @@
         date: dateVal
       });
 
+      clearStep1Inputs();
       addLog(`介面1 巡點機數「${machine.name}」保持累計，傳送至介面2`);
       saveState();
       focusStep(2);
-      showToast("✅ 已保留巡點累計數值，並傳送至「介面 2 - 未兌幣記錄」");
+      showToast("✅ 已保留巡點累計數值並清空輸入欄，已傳送至「介面 2 - 未兌幣記錄」");
     }
 
-    // 介面 2 選擇 1：確認場主兌幣未入帳 -> 傳到介面 3
+    // 介面 2 選擇 1：確認場主兌幣未入帳 -> 啟用並顯示介面 3 數據
     function chooseUnredeemedToStep3() {
       const loc = getCurrentLocation();
-      if ((loc.unredeemedCoins || 0) <= 0) {
-        alert("目前沒有未兌幣數可供處理！");
+      if (loc.coinSettledLocked || (loc.unredeemedCoins || 0) <= 0) {
+        alert("目前沒有未兌幣數可供處理，或本輪已完成存幣鎖定！");
         return;
       }
-      loc.step3Active = true;
-      loc.coinSettledLocked = false;
+      loc.step3ConfirmedUnpaid = true;
       saveState();
       focusStep(3);
-      showToast("➡️ 已轉至「介面 3 - 兌幣未入帳紀錄」");
+      showToast("➡️ 已確認兌幣未入帳，「介面 3 - 兌幣未入帳紀錄」已顯示數據");
     }
 
-    // 介面 2 選擇 2：確認場主兌幣已入帳 -> 結算並鎖定輸入
+    // 介面 2 選擇 2：確認場主兌幣已入帳 -> 存幣入帳並鎖定輸入
     function choosePaidDirectInStep2() {
       const loc = getCurrentLocation();
       const dateVal = document.getElementById("redeemDateInput").value || document.getElementById("coinDateInput").value || getTodayStr();
       const monthKey = getMonthKey(dateVal);
       const unredCoins = loc.unredeemedCoins || 0;
 
-      if (unredCoins <= 0 || loc.coinSettledLocked) {
+      if (loc.coinSettledLocked || unredCoins <= 0) {
         alert("目前沒有可入帳的未兌幣數，或本輪兌幣已完成鎖定！");
         return;
       }
@@ -1086,7 +1095,8 @@
       });
 
       loc.coinSettledLocked = true;
-      loc.step3Active = false;
+      loc.step3ConfirmedUnpaid = false;
+      clearStep1Inputs();
       addLog(`介面2 確認場主兌幣已入帳 HK$${cash} (${unredCoins}幣)，已鎖定輸入`);
       saveState();
       showToast(`✅ 場主兌幣已入帳 HK$${cash}，輸入已鎖定`);
@@ -1102,8 +1112,8 @@
       const totalUnredCash = totalUnredCoins * COIN_RATE;
       const rawInput = document.getElementById("redeemCashInput").value;
 
-      if (loc.coinSettledLocked || totalUnredCoins <= 0) {
-        box.textContent = "目前未兌現幣數為 0 幣 / HK$ 0（已完成兌幣並鎖定輸入）。";
+      if (loc.coinSettledLocked || !loc.step3ConfirmedUnpaid) {
+        box.textContent = "目前未啟用或已鎖定輸入。";
         return;
       }
 
@@ -1124,11 +1134,11 @@
       }
     }
 
-    // 介面 3 確認兌現：計算 Outstanding 並反映在未兌幣數與金額
+    // 介面 3 確認兌現：計算 Outstanding 並反映在未兌幣數與金額，同時鎖定輸入
     function confirmStep3Redeem() {
       const loc = getCurrentLocation();
-      if (loc.coinSettledLocked) {
-        alert("本輪兌幣已完成並鎖定，無法再次輸入！");
+      if (loc.coinSettledLocked || !loc.step3ConfirmedUnpaid) {
+        alert("目前處於鎖定狀態或尚未確認兌幣未入帳，無法輸入！");
         return;
       }
 
@@ -1152,7 +1162,6 @@
       const outstandingCash = Math.max(0, totalUnredCash - cashPaid);
       const outstandingCoins = Math.max(0, totalUnredCoins - paidCoins);
 
-      // 依已抵銷幣數比例推進基準讀數，保留剩餘未兌幣數
       loc.machines.forEach(m => {
         if (m.isFourInOne) {
           ["左上", "右上", "左下", "右下"].forEach(slot => {
@@ -1185,35 +1194,36 @@
       document.getElementById("redeemCashInput").value = "";
       document.getElementById("redeemNoteInput").value = "";
 
-      // 若已無剩餘未兌幣數，鎖定輸入避免再輸入；若有 Outstanding 剩餘幣數則保留可繼續處理
-      recalculateLocationTotals();
-      if ((loc.unredeemedCoins || 0) <= 0) {
-        loc.coinSettledLocked = true;
-        loc.step3Active = false;
-      }
+      // 存幣／兌幣完成後鎖定輸入，需在介面 1 重新輸入新讀數並確認才會解鎖
+      loc.coinSettledLocked = true;
+      loc.step3ConfirmedUnpaid = false;
+      clearStep1Inputs();
 
-      addLog(`介面3 確認兌現 HK$${cashPaid}，Outstanding 剩餘 HK$${outstandingCash} (${outstandingCoins}幣)`);
+      addLog(`介面3 確認兌現 HK$${cashPaid}，Outstanding 剩餘 HK$${outstandingCash} (${outstandingCoins}幣)，已鎖定輸入`);
       saveState();
 
       if (outstandingCash > 0) {
-        showToast(`⚠️ 已兌現 HK$${cashPaid}！Outstanding 剩餘 HK$${outstandingCash} (${outstandingCoins}幣)`);
+        showToast(`⚠️ 已兌現 HK$${cashPaid}！Outstanding 剩餘 HK$${outstandingCash} (${outstandingCoins}幣)，輸入已鎖定`);
       } else {
         showToast(`✅ 兌現 HK$${cashPaid} 完成！未兌幣數已歸零並鎖定輸入`);
       }
     }
 
     function applyCoinLockState(loc) {
-      const isLocked = !!loc.coinSettledLocked || (loc.unredeemedCoins || 0) <= 0;
+      const isLocked = !!loc.coinSettledLocked;
       const badge = document.getElementById("step2LockBadge");
       const btnPaid = document.getElementById("btnChoicePaidDirect");
       const btnUnpaid = document.getElementById("btnChoiceUnpaidToStep3");
+
+      const step3Notice = document.getElementById("step3LockedNotice");
+      const step3Panel = document.getElementById("step3ActivePanel");
       const cashInput = document.getElementById("redeemCashInput");
       const noteInput = document.getElementById("redeemNoteInput");
       const btnStep3 = document.getElementById("btnConfirmStep3Redeem");
 
-      if (loc.coinSettledLocked) {
+      if (isLocked) {
         if (badge) {
-          badge.textContent = "已兌幣鎖定";
+          badge.textContent = "已存幣鎖定";
           badge.className = "text-[11px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full";
         }
       } else {
@@ -1223,11 +1233,17 @@
         }
       }
 
-      if (btnPaid) btnPaid.disabled = isLocked;
-      if (btnUnpaid) btnUnpaid.disabled = isLocked;
-      if (cashInput) cashInput.disabled = isLocked;
-      if (noteInput) noteInput.disabled = isLocked;
-      if (btnStep3) btnStep3.disabled = isLocked;
+      if (btnPaid) btnPaid.disabled = isLocked || (loc.unredeemedCoins || 0) <= 0;
+      if (btnUnpaid) btnUnpaid.disabled = isLocked || (loc.unredeemedCoins || 0) <= 0;
+
+      // 介面 3 數據只會在確認兌幣未入帳（且未鎖定）後才顯示
+      const showStep3Data = !!loc.step3ConfirmedUnpaid && !isLocked && (loc.unredeemedCoins || 0) > 0;
+      if (step3Notice) step3Notice.classList.toggle("hidden", showStep3Data);
+      if (step3Panel) step3Panel.classList.toggle("hidden", !showStep3Data);
+
+      if (cashInput) cashInput.disabled = !showStep3Data;
+      if (noteInput) noteInput.disabled = !showStep3Data;
+      if (btnStep3) btnStep3.disabled = !showStep3Data;
     }
 
     function handlePartnerClick(partnerKey) {
@@ -1396,7 +1412,7 @@
         unredeemedCash: 0,
         totalRedeemedCash: 0,
         coinSettledLocked: false,
-        step3Active: false,
+        step3ConfirmedUnpaid: false,
         goodsList: [],
         monthlyStats: {},
         machines: [
@@ -1466,6 +1482,7 @@
         if (bucket.records.length === 0) delete loc.monthlyStats[monthKey];
       }
       loc.coinSettledLocked = false;
+      loc.step3ConfirmedUnpaid = false;
       saveState();
       showToast("✅ 紀錄已刪除，數據已重新計算");
     }
@@ -1874,7 +1891,6 @@
       document.getElementById("statCostTotal").textContent = `$${partnerATotalCost + partnerBTotalCost}`;
       document.getElementById("statCostShared").textContent = `$0`;
 
-      // 更新介面 2 & 介面 3 顯示
       const unredCoins = loc.unredeemedCoins || 0;
       const unredCash = unredCoins * COIN_RATE;
       document.getElementById("step2LocationLabel").textContent = `【${loc.name}】來自介面 1 的未兌幣記錄`;
@@ -1994,7 +2010,19 @@
       if (prevMId && Array.from(coinMSelect.options).some(o => o.value === prevMId)) {
         coinMSelect.value = prevMId;
       }
-      onCoinMachineChange();
+      const activeM = loc.machines.find(m => m.id === coinMSelect.value);
+      if (activeM) {
+        const singleWrapper = document.getElementById("singlePanelWrapper");
+        const fourWrapper = document.getElementById("fourInOneWrapper");
+        if (activeM.isFourInOne) {
+          singleWrapper.classList.add("hidden");
+          fourWrapper.classList.remove("hidden");
+        } else {
+          singleWrapper.classList.remove("hidden");
+          fourWrapper.classList.add("hidden");
+        }
+        updatePrevReadingInfo(activeM);
+      }
 
       const rawGoodsList = loc.goodsList || [];
       const filteredGoods = rawGoodsList.filter(g => {
