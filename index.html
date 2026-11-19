@@ -146,10 +146,10 @@
           </div>
         </div>
 
-        <!-- 新增：本場未入帳幣同金額 -->
+        <!-- 本場未入帳幣與金額 -->
         <div class="card border-l-4 border-amber-500 bg-amber-50/40 flex justify-between items-center py-3">
           <div>
-            <div class="text-xs font-bold text-amber-900">📥 本場未入帳幣與金額（介面 3）</div>
+            <div class="text-xs font-bold text-amber-900">📥 本場未入帳幣與金額</div>
             <div id="statUnpaidCash" class="text-xl font-extrabold text-rose-700 mt-0.5">HK$ 0</div>
           </div>
           <div class="text-right">
@@ -198,29 +198,29 @@
         </div>
       </section>
 
-      <!-- 2. 巡點兌幣三步分頁 -->
+      <!-- 2. 巡點兌幣三區塊分頁 -->
       <section id="tab-coins" class="hidden">
 
         <div class="grid grid-cols-3 gap-2 mb-3 text-center text-xs font-bold">
           <button id="stepBadge1" onclick="focusStep(1)" class="py-2 px-2 rounded-xl bg-blue-900 text-white shadow">
-            ① 巡點機數
+            巡點機數
           </button>
           <button id="stepBadge2" onclick="focusStep(2)" class="py-2 px-2 rounded-xl bg-white text-slate-600 border border-slate-200">
-            ② 未兌幣記錄
+            未兌幣記錄
           </button>
           <button id="stepBadge3" onclick="focusStep(3)" class="py-2 px-2 rounded-xl bg-white text-slate-600 border border-slate-200">
-            ③ 兌幣未入帳紀錄
+            兌幣未入帳紀錄
           </button>
         </div>
 
-        <!-- 介面 1 - 巡點機數 -->
+        <!-- 巡點機數 -->
         <div id="step1Card" class="card border-2 border-blue-200">
           <div class="flex justify-between items-center mb-1">
-            <h2 class="font-extrabold text-base text-blue-950">步驟 1：介面 1 - 巡點機數</h2>
+            <h2 class="font-extrabold text-base text-blue-950">巡點機數</h2>
             <span class="text-[11px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">1 幣 = HK$5</span>
           </div>
           <p class="text-xs text-slate-500 mb-3">
-            同場每台機確認後，介面 2 顯示同場各機巡機數總和；確認兌幣（不論已入帳或未入帳）後歸零重新累計。
+            同場每台機確認後，未兌幣記錄顯示同場各機巡機數總和；確認兌幣（不論已入帳或未入帳）後歸零重新累計。
           </p>
 
           <div class="space-y-3">
@@ -236,7 +236,7 @@
             </div>
 
             <div id="prevReadingBox" class="text-xs bg-slate-100 text-slate-700 px-3 py-2 rounded-xl font-semibold">
-              本機目前巡機數：0 · 同場總和（介面 2）：0 幣
+              本機目前巡機數：0 · 同場總和：0 幣
             </div>
 
             <div id="singlePanelWrapper">
@@ -269,15 +269,15 @@
             </div>
 
             <button id="btnConfirmStep1" onclick="confirmStep1Inspection()" class="w-full bg-blue-900 hover:bg-blue-950 text-white font-bold py-3 rounded-xl text-sm shadow">
-              ✅ 確認巡點數值並更新「介面 2」同場總和 ➔
+              ✅ 確認巡點數值並更新同場總和 ➔
             </button>
           </div>
         </div>
 
-        <!-- 介面 2 - 未兌幣記錄 -->
+        <!-- 未兌幣記錄 -->
         <div id="step2Card" class="card border-2 border-indigo-200 bg-indigo-50/30">
           <div class="flex justify-between items-center mb-1">
-            <h2 class="font-extrabold text-base text-indigo-950">步驟 2：介面 2 - 未兌幣記錄</h2>
+            <h2 class="font-extrabold text-base text-indigo-950">未兌幣記錄</h2>
             <span id="step2LockBadge" class="text-[11px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">待處理</span>
           </div>
           <p id="step2LocationLabel" class="text-xs text-slate-500 mb-2">【當前分店】同場各機巡機數總和</p>
@@ -298,7 +298,7 @@
 
           <div class="grid grid-cols-1 gap-2.5">
             <button id="btnChoiceUnpaidToStep3" onclick="chooseUnredeemedToStep3()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl text-sm shadow">
-              1️⃣ 確認場主兌幣未入帳 ➔ 傳到「介面 3 - 兌幣未入帳紀錄」（同場歸零）
+              1️⃣ 確認場主兌幣未入帳 ➔ 傳到「兌幣未入帳紀錄」（同場歸零）
             </button>
             <button id="btnChoicePaidDirect" onclick="choosePaidDirectInStep2()" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 rounded-xl text-sm shadow">
               2️⃣ 確認場主兌幣已入帳（計算收入並歸零重新累計）
@@ -306,18 +306,18 @@
           </div>
         </div>
 
-        <!-- 介面 3 - 兌幣未入帳紀錄 -->
+        <!-- 兌幣未入帳紀錄 -->
         <div id="step3Card" class="card border-2 border-amber-300 bg-amber-50/40">
           <div class="flex justify-between items-center mb-1">
-            <h2 class="font-extrabold text-base text-amber-950">步驟 3：介面 3 - 兌幣未入帳紀錄</h2>
+            <h2 class="font-extrabold text-base text-amber-950">兌幣未入帳紀錄</h2>
             <span class="text-[11px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">1 幣 = HK$5</span>
           </div>
           <p class="text-xs text-slate-600 mb-3">
-            僅在「介面 2」點選「確認場主兌幣未入帳」後顯示未兌現數據總和與兌現操作。
+            僅在「未兌幣記錄」點選「確認場主兌幣未入帳」後顯示未兌現數據總和與兌現操作。
           </p>
 
           <div id="step3LockedNotice" class="text-xs bg-white border border-amber-200 rounded-xl p-3 text-slate-600 font-semibold">
-            尚未確認兌幣未入帳。請先在「介面 2 - 未兌幣記錄」點選「1️⃣ 確認場主兌幣未入帳」，此處才會顯示數據。
+            尚未確認兌幣未入帳。請先在「未兌幣記錄」點選「1️⃣ 確認場主兌幣未入帳」，此處才會顯示數據。
           </div>
 
           <div id="step3ActivePanel" class="hidden">
@@ -422,8 +422,9 @@
             </div>
             <span id="goodsListCount" class="text-xs text-slate-500">共 0 項</span>
           </div>
-          <div class="flex gap-1.5 mb-2 text-xs">
-            <button onclick="setGoodsFilter('ACTIVE')" id="filter-ACTIVE" class="px-2.5 py-1 rounded-lg font-bold bg-blue-900 text-white">目前庫存 (入機/貨存)</button>
+          <div class="flex flex-wrap gap-1.5 mb-2 text-xs">
+            <button onclick="setGoodsFilter('IN_MACHINE')" id="filter-IN_MACHINE" class="px-2.5 py-1 rounded-lg font-bold bg-blue-900 text-white">入機</button>
+            <button onclick="setGoodsFilter('STOCK')" id="filter-STOCK" class="px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600">貨存</button>
             <button onclick="setGoodsFilter('ALL')" id="filter-ALL" class="px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600">全部明細</button>
             <button onclick="setGoodsFilter('SHIPPED')" id="filter-SHIPPED" class="px-2.5 py-1 rounded-lg font-bold bg-slate-100 text-slate-600">已出貨</button>
           </div>
@@ -534,12 +535,12 @@
       measurementId: "G-RPZDMHX5C1"
     };
 
-    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v45";
+    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v46";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "partnerA";
     let currentView = "landing";
     let expandedSettlementLocIds = {};
-    let goodsFilterMode = "ACTIVE";
+    let goodsFilterMode = "IN_MACHINE";
     let allGoodsExpanded = false;
     let coinPageMonthlyExpanded = false;
     let expandedMonthlyKeys = {};
@@ -607,7 +608,7 @@
 
     function loadLocalBackup() {
       try {
-        const raw = localStorage.getItem(LOCAL_BACKUP_KEY) || localStorage.getItem("claw_ledger_independent_v44") || localStorage.getItem("claw_ledger_independent_v43");
+        const raw = localStorage.getItem(LOCAL_BACKUP_KEY) || localStorage.getItem("claw_ledger_independent_v45") || localStorage.getItem("claw_ledger_independent_v44");
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed && parsed.ledgers) return parsed;
@@ -889,11 +890,6 @@
       return (loc.machines || []).reduce((acc, m) => acc + Math.max(0, Number(m.step2Coins) || 0), 0);
     }
 
-    function getLocationUnpaidSum(loc) {
-      const machineSum = (loc.machines || []).reduce((acc, m) => acc + Math.max(0, Number(m.unpaidCoins) || 0), 0);
-      return machineSum > 0 ? machineSum : Math.max(0, Number(loc.step3CoinsTotal) || 0);
-    }
-
     function resetLocationStep2AndMachines(loc) {
       (loc.machines || []).forEach(m => {
         m.step2Coins = 0;
@@ -991,9 +987,9 @@
       const mCoins = Number(machine.step2Coins) || 0;
       if (machine.isFourInOne) {
         const s = machine.slots || {};
-        box.textContent = `本機目前：${mCoins} 幣 (${s["左上"] || 0},${s["右上"] || 0},${s["左下"] || 0},${s["右下"] || 0}) · 同場總和（介面 2）：${locSum} 幣`;
+        box.textContent = `本機目前：${mCoins} 幣 (${s["左上"] || 0},${s["右上"] || 0},${s["左下"] || 0},${s["右下"] || 0}) · 同場總和：${locSum} 幣`;
       } else {
-        box.textContent = `本機目前：${mCoins} 幣 · 同場總和（介面 2）：${locSum} 幣 (HK$${locSum * COIN_RATE})`;
+        box.textContent = `本機目前：${mCoins} 幣 · 同場總和：${locSum} 幣 (HK$${locSum * COIN_RATE})`;
       }
     }
 
@@ -1021,7 +1017,7 @@
 
       const box = document.getElementById("prevReadingBox");
       if (box) {
-        box.textContent = `本機輸入：${enteredCoins} 幣 · 確認後同場總和（介面 2）：${projectedTotal} 幣（HK$ ${projectedTotal * COIN_RATE}）`;
+        box.textContent = `本機輸入：${enteredCoins} 幣 · 確認後同場總和：${projectedTotal} 幣（HK$ ${projectedTotal * COIN_RATE}）`;
       }
     }
 
@@ -1092,18 +1088,18 @@
       });
 
       clearStep1Inputs();
-      addLog(`介面1 巡點「${machine.name}」${confirmedCoins} 幣，同場總和 ${totalLocCoins} 幣`);
+      addLog(`巡點「${machine.name}」${confirmedCoins} 幣，同場總和 ${totalLocCoins} 幣`);
       saveState();
 
       focusStep(2);
-      showToast(`✅ 「${machine.name}」${confirmedCoins} 幣，介面 2 同場總和：${totalLocCoins} 幣`);
+      showToast(`✅ 「${machine.name}」${confirmedCoins} 幣，同場總和：${totalLocCoins} 幣`);
     }
 
     function chooseUnredeemedToStep3() {
       const loc = getCurrentLocation();
       const unredCoins = getLocationStep2Sum(loc);
       if (unredCoins <= 0) {
-        alert("介面 2 目前沒有未兌幣數可供傳送！");
+        alert("目前沒有未兌幣數可供傳送！");
         return;
       }
 
@@ -1132,10 +1128,10 @@
         date: dateVal
       });
 
-      addLog(`介面2 確認兌幣未入帳 ${unredCoins} 幣 (HK$${addedCash}) 傳至介面3，同場已歸零`);
+      addLog(`確認兌幣未入帳 ${unredCoins} 幣 (HK$${addedCash}) 轉至未入帳紀錄，同場已歸零`);
       saveState();
       focusStep(3);
-      showToast(`➡️ 已將 ${unredCoins} 幣 (HK$${addedCash}) 傳到介面 3，介面 2 已歸零`);
+      showToast(`➡️ 已將 ${unredCoins} 幣 (HK$${addedCash}) 轉至兌幣未入帳紀錄`);
     }
 
     function choosePaidDirectInStep2() {
@@ -1146,7 +1142,7 @@
       const unredCoins = getLocationStep2Sum(loc);
 
       if (unredCoins <= 0) {
-        alert("介面 2 目前沒有可入帳的未兌幣數！");
+        alert("目前沒有可入帳的未兌幣數！");
         return;
       }
 
@@ -1162,7 +1158,7 @@
         coins: unredCoins,
         cash: cash,
         date: dateVal,
-        note: `介面2 確認兌幣已入帳 (${opName})`
+        note: `確認兌幣已入帳 (${opName})`
       });
       mBucket.records.push({
         id: "r_inc_" + Date.now(),
@@ -1175,9 +1171,9 @@
       resetLocationStep2AndMachines(loc);
       loc.coinSettledLocked = false;
       clearStep1Inputs();
-      addLog(`介面2 確認兌幣已入帳 HK$${cash} (${unredCoins}幣)，同場已歸零重新累計`);
+      addLog(`確認兌幣已入帳 HK$${cash} (${unredCoins}幣)，同場已歸零重新累計`);
       saveState();
-      showToast(`✅ 兌幣已入帳 HK$${cash}，介面 2 已歸零可重新巡點累計`);
+      showToast(`✅ 兌幣已入帳 HK$${cash}，已歸零可重新巡點累計`);
     }
 
     function previewOutstanding() {
@@ -1195,7 +1191,7 @@
       }
 
       if (rawInput === "") {
-        box.textContent = `介面 3 累計未兌現總和：HK$ ${totalStep3Cash}（${totalStep3Coins} 幣，1幣=HK$5）；請輸入兌現金額試算 Outstanding。`;
+        box.textContent = `累計未兌現總和：HK$ ${totalStep3Cash}（${totalStep3Coins} 幣，1幣=HK$5）；請輸入兌現金額試算 Outstanding。`;
         return;
       }
 
@@ -1218,14 +1214,14 @@
       const totalStep3Cash = totalStep3Coins * COIN_RATE;
 
       if (!loc.step3ConfirmedUnpaid || totalStep3Coins <= 0) {
-        alert("目前沒有介面 3 未兌現幣數總和可供兌現！");
+        alert("目前沒有未兌現幣數總和可供兌現！");
         return;
       }
 
       const cashPaid = parseFloat(document.getElementById("redeemCashInput").value);
       const dateVal = document.getElementById("redeemDateInput").value || getTodayStr();
       const monthKey = getMonthKey(dateVal);
-      const note = document.getElementById("redeemNoteInput").value.trim() || "介面3 兌現結算";
+      const note = document.getElementById("redeemNoteInput").value.trim() || "兌現結算";
 
       if (isNaN(cashPaid) || cashPaid <= 0) {
         alert("請輸入有效的兌現金額 (HK$)！");
@@ -1237,7 +1233,6 @@
       const outstandingCoins = Math.max(0, totalStep3Coins - paidCoins);
       const opName = currentOperator === "partnerA" ? ledger.partnerA : ledger.partnerB;
 
-      // 依比例扣抵各機未入帳幣數
       let remainingToDeduct = paidCoins;
       const machinesWithUnpaid = (loc.machines || []).filter(m => (Number(m.unpaidCoins) || 0) > 0);
       machinesWithUnpaid.forEach((m, idx) => {
@@ -1272,7 +1267,7 @@
         cash: cashPaid,
         date: dateVal,
         note: outstandingCash > 0
-          ? `${note}｜實收 HK$${cashPaid}，Outstanding 欠款 HK$${outstandingCash}（介面3剩餘 ${outstandingCoins} 幣）`
+          ? `${note}｜實收 HK$${cashPaid}，Outstanding 欠款 HK$${outstandingCash}（剩餘 ${outstandingCoins} 幣）`
           : `${note}｜全額兌現 HK$${cashPaid}`
       });
       mBucket.records.push({
@@ -1287,13 +1282,13 @@
       document.getElementById("redeemNoteInput").value = "";
       clearStep1Inputs();
 
-      addLog(`介面3 確認兌現 HK$${cashPaid}，介面3 剩餘 ${outstandingCoins} 幣 (HK$${outstandingCash})`);
+      addLog(`確認兌現 HK$${cashPaid}，未入帳剩餘 ${outstandingCoins} 幣 (HK$${outstandingCash})`);
       saveState();
 
       if (outstandingCash > 0) {
-        showToast(`⚠️ 已兌現 HK$${cashPaid}！介面 3 剩餘 ${outstandingCoins} 幣 (HK$${outstandingCash})`);
+        showToast(`⚠️ 已兌現 HK$${cashPaid}！剩餘 ${outstandingCoins} 幣 (HK$${outstandingCash})`);
       } else {
-        showToast(`✅ 兌現 HK$${cashPaid} 完成！介面 3 未兌現總和已清零`);
+        showToast(`✅ 兌現 HK$${cashPaid} 完成！未兌現總和已清零`);
       }
     }
 
@@ -1367,8 +1362,9 @@
 
     function setGoodsFilter(mode) {
       goodsFilterMode = mode;
-      ["ACTIVE", "ALL", "SHIPPED"].forEach(m => {
+      ["IN_MACHINE", "STOCK", "ALL", "SHIPPED"].forEach(m => {
         const btn = document.getElementById("filter-" + m);
+        if (!btn) return;
         if (m === mode) {
           btn.className = "px-2.5 py-1 rounded-lg font-bold bg-blue-900 text-white";
         } else {
@@ -1812,7 +1808,7 @@
         return `
           <div class="flex justify-between items-center py-1.5 pl-2 pr-1 border-b border-slate-100 last:border-b-0 text-xs text-slate-600">
             <div>
-              <span class="font-bold text-blue-900">🔍 介面1 巡點確認</span> [${r.machineName || '機台'}] ${r.coins || 0} 幣（同場總和 ${r.totalCoins || r.coins || 0} 幣）
+              <span class="font-bold text-blue-900">🔍 巡點確認</span> [${r.machineName || '機台'}] ${r.coins || 0} 幣（同場總和 ${r.totalCoins || r.coins || 0} 幣）
               <div class="text-[10px] text-slate-400">${r.date || "未填"}</div>
             </div>
             <button onclick="deleteRecord('${m}', '${r.id}')" class="text-rose-600 font-bold px-2 py-0.5 bg-rose-50 rounded">刪除</button>
@@ -1822,7 +1818,7 @@
         return `
           <div class="flex justify-between items-center py-1.5 pl-2 pr-1 border-b border-slate-100 last:border-b-0 text-xs text-amber-900">
             <div>
-              <span class="font-bold">📥 確認兌幣未入帳</span> +${r.coins || 0} 幣（HK$ ${r.cash || 0}）傳至介面3
+              <span class="font-bold">📥 確認兌幣未入帳</span> +${r.coins || 0} 幣（HK$ ${r.cash || 0}）
               <div class="text-[10px] text-slate-400">${r.date || "未填"}</div>
             </div>
             <button onclick="deleteRecord('${m}', '${r.id}')" class="text-rose-600 font-bold px-2 py-0.5 bg-rose-50 rounded">刪除</button>
@@ -2062,8 +2058,6 @@
 
       (loc.machines || []).forEach(m => {
         coinMSelect.add(new Option(m.name + (m.isFourInOne ? " [四合一]" : ""), m.id));
-        const mUnpaidCoins = Math.max(0, Number(m.unpaidCoins) || 0);
-        const mUnpaidCash = mUnpaidCoins * COIN_RATE;
         const mRoundCoins = Number(m.step2Coins) || 0;
 
         const div = document.createElement("div");
@@ -2079,29 +2073,21 @@
               </div>
               <span class="text-blue-800">本輪巡機 ${mRoundCoins} 幣</span>
             </div>
-            <div class="grid grid-cols-2 gap-1.5 text-center text-xs mb-2">
+            <div class="grid grid-cols-2 gap-1.5 text-center text-xs">
               <div class="bg-white py-1 rounded border border-slate-200">左上讀數: <strong>${s["左上"] || 0}</strong></div>
               <div class="bg-white py-1 rounded border border-slate-200">右上讀數: <strong>${s["右上"] || 0}</strong></div>
               <div class="bg-white py-1 rounded border border-slate-200">左下讀數: <strong>${s["左下"] || 0}</strong></div>
               <div class="bg-white py-1 rounded border border-slate-200">右下讀數: <strong>${s["右下"] || 0}</strong></div>
-            </div>
-            <div class="flex justify-between items-center text-[11px] bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
-              <span class="font-bold text-amber-900">該機未入帳：${mUnpaidCoins} 幣</span>
-              <span class="font-extrabold text-rose-700">HK$ ${mUnpaidCash}</span>
             </div>`;
         } else {
           div.innerHTML = `
-            <div class="flex justify-between items-center text-xs mb-1.5">
+            <div class="flex justify-between items-center text-xs">
               <div class="flex items-center gap-1.5">
                 <span class="font-bold text-slate-800">${m.name}</span>
                 <button onclick="renameMachine('${m.id}')" class="text-[11px] bg-white border border-slate-300 px-1.5 py-0.5 rounded text-slate-600">✏️改名</button>
                 <button onclick="deleteMachine('${m.id}')" class="text-[11px] bg-rose-50 border border-rose-200 text-rose-600 px-1.5 py-0.5 rounded">🗑️刪除</button>
               </div>
               <span class="font-bold text-blue-800">本輪巡機：${mRoundCoins} 幣</span>
-            </div>
-            <div class="flex justify-between items-center text-[11px] bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
-              <span class="font-bold text-amber-900">該機未入帳：${mUnpaidCoins} 幣</span>
-              <span class="font-extrabold text-rose-700">HK$ ${mUnpaidCash}</span>
             </div>`;
         }
         mContainer.appendChild(div);
@@ -2126,7 +2112,8 @@
 
       const rawGoodsList = loc.goodsList || [];
       const filteredGoods = rawGoodsList.filter(g => {
-        if (goodsFilterMode === "ACTIVE") return g.status === "入機" || g.status === "貨存" || g.status === "存貨";
+        if (goodsFilterMode === "IN_MACHINE") return g.status === "入機";
+        if (goodsFilterMode === "STOCK") return g.status === "貨存" || g.status === "存貨";
         if (goodsFilterMode === "SHIPPED") return g.status === "出貨";
         return true;
       });
