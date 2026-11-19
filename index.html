@@ -869,15 +869,15 @@
           if (m.isFourInOne) {
             let mSum = 0;
             ["左上", "右上", "左下", "右下"].forEach(slot => {
-              const current = m.slots[slot] || 0;
-              const last = m.slotLast[slot] || 0;
+              const current = Number(m.slots[slot]) || 0;
+              const last = Number(m.slotLast[slot]) || 0;
               mSum += Math.max(0, current - last);
             });
             m.coins = mSum;
             totalUnred += mSum;
           } else {
-            const current = m.panelTotal || 0;
-            const last = m.lastRedeemedPanel || 0;
+            const current = Number(m.panelTotal) || 0;
+            const last = Number(m.lastRedeemedPanel) || 0;
             const diff = Math.max(0, current - last);
             m.coins = diff;
             totalUnred += diff;
@@ -1051,11 +1051,18 @@
       clearStep1Inputs();
       addLog(`介面1 巡點機數「${machine.name}」累計更新，傳送至介面2`);
       saveState();
+
+      // 確保介面 2 數值與按鈕狀態立即同步
+      const s2Coins = document.getElementById("step2CoinsDisplay");
+      const s2Cash = document.getElementById("step2CashDisplay");
+      if (s2Coins) s2Coins.textContent = `${loc.unredeemedCoins || 0} 幣`;
+      if (s2Cash) s2Cash.textContent = `HK$ ${loc.unredeemedCash || 0}`;
+      applyCoinLockState(loc);
+
       focusStep(2);
       showToast("✅ 已更新巡點累計數值並傳送至「介面 2 - 未兌幣記錄」");
     }
 
-    // 介面 2 選擇 1：確認場主兌幣未入帳 -> 累加到介面 3 總和，並把介面 2 未兌幣歸零以便之後巡機數重新累計
     function chooseUnredeemedToStep3() {
       const loc = getCurrentLocation();
       const unredCoins = loc.unredeemedCoins || 0;
@@ -1068,7 +1075,6 @@
       loc.step3CoinsTotal = (loc.step3CoinsTotal || 0) + unredCoins;
       loc.step3ConfirmedUnpaid = true;
 
-      // 將各機台目前差額基準更新到目前累計，讓介面 2 未兌幣歸零、之後巡機數可再次累計
       loc.machines.forEach(m => {
         if (m.isFourInOne) {
           ["左上", "右上", "左下", "右下"].forEach(slot => {
@@ -1097,7 +1103,6 @@
       showToast(`➡️ 已將 ${unredCoins} 幣 (HK$${addedCash}) 累計至介面 3，介面 2 未兌幣已歸零`);
     }
 
-    // 介面 2 選擇 2：確認場主兌幣已入帳 -> 存幣入帳並鎖定輸入
     function choosePaidDirectInStep2() {
       const loc = getCurrentLocation();
       const dateVal = document.getElementById("redeemDateInput").value || document.getElementById("coinDateInput").value || getTodayStr();
@@ -1138,7 +1143,6 @@
       showToast(`✅ 場主兌幣已入帳 HK$${cash}，輸入已鎖定`);
     }
 
-    // 介面 3 兌現金額輸入即時試算 Outstanding（以介面 3 累計未兌現總和為基準）
     function previewOutstanding() {
       const loc = getCurrentLocation();
       const box = document.getElementById("outstandingPreviewBox");
@@ -1170,7 +1174,6 @@
       }
     }
 
-    // 介面 3 確認兌現：扣減介面 3 累計未兌現總和並計算 Outstanding
     function confirmStep3Redeem() {
       const loc = getCurrentLocation();
       const totalStep3Coins = loc.step3CoinsTotal || 0;
@@ -1497,6 +1500,11 @@
       const loc = getCurrentLocation();
       const bucket = loc.monthlyStats[monthKey];
       if (bucket && bucket.records) {
+        const target = bucket.records.find(r => r.id === recordId);
+        if (target && target.type === "unpaid_transfer") {
+          loc.step3CoinsTotal = Math.max(0, (loc.step3CoinsTotal || 0) - (target.coins || 0));
+          if ((loc.step3CoinsTotal || 0) <= 0) loc.step3ConfirmedUnpaid = false;
+        }
         bucket.records = bucket.records.filter(r => r.id !== recordId);
         if (bucket.records.length === 0) delete loc.monthlyStats[monthKey];
       }
