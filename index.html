@@ -617,10 +617,6 @@
       return `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers/${ledgerId}`;
     }
 
-    function getCollectionUrl() {
-      return `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/default/documents/ledgers`;
-    }
-
     function showToast(msg, isError) {
       const el = document.getElementById("toastBanner");
       if (!el) return;
@@ -660,56 +656,8 @@
       return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
     }
 
-    async function syncAllLedgersFromCloud(silent) {
-      if (isResetting) return;
-      try {
-        const headers = await getAuthHeaders();
-        const res = await fetchWithTimeout(getCollectionUrl(), { method: "GET", headers }, 6000);
-        if (!res.ok) {
-          const errJson = await res.json().catch(() => ({}));
-          const msg = (errJson.error && errJson.error.message) || `HTTP ${res.status}`;
-          setSyncUI(false, "讀取被拒：" + msg);
-          return;
-        }
-        const json = await res.json();
-        const docs = json.documents || [];
-        let loadedCount = 0;
-        docs.forEach(doc => {
-          const rawStr = doc.fields && doc.fields.payloadJson && doc.fields.payloadJson.stringValue;
-          if (rawStr) {
-            try {
-              const cloudLedger = JSON.parse(rawStr);
-              if (cloudLedger && cloudLedger.id) {
-                appState.ledgers[cloudLedger.id] = cloudLedger;
-                loadedCount++;
-              }
-            } catch (e) {}
-          }
-        });
-        if (loadedCount > 0) {
-          appState = normalizeState(appState);
-          localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(appState));
-          renderAll();
-        }
-        const t = new Date();
-        const ts = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}:${String(t.getSeconds()).padStart(2, "0")}`;
-        setSyncUI(true, "雲端已同步 (" + ts + ")");
-        const dw = document.getElementById("diagWriteText");
-        if (dw) dw.textContent = "正常 (" + ts + ")";
-        if (!silent) showToast("☁️ 已同步雲端全部帳戶（共 " + loadedCount + " 個）");
-      } catch (err) {
-        const reason = err.name === "AbortError" ? "連線逾時（請檢查網路）" : err.message;
-        setSyncUI(false, "同步異常：" + reason);
-        if (!silent) showToast("❌ 同步失敗：" + reason, true);
-      }
-    }
-
     async function pullFromCloud(silent) {
       if (isResetting) return;
-      if (currentView === "landing") {
-        await syncAllLedgersFromCloud(silent);
-        return;
-      }
       try {
         const headers = await getAuthHeaders();
         const res = await fetchWithTimeout(getFirestoreUrl(), { method: "GET", headers }, 6000);
@@ -737,7 +685,7 @@
             setSyncUI(true, "雲端已同步 (" + ts + ")");
             const dw = document.getElementById("diagWriteText");
             if (dw) dw.textContent = "正常 (" + ts + ")";
-            if (!silent) showToast("☁️ 已成功從雲端拉取最新資料！");
+            if (!silent) showToast("☁️ 已成功從雲端拉取當前帳戶最新資料！");
             return;
           }
         }
@@ -828,7 +776,7 @@
           authUser = cred.user;
           const da = document.getElementById("diagAuthText");
           if (da) da.textContent = "已匿名登入 (" + authUser.uid.slice(0, 6) + "...)";
-          await syncAllLedgersFromCloud(true);
+          await pullFromCloud(true);
           if (!window._syncInterval) {
             window._syncInterval = setInterval(() => {
               if (document.visibilityState === "visible") pullFromCloud(true);
@@ -1150,7 +1098,7 @@
 
         loc.machines.forEach(m => {
           if (m.id === machine.id) {
-            let mSum = 
+            let mSum =
               Math.max(0, lt - (m.slotLast["左上"] || 0)) +
               Math.max(0, rt - (m.slotLast["右上"] || 0)) +
               Math.max(0, lb - (m.slotLast["左下"] || 0)) +
@@ -1205,7 +1153,7 @@
           return;
         }
 
-        addedCoins = 
+        addedCoins =
           Math.max(0, lt - (machine.slots["左上"] || machine.slotLast["左上"] || 0)) +
           Math.max(0, rt - (machine.slots["右上"] || machine.slotLast["右上"] || 0)) +
           Math.max(0, lb - (machine.slots["左下"] || machine.slotLast["左下"] || 0)) +
@@ -1329,7 +1277,7 @@
 
       document.getElementById("redeemNoteInput").value = "";
       saveState();
-      
+
       if (outstandingCash > 0) {
         showToast(`⚠️ 已入帳 HK$${cashPaid}！尚有 Outstanding 欠款 $${outstandingCash} (${outstandingCoins}幣) 保留未入帳。`);
       } else {
@@ -1502,7 +1450,7 @@
               let name = String(row[1] || "").trim();
               let cost = parseFloat(row[2]) || 0;
               let rawStatus = String(row[3] || "出貨").trim();
-              
+
               let status = "出貨";
               if (rawStatus === "存貨" || rawStatus === "貨存") {
                 status = "貨存";
@@ -1882,7 +1830,7 @@
       });
       document.getElementById("goodsListCount").textContent = `顯示 ${filteredGoods.length} / 總共 ${rawGoodsList.length} 項`;
       document.getElementById("toggleAllGoodsBtn").textContent = allGoodsExpanded ? "📂 收起全部貨物" : "📂 展開全部貨物";
-      
+
       const previewEl = document.getElementById("goodsListPreview");
       const containerEl = document.getElementById("goodsListContainer");
 
