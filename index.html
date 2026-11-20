@@ -301,7 +301,7 @@
               1️⃣ 確認場主兌幣未入帳 ➔ 傳到「兌幣未入帳紀錄」（同場歸零）
             </button>
             <button id="btnChoicePaidDirect" onclick="choosePaidDirectInStep2()" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 rounded-xl text-sm shadow">
-              2️⃣ 確認場主兌幣已入帳（計算收入並歸零重新累計）
+              2️⃣ 確認場主兌幣已入帳（50/50分帳並歸零重新累計）
             </button>
           </div>
         </div>
@@ -354,7 +354,7 @@
               </div>
 
               <button id="btnConfirmStep3Redeem" onclick="confirmStep3Redeem()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl text-sm shadow">
-                ✔️ 確認兌現（計算 Outstanding 並更新未兌幣數/金額）
+                ✔️ 確認兌現（50/50分帳並更新未兌幣數/金額）
               </button>
             </div>
           </div>
@@ -564,7 +564,7 @@
       measurementId: "G-RPZDMHX5C1"
     };
 
-    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v47";
+    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v48";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "partnerA";
     let currentView = "landing";
@@ -640,7 +640,7 @@
 
     function loadLocalBackup() {
       try {
-        const raw = localStorage.getItem(LOCAL_BACKUP_KEY) || localStorage.getItem("claw_ledger_independent_v46") || localStorage.getItem("claw_ledger_independent_v45");
+        const raw = localStorage.getItem(LOCAL_BACKUP_KEY) || localStorage.getItem("claw_ledger_independent_v47") || localStorage.getItem("claw_ledger_independent_v46");
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed && parsed.ledgers) return parsed;
@@ -918,6 +918,37 @@
       pushToCloud(true);
     }
 
+    function splitFiftyFifty(totalCash) {
+      const amount = Math.max(0, Number(totalCash) || 0);
+      const shareA = Math.floor(amount / 2);
+      const shareB = amount - shareA;
+      return { shareA, shareB };
+    }
+
+    function appendFiftyFiftyIncomeRecords(mBucket, ledger, totalCash, dateVal, baseIdPrefix) {
+      const { shareA, shareB } = splitFiftyFifty(totalCash);
+      mBucket.records = mBucket.records || [];
+      if (shareA > 0) {
+        mBucket.records.push({
+          id: `${baseIdPrefix}_a_${Date.now()}`,
+          type: "manual",
+          owner: ledger.partnerA,
+          cash: shareA,
+          date: dateVal
+        });
+      }
+      if (shareB > 0) {
+        mBucket.records.push({
+          id: `${baseIdPrefix}_b_${Date.now() + 1}`,
+          type: "manual",
+          owner: ledger.partnerB,
+          cash: shareB,
+          date: dateVal
+        });
+      }
+      return { shareA, shareB };
+    }
+
     function getLocationStep2Sum(loc) {
       return (loc.machines || []).reduce((acc, m) => acc + Math.max(0, Number(m.step2Coins) || 0), 0);
     }
@@ -1179,33 +1210,25 @@
       }
 
       const cash = unredCoins * COIN_RATE;
-      const opName = currentOperator === "partnerA" ? ledger.partnerA : ledger.partnerB;
-
       const mBucket = ensureMonthlyBucket(loc, monthKey);
       mBucket.records = mBucket.records || [];
       mBucket.records.push({
         id: "r_" + Date.now(),
         type: "redeem",
-        owner: opName,
+        owner: "50/50",
         coins: unredCoins,
         cash: cash,
         date: dateVal,
-        note: `確認兌幣已入帳 (${opName})`
+        note: `確認兌幣已入帳（${ledger.partnerA}/${ledger.partnerB} 50/50分帳）`
       });
-      mBucket.records.push({
-        id: "r_inc_" + Date.now(),
-        type: "manual",
-        owner: opName,
-        cash: cash,
-        date: dateVal
-      });
+      const { shareA, shareB } = appendFiftyFiftyIncomeRecords(mBucket, ledger, cash, dateVal, "r_inc50");
 
       resetLocationStep2AndMachines(loc);
       loc.coinSettledLocked = false;
       clearStep1Inputs();
-      addLog(`確認兌幣已入帳 HK$${cash} (${unredCoins}幣)，同場已歸零重新累計`);
+      addLog(`確認兌幣已入帳 HK$${cash} (${unredCoins}幣)，${ledger.partnerA} $${shareA} / ${ledger.partnerB} $${shareB} 50/50分帳並歸零`);
       saveState();
-      showToast(`✅ 兌幣已入帳 HK$${cash}，已歸零可重新巡點累計`);
+      showToast(`✅ 兌幣 HK$${cash} 已 50/50 分帳（${ledger.partnerA} $${shareA} / ${ledger.partnerB} $${shareB}）`);
     }
 
     function previewOutstanding() {
@@ -1263,7 +1286,6 @@
       const paidCoins = Math.min(totalStep3Coins, Math.floor(cashPaid / COIN_RATE));
       const outstandingCash = Math.max(0, totalStep3Cash - cashPaid);
       const outstandingCoins = Math.max(0, totalStep3Coins - paidCoins);
-      const opName = currentOperator === "partnerA" ? ledger.partnerA : ledger.partnerB;
 
       let remainingToDeduct = paidCoins;
       const machinesWithUnpaid = (loc.machines || []).filter(m => (Number(m.unpaidCoins) || 0) > 0);
@@ -1294,33 +1316,27 @@
       mBucket.records.push({
         id: "r_" + Date.now(),
         type: "redeem",
-        owner: opName,
+        owner: "50/50",
         coins: paidCoins,
         cash: cashPaid,
         date: dateVal,
         note: outstandingCash > 0
-          ? `${note}｜實收 HK$${cashPaid}，Outstanding 欠款 HK$${outstandingCash}（剩餘 ${outstandingCoins} 幣）`
-          : `${note}｜全額兌現 HK$${cashPaid}`
+          ? `${note}｜50/50分帳實收 HK$${cashPaid}，Outstanding 欠款 HK$${outstandingCash}（剩餘 ${outstandingCoins} 幣）`
+          : `${note}｜50/50分帳全額兌現 HK$${cashPaid}`
       });
-      mBucket.records.push({
-        id: "r_inc3_" + Date.now(),
-        type: "manual",
-        owner: opName,
-        cash: cashPaid,
-        date: dateVal
-      });
+      const { shareA, shareB } = appendFiftyFiftyIncomeRecords(mBucket, ledger, cashPaid, dateVal, "r_inc3_50");
 
       document.getElementById("redeemCashInput").value = "";
       document.getElementById("redeemNoteInput").value = "";
       clearStep1Inputs();
 
-      addLog(`確認兌現 HK$${cashPaid}，未入帳剩餘 ${outstandingCoins} 幣 (HK$${outstandingCash})`);
+      addLog(`確認兌現 HK$${cashPaid}（${ledger.partnerA} $${shareA} / ${ledger.partnerB} $${shareB} 50/50分帳），未入帳剩餘 ${outstandingCoins} 幣`);
       saveState();
 
       if (outstandingCash > 0) {
-        showToast(`⚠️ 已兌現 HK$${cashPaid}！剩餘 ${outstandingCoins} 幣 (HK$${outstandingCash})`);
+        showToast(`⚠️ 已兌現 HK$${cashPaid}（50/50分帳）！剩餘 ${outstandingCoins} 幣 (HK$${outstandingCash})`);
       } else {
-        showToast(`✅ 兌現 HK$${cashPaid} 完成！未兌現總和已清零`);
+        showToast(`✅ 兌現 HK$${cashPaid} 完成（50/50分帳）！未兌現總和已清零`);
       }
     }
 
