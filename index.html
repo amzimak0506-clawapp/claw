@@ -38,7 +38,7 @@
     }
   </style>
 </head>
-<body class="pb-16">
+<body class="pb-20">
 
   <!-- 1. 帳戶首頁畫面 (Landing Page) -->
   <div id="view-landing" class="max-w-lg mx-auto px-4 pt-8">
@@ -126,9 +126,6 @@
       </div>
     </header>
 
-    <div id="toastBanner" class="hidden fixed top-36 inset-x-4 max-w-lg mx-auto z-40 bg-emerald-600 text-white text-center text-sm font-bold py-2.5 px-4 rounded-xl shadow-lg">
-    </div>
-
     <main class="max-w-lg mx-auto px-4 pt-4">
 
       <!-- 1. 總覽分頁 -->
@@ -146,10 +143,10 @@
           </div>
         </div>
 
-        <!-- 本場未入帳幣與金額 -->
+        <!-- 本場已兌幣未入帳幣與金額 -->
         <div class="card border-l-4 border-amber-500 bg-amber-50/40 flex justify-between items-center py-3">
           <div>
-            <div class="text-xs font-bold text-amber-900">📥 本場未入帳幣與金額</div>
+            <div class="text-xs font-bold text-amber-900">📥 本場已兌幣未入帳幣與金額</div>
             <div id="statUnpaidCash" class="text-xl font-extrabold text-rose-700 mt-0.5">HK$ 0</div>
           </div>
           <div class="text-right">
@@ -414,35 +411,7 @@
           </div>
         </div>
 
-        <!-- 同帳戶調貨（跨分店） -->
-        <div class="card border-2 border-indigo-200 bg-indigo-50/30">
-          <div class="flex justify-between items-center mb-2">
-            <h2 class="font-bold text-base text-indigo-950">🔄 同帳戶調貨（跨分店）</h2>
-            <span id="transferSelectedCount" class="text-xs font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">已選 0 件</span>
-          </div>
-          <p class="text-xs text-slate-600 mb-3">
-            從目前帳戶內其他分店調入庫存（入機／貨存）至本場，或將本場庫存調往同帳戶其他分店。
-          </p>
-
-          <div class="grid grid-cols-2 gap-3 mb-3">
-            <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">來源分店</label>
-              <select id="transferFromLocSelect" onchange="onTransferSourceChange()" class="w-full border border-slate-300 rounded-xl px-2.5 py-2 bg-white text-xs font-bold"></select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-600 mb-1">目標分店</label>
-              <select id="transferToLocSelect" class="w-full border border-slate-300 rounded-xl px-2.5 py-2 bg-white text-xs font-bold"></select>
-            </div>
-          </div>
-
-          <div id="transferCandidatesList" class="max-h-48 overflow-y-auto space-y-1.5 bg-white border border-indigo-100 rounded-xl p-2.5 mb-3 text-xs">
-          </div>
-
-          <button onclick="executeSameAccountTransfer()" class="w-full bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-2.5 rounded-xl text-sm shadow">
-            🔄 確認同帳戶調貨
-          </button>
-        </div>
-
+        <!-- 本場貨物 List（在上） -->
         <div class="card">
           <div class="flex justify-between items-center mb-2">
             <div class="flex items-center gap-2">
@@ -459,6 +428,41 @@
           </div>
           <div id="goodsListPreview" class="text-xs text-slate-500 py-1">（列表已收起）</div>
           <div id="goodsListContainer" class="space-y-1.5 hidden mt-2"></div>
+        </div>
+
+        <!-- 同帳戶調貨（跨分店，在下且預設收起） -->
+        <div class="card border-2 border-indigo-200 bg-indigo-50/30">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2">
+              <h2 class="font-bold text-base text-indigo-950">🔄 同帳戶調貨（跨分店）</h2>
+              <button onclick="toggleTransferSection()" id="toggleTransferBtn" class="text-xs font-bold text-indigo-700 bg-indigo-100 hover:bg-indigo-200 px-2.5 py-1 rounded-lg">▼ 展開調貨</button>
+            </div>
+            <span id="transferSelectedCount" class="text-xs font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">已選 0 件</span>
+          </div>
+
+          <div id="transferSectionBody" class="hidden mt-3">
+            <p class="text-xs text-slate-600 mb-3">
+              從目前帳戶內其他分店調入庫存（入機／貨存）至本場，或將本場庫存調往同帳戶其他分店。
+            </p>
+
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">來源分店</label>
+                <select id="transferFromLocSelect" onchange="onTransferSourceChange()" class="w-full border border-slate-300 rounded-xl px-2.5 py-2 bg-white text-xs font-bold"></select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">目標分店</label>
+                <select id="transferToLocSelect" class="w-full border border-slate-300 rounded-xl px-2.5 py-2 bg-white text-xs font-bold"></select>
+              </div>
+            </div>
+
+            <div id="transferCandidatesList" class="max-h-48 overflow-y-auto space-y-1.5 bg-white border border-indigo-100 rounded-xl p-2.5 mb-3 text-xs">
+            </div>
+
+            <button onclick="executeSameAccountTransfer()" class="w-full bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-2.5 rounded-xl text-sm shadow">
+              🔄 確認同帳戶調貨
+            </button>
+          </div>
         </div>
       </section>
 
@@ -546,6 +550,10 @@
     </main>
   </div>
 
+  <!-- 置底提示橫幅 -->
+  <div id="toastBanner" class="hidden fixed bottom-5 inset-x-4 max-w-lg mx-auto z-50 bg-emerald-600 text-white text-center text-sm font-bold py-2.5 px-4 rounded-xl shadow-lg">
+  </div>
+
   <script>
     const COIN_RATE = 5; // 1幣 = HK$5
 
@@ -564,13 +572,14 @@
       measurementId: "G-RPZDMHX5C1"
     };
 
-    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v49";
+    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v50";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "partnerA";
     let currentView = "landing";
     let expandedSettlementLocIds = {};
     let goodsFilterMode = "IN_MACHINE";
     let allGoodsExpanded = false;
+    let transferSectionExpanded = false;
     let coinPageMonthlyExpanded = false;
     let expandedMonthlyKeys = {};
     let isResetting = false;
@@ -649,7 +658,7 @@
 
     function loadLocalBackup() {
       try {
-        const raw = localStorage.getItem(LOCAL_BACKUP_KEY) || localStorage.getItem("claw_ledger_independent_v48") || localStorage.getItem("claw_ledger_independent_v47");
+        const raw = localStorage.getItem(LOCAL_BACKUP_KEY) || localStorage.getItem("claw_ledger_independent_v49") || localStorage.getItem("claw_ledger_independent_v48");
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed && parsed.ledgers) return parsed;
@@ -741,7 +750,7 @@
       const el = document.getElementById("toastBanner");
       if (!el) return;
       el.textContent = msg;
-      el.className = `fixed top-36 inset-x-4 max-w-lg mx-auto z-40 ${isError ? "bg-rose-600" : "bg-emerald-600"} text-white text-center text-sm font-bold py-2.5 px-4 rounded-xl shadow-lg`;
+      el.className = `fixed bottom-5 inset-x-4 max-w-lg mx-auto z-50 ${isError ? "bg-rose-600" : "bg-emerald-600"} text-white text-center text-sm font-bold py-2.5 px-4 rounded-xl shadow-lg`;
       clearTimeout(window._toastTimer);
       window._toastTimer = setTimeout(() => {
         el.classList.add("hidden");
@@ -1438,6 +1447,11 @@
       renderAllWithoutViewReset();
     }
 
+    function toggleTransferSection() {
+      transferSectionExpanded = !transferSectionExpanded;
+      renderAllWithoutViewReset();
+    }
+
     function toggleCoinPageMonthly() {
       coinPageMonthlyExpanded = !coinPageMonthlyExpanded;
       renderAllWithoutViewReset();
@@ -1800,6 +1814,29 @@
       document.getElementById("stockCostInput").value = "";
       saveState();
       showToast(`✅ 已新增「${name}」(${ownerName})`);
+    }
+
+    function editGoodsItem(goodsId) {
+      const loc = getCurrentLocation();
+      const item = (loc.goodsList || []).find(g => g.id === goodsId);
+      if (!item) return;
+
+      const newName = prompt("請輸入新的貨物名稱：", item.name || "");
+      if (newName === null) return;
+      const trimmedName = newName.trim() || "未命名貨物";
+
+      const rawCost = prompt("請輸入新的成本 (HK$)：", formatMoney(item.cost || 0));
+      if (rawCost === null) return;
+      const parsedCost = parseFloat(rawCost);
+      if (rawCost.trim() === "" || isNaN(parsedCost) || parsedCost < 0) {
+        alert("請輸入有效的成本金額（0 或以上）！");
+        return;
+      }
+
+      item.name = trimmedName;
+      item.cost = roundMoney(parsedCost);
+      saveState();
+      showToast(`✅ 已更新「${item.name}」成本 $${formatMoney(item.cost)}`);
     }
 
     function cycleGoodsStatus(goodsId, newStatus) {
@@ -2340,13 +2377,14 @@
             : (g.status === "貨存" || g.status === "存貨" ? "bg-blue-100 text-blue-800" : "bg-slate-200 text-slate-700");
           return `
             <div class="card !mb-1.5 !p-2.5 border border-slate-200">
-              <div class="flex justify-between items-center text-xs">
-                <div class="font-bold text-slate-800 flex items-center gap-1.5">
+              <div class="flex justify-between items-center text-xs gap-1">
+                <div class="font-bold text-slate-800 flex flex-wrap items-center gap-1.5">
                   <span class="px-1.5 py-0.5 rounded ${statusBadge}">${g.status}</span>
                   <span>${g.name}</span>
-                  <span class="text-slate-400">· 成本 $${formatMoney(g.cost || 0)} · ${g.owner}</span>
+                  <span class="text-slate-500">· 成本 $${formatMoney(g.cost || 0)} · ${g.owner}</span>
                 </div>
-                <div class="flex items-center gap-1">
+                <div class="flex items-center gap-1 shrink-0">
+                  <button onclick="editGoodsItem('${g.id}')" class="px-1.5 py-0.5 rounded border text-[10px] font-bold bg-amber-50 text-amber-800 border-amber-300">改</button>
                   <button onclick="cycleGoodsStatus('${g.id}', '入機')" class="px-1.5 py-0.5 rounded border text-[10px] ${g.status === '入機' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white border-slate-300'}">入</button>
                   <button onclick="cycleGoodsStatus('${g.id}', '貨存')" class="px-1.5 py-0.5 rounded border text-[10px] ${g.status === '貨存' || g.status === '存貨' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-slate-300'}">存</button>
                   <button onclick="cycleGoodsStatus('${g.id}', '出貨')" class="px-1.5 py-0.5 rounded border text-[10px] ${g.status === '出貨' ? 'bg-slate-700 text-white border-slate-700' : 'bg-white border-slate-300'}">出</button>
@@ -2358,8 +2396,13 @@
       } else {
         previewEl.classList.remove("hidden");
         containerEl.classList.add("hidden");
-        previewEl.textContent = `（列表已收起，目前篩選共 ${filteredGoods.length} 項，點擊「展開全部貨物」可查看完整清單）`;
+        previewEl.textContent = `（列表已收起，目前篩選共 ${filteredGoods.length} 項，點擊「展開全部貨物」可查看與修改）`;
       }
+
+      const transferBtn = document.getElementById("toggleTransferBtn");
+      const transferBody = document.getElementById("transferSectionBody");
+      if (transferBtn) transferBtn.textContent = transferSectionExpanded ? "▲ 收起調貨" : "▼ 展開調貨";
+      if (transferBody) transferBody.classList.toggle("hidden", !transferSectionExpanded);
 
       syncTransferSelectors();
       renderTransferCandidates();
