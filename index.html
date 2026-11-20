@@ -340,7 +340,7 @@
                 </div>
                 <div>
                   <label class="block text-xs font-bold text-slate-600 mb-1">兌現金額 (HK$)</label>
-                  <input type="number" id="redeemCashInput" oninput="previewOutstanding()" placeholder="輸入兌現金額" class="w-full border border-amber-400 rounded-xl px-3 py-2.5 bg-white font-extrabold text-emerald-700" />
+                  <input type="number" step="any" id="redeemCashInput" oninput="previewOutstanding()" placeholder="輸入兌現金額" class="w-full border border-amber-400 rounded-xl px-3 py-2.5 bg-white font-extrabold text-emerald-700" />
                 </div>
               </div>
 
@@ -404,7 +404,7 @@
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-600 mb-1">對應成本 (HK$)</label>
-                <input type="number" id="stockCostInput" placeholder="輸入金額" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
+                <input type="number" step="any" id="stockCostInput" placeholder="輸入金額" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
               </div>
             </div>
 
@@ -564,7 +564,7 @@
       measurementId: "G-RPZDMHX5C1"
     };
 
-    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v48";
+    const LOCAL_BACKUP_KEY = "claw_ledger_independent_v49";
     let authUser = null;
     let currentOperator = localStorage.getItem("claw_operator") || "partnerA";
     let currentView = "landing";
@@ -577,6 +577,15 @@
     let selectedTransferIds = {};
     let transferFromIdCache = "";
     let transferToIdCache = "";
+
+    function roundMoney(val) {
+      return Math.round((Number(val) || 0) * 100) / 100;
+    }
+
+    function formatMoney(val) {
+      const n = roundMoney(val);
+      return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, "");
+    }
 
     function getTodayStr() {
       const d = new Date();
@@ -640,7 +649,7 @@
 
     function loadLocalBackup() {
       try {
-        const raw = localStorage.getItem(LOCAL_BACKUP_KEY) || localStorage.getItem("claw_ledger_independent_v47") || localStorage.getItem("claw_ledger_independent_v46");
+        const raw = localStorage.getItem(LOCAL_BACKUP_KEY) || localStorage.getItem("claw_ledger_independent_v48") || localStorage.getItem("claw_ledger_independent_v47");
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed && parsed.ledgers) return parsed;
@@ -693,8 +702,10 @@
           });
           Object.values(l.monthlyStats || {}).forEach(bucket => {
             (bucket.records || []).forEach(r => {
-              if (r.owner === "Amzi") r.owner = ledger.partnerA;
-              if (r.owner === "Dennis") r.owner = ledger.partnerB;
+              if (r.type === "legacy") {
+                if (r.owner === "Amzi") r.owner = ledger.partnerA;
+                if (r.owner === "Dennis") r.owner = ledger.partnerB;
+              }
             });
           });
           (l.machines || []).forEach(m => {
@@ -920,9 +931,8 @@
 
     function splitFiftyFifty(totalCash) {
       const amount = Math.max(0, Number(totalCash) || 0);
-      const shareA = Math.floor(amount / 2);
-      const shareB = amount - shareA;
-      return { shareA, shareB };
+      const half = roundMoney(amount / 2);
+      return { shareA: half, shareB: half };
     }
 
     function appendFiftyFiftyIncomeRecords(mBucket, ledger, totalCash, dateVal, baseIdPrefix) {
@@ -982,7 +992,7 @@
         let totalRedeem = 0;
         Object.values(loc.monthlyStats || {}).forEach(bucket => {
           (bucket.records || []).forEach(r => {
-            if (r.type === "redeem") totalRedeem += (r.cash || 0);
+            if (r.type === "redeem") totalRedeem = roundMoney(totalRedeem + (Number(r.cash) || 0));
           });
         });
         loc.totalRedeemedCash = totalRedeem;
@@ -1209,7 +1219,7 @@
         return;
       }
 
-      const cash = unredCoins * COIN_RATE;
+      const cash = roundMoney(unredCoins * COIN_RATE);
       const mBucket = ensureMonthlyBucket(loc, monthKey);
       mBucket.records = mBucket.records || [];
       mBucket.records.push({
@@ -1226,9 +1236,9 @@
       resetLocationStep2AndMachines(loc);
       loc.coinSettledLocked = false;
       clearStep1Inputs();
-      addLog(`確認兌幣已入帳 HK$${cash} (${unredCoins}幣)，${ledger.partnerA} $${shareA} / ${ledger.partnerB} $${shareB} 50/50分帳並歸零`);
+      addLog(`確認兌幣已入帳 HK$${formatMoney(cash)} (${unredCoins}幣)，${ledger.partnerA} $${formatMoney(shareA)} / ${ledger.partnerB} $${formatMoney(shareB)} 50/50分帳並歸零`);
       saveState();
-      showToast(`✅ 兌幣 HK$${cash} 已 50/50 分帳（${ledger.partnerA} $${shareA} / ${ledger.partnerB} $${shareB}）`);
+      showToast(`✅ 兌幣 HK$${formatMoney(cash)} 已 50/50 分帳（各 $${formatMoney(shareA)}）`);
     }
 
     function previewOutstanding() {
@@ -1237,7 +1247,7 @@
       if (!box) return;
 
       const totalStep3Coins = loc.step3CoinsTotal || 0;
-      const totalStep3Cash = totalStep3Coins * COIN_RATE;
+      const totalStep3Cash = roundMoney(totalStep3Coins * COIN_RATE);
       const rawInput = document.getElementById("redeemCashInput").value;
 
       if (!loc.step3ConfirmedUnpaid || totalStep3Coins <= 0) {
@@ -1246,19 +1256,20 @@
       }
 
       if (rawInput === "") {
-        box.textContent = `累計未兌現總和：HK$ ${totalStep3Cash}（${totalStep3Coins} 幣，1幣=HK$5）；請輸入兌現金額試算 Outstanding。`;
+        box.textContent = `累計未兌現總和：HK$ ${formatMoney(totalStep3Cash)}（${totalStep3Coins} 幣，1幣=HK$5）；請輸入兌現金額試算 Outstanding。`;
         return;
       }
 
       const paidCash = parseFloat(rawInput) || 0;
       const paidCoins = Math.min(totalStep3Coins, Math.floor(paidCash / COIN_RATE));
       const remCoins = Math.max(0, totalStep3Coins - paidCoins);
-      const remCash = Math.max(0, totalStep3Cash - paidCash);
+      const remCash = roundMoney(Math.max(0, totalStep3Cash - paidCash));
+      const halfPaid = formatMoney(paidCash / 2);
 
       if (remCash > 0) {
-        box.innerHTML = `<span class="text-rose-700 font-bold">Outstanding 欠款：HK$ ${remCash}</span>（折算剩餘未兌幣：<strong>${remCoins} 幣</strong> / 本次抵銷 ${paidCoins} 幣）`;
+        box.innerHTML = `<span class="text-rose-700 font-bold">Outstanding 欠款：HK$ ${formatMoney(remCash)}</span>（折算剩餘未兌幣：<strong>${remCoins} 幣</strong> / 本次各分 $${halfPaid}）`;
       } else {
-        box.innerHTML = `<span class="text-emerald-700 font-bold">全額兌清（Outstanding：HK$ 0）</span>（抵銷 ${paidCoins} 幣，剩餘 0 幣）`;
+        box.innerHTML = `<span class="text-emerald-700 font-bold">全額兌清（Outstanding：HK$ 0）</span>（抵銷 ${paidCoins} 幣，本次各分 $${halfPaid}）`;
       }
     }
 
@@ -1266,14 +1277,14 @@
       const loc = getCurrentLocation();
       const ledger = getCurrentLedger();
       const totalStep3Coins = loc.step3CoinsTotal || 0;
-      const totalStep3Cash = totalStep3Coins * COIN_RATE;
+      const totalStep3Cash = roundMoney(totalStep3Coins * COIN_RATE);
 
       if (!loc.step3ConfirmedUnpaid || totalStep3Coins <= 0) {
         alert("目前沒有未兌現幣數總和可供兌現！");
         return;
       }
 
-      const cashPaid = parseFloat(document.getElementById("redeemCashInput").value);
+      const cashPaid = roundMoney(parseFloat(document.getElementById("redeemCashInput").value));
       const dateVal = document.getElementById("redeemDateInput").value || getTodayStr();
       const monthKey = getMonthKey(dateVal);
       const note = document.getElementById("redeemNoteInput").value.trim() || "兌現結算";
@@ -1284,7 +1295,7 @@
       }
 
       const paidCoins = Math.min(totalStep3Coins, Math.floor(cashPaid / COIN_RATE));
-      const outstandingCash = Math.max(0, totalStep3Cash - cashPaid);
+      const outstandingCash = roundMoney(Math.max(0, totalStep3Cash - cashPaid));
       const outstandingCoins = Math.max(0, totalStep3Coins - paidCoins);
 
       let remainingToDeduct = paidCoins;
@@ -1321,8 +1332,8 @@
         cash: cashPaid,
         date: dateVal,
         note: outstandingCash > 0
-          ? `${note}｜50/50分帳實收 HK$${cashPaid}，Outstanding 欠款 HK$${outstandingCash}（剩餘 ${outstandingCoins} 幣）`
-          : `${note}｜50/50分帳全額兌現 HK$${cashPaid}`
+          ? `${note}｜50/50分帳實收 HK$${formatMoney(cashPaid)}，Outstanding 欠款 HK$${formatMoney(outstandingCash)}（剩餘 ${outstandingCoins} 幣）`
+          : `${note}｜50/50分帳全額兌現 HK$${formatMoney(cashPaid)}`
       });
       const { shareA, shareB } = appendFiftyFiftyIncomeRecords(mBucket, ledger, cashPaid, dateVal, "r_inc3_50");
 
@@ -1330,13 +1341,13 @@
       document.getElementById("redeemNoteInput").value = "";
       clearStep1Inputs();
 
-      addLog(`確認兌現 HK$${cashPaid}（${ledger.partnerA} $${shareA} / ${ledger.partnerB} $${shareB} 50/50分帳），未入帳剩餘 ${outstandingCoins} 幣`);
+      addLog(`確認兌現 HK$${formatMoney(cashPaid)}（${ledger.partnerA} $${formatMoney(shareA)} / ${ledger.partnerB} $${formatMoney(shareB)} 50/50分帳），未入帳剩餘 ${outstandingCoins} 幣`);
       saveState();
 
       if (outstandingCash > 0) {
-        showToast(`⚠️ 已兌現 HK$${cashPaid}（50/50分帳）！剩餘 ${outstandingCoins} 幣 (HK$${outstandingCash})`);
+        showToast(`⚠️ 已兌現 HK$${formatMoney(cashPaid)}（各 $${formatMoney(shareA)}）！剩餘 ${outstandingCoins} 幣 (HK$${formatMoney(outstandingCash)})`);
       } else {
-        showToast(`✅ 兌現 HK$${cashPaid} 完成（50/50分帳）！未兌現總和已清零`);
+        showToast(`✅ 兌現 HK$${formatMoney(cashPaid)} 完成（各 $${formatMoney(shareA)}）！未兌現總和已清零`);
       }
     }
 
@@ -1529,7 +1540,7 @@
               <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleTransferItem('${g.id}')" class="w-4 h-4 accent-indigo-700" />
               <div>
                 <span class="font-bold text-slate-800">${g.name}</span>
-                <span class="text-[11px] text-slate-500">· ${g.owner} · 成本 $${g.cost || 0}</span>
+                <span class="text-[11px] text-slate-500">· ${g.owner} · 成本 $${formatMoney(g.cost || 0)}</span>
               </div>
             </div>
             <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${g.status === '入機' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">${g.status}</span>
@@ -1772,7 +1783,7 @@
       const opKey = document.getElementById("stockOwnerSelect").value;
       const ownerName = opKey === "partnerA" ? ledger.partnerA : ledger.partnerB;
       const name = document.getElementById("stockNoteInput").value.trim() || "未命名貨物";
-      const cost = parseFloat(document.getElementById("stockCostInput").value) || 0;
+      const cost = roundMoney(parseFloat(document.getElementById("stockCostInput").value) || 0);
 
       loc.goodsList = loc.goodsList || [];
       loc.goodsList.unshift({
@@ -1908,7 +1919,7 @@
               else if (rawOwner.toLowerCase() === "dennis") owner = ledger.partnerB;
 
               let name = String(row[1] || "").trim();
-              let cost = parseFloat(row[2]) || 0;
+              let cost = roundMoney(parseFloat(row[2]) || 0);
               let rawStatus = String(row[3] || "出貨").trim();
 
               let status = "出貨";
@@ -1947,7 +1958,7 @@
               if (rawOwner.toLowerCase() === "amzi") owner = ledger.partnerA;
               else if (rawOwner.toLowerCase() === "dennis") owner = ledger.partnerB;
 
-              let inc = parseFloat(row[3]) || 0;
+              let inc = roundMoney(parseFloat(row[3]) || 0);
               let dateVal = parseExcelDate(row[4]);
 
               if (inc > 0) {
@@ -1966,9 +1977,9 @@
             });
           }
 
-          addLog(`上傳 Excel 檔案 (${file.name})：成功匯入 ${totalImportedGoods} 筆貨物與 ${totalImportedIncome} 筆收入`);
+          addLog(`上傳 Excel 檔案 (${file.name})：成功匯入 ${totalImportedGoods} 筆貨物與 ${totalImportedIncome} 筆舊帳收入`);
           saveState();
-          showToast(`✅ 成功匯入 Excel！所有成本與收入已更新。`);
+          showToast(`✅ 成功匯入 Excel！舊帳紀錄維持不變。`);
           event.target.value = "";
         } catch (err) {
           alert("解析 Excel 檔案失敗：" + err.message);
@@ -2008,15 +2019,20 @@
         return `
           <div class="flex justify-between items-center py-1.5 pl-2 pr-1 border-b border-slate-100 last:border-b-0 text-xs text-amber-900">
             <div>
-              <span class="font-bold">📥 確認兌幣未入帳</span> +${r.coins || 0} 幣（HK$ ${r.cash || 0}）
+              <span class="font-bold">📥 確認兌幣未入帳</span> +${r.coins || 0} 幣（HK$ ${formatMoney(r.cash || 0)}）
               <div class="text-[10px] text-slate-400">${r.date || "未填"}</div>
             </div>
             <button onclick="deleteRecord('${m}', '${r.id}')" class="text-rose-600 font-bold px-2 py-0.5 bg-rose-50 rounded">刪除</button>
           </div>`;
       }
       const isRedeem = r.type === "redeem";
-      const title = isRedeem ? `💰 兌幣結算 (${r.note || '兌現'})` : `💵 台主收入入帳 (${r.owner || '共同'})`;
-      const detailStr = isRedeem ? `抵銷幣數：${r.coins || 0} 幣 · 金額：HK$ ${r.cash}` : `擁有人：${r.owner} · 金額：HK$ ${r.cash}`;
+      const isLegacy = r.type === "legacy";
+      const title = isRedeem
+        ? `💰 兌幣結算 (${r.note || '兌現'})`
+        : (isLegacy ? `📄 Excel 舊帳收入 (${r.owner || '未填'})` : `💵 兌幣分帳收入 (${r.owner || '共同'})`);
+      const detailStr = isRedeem
+        ? `抵銷幣數：${r.coins || 0} 幣 · 金額：HK$ ${formatMoney(r.cash)}`
+        : `擁有人：${r.owner} · 金額：HK$ ${formatMoney(r.cash)}`;
       return `
         <div class="flex justify-between items-center py-2 pl-2 pr-1 border-b border-slate-100 last:border-b-0 text-xs">
           <div>
@@ -2039,14 +2055,14 @@
         const bucket = stats[m];
         const records = bucket.records || [];
         let monthTotal = 0;
-        records.forEach(r => { if (r.type === "redeem") monthTotal += (r.cash || 0); });
+        records.forEach(r => { if (r.type === "redeem") monthTotal = roundMoney(monthTotal + (Number(r.cash) || 0)); });
         const isExp = !!expandedMonthlyKeys[m + "_" + locId];
         const recHtml = records.map(r => renderRecordItemHtml(m, r)).join("") || `<div class="text-slate-400 py-1 pl-2">無明細紀錄</div>`;
 
         return `
           <div class="py-2">
             <div onclick="toggleSettlementMonth('${locId}', '${m}')" class="flex justify-between items-center font-bold text-slate-800 bg-slate-100 px-3 py-2 rounded-xl cursor-pointer hover:bg-slate-200 transition">
-              <span>🗓️ ${m} 月份明細（累計已兌現金：HK$ ${monthTotal}）</span>
+              <span>🗓️ ${m} 月份明細（累計已兌現金：HK$ ${formatMoney(monthTotal)}）</span>
               <span class="text-xs text-blue-700 font-bold px-2 py-0.5 bg-blue-50 rounded border border-blue-200">${isExp ? "▲ 收起月覽" : "▼ 展開月覽"}</span>
             </div>
             ${isExp ? `<div class="mt-2 space-y-1 pl-2 bg-white p-2 rounded-xl border border-slate-200">${recHtml}</div>` : ""}
@@ -2118,45 +2134,46 @@
       Object.values(loc.monthlyStats || {}).forEach(bucket => {
         (bucket.records || []).forEach(r => {
           if (r.type === "legacy" || r.type === "manual") {
-            if (r.owner === ledger.partnerA) partnerAInc += (r.cash || 0);
-            if (r.owner === ledger.partnerB) partnerBInc += (r.cash || 0);
+            const amt = Number(r.cash) || 0;
+            if (r.owner === ledger.partnerA) partnerAInc = roundMoney(partnerAInc + amt);
+            if (r.owner === ledger.partnerB) partnerBInc = roundMoney(partnerBInc + amt);
           }
         });
       });
 
       (loc.goodsList || []).forEach(g => {
-        const c = g.cost || 0;
+        const c = Number(g.cost) || 0;
         if (g.owner === ledger.partnerA) {
-          if (g.status === "出貨") partnerAShippedCost += c;
-          else if (g.status === "入機" || g.status === "貨存" || g.status === "存貨") partnerAStockCost += c;
+          if (g.status === "出貨") partnerAShippedCost = roundMoney(partnerAShippedCost + c);
+          else if (g.status === "入機" || g.status === "貨存" || g.status === "存貨") partnerAStockCost = roundMoney(partnerAStockCost + c);
         } else if (g.owner === ledger.partnerB) {
-          if (g.status === "出貨") partnerBShippedCost += c;
-          else if (g.status === "入機" || g.status === "貨存" || g.status === "存貨") partnerBStockCost += c;
+          if (g.status === "出貨") partnerBShippedCost = roundMoney(partnerBShippedCost + c);
+          else if (g.status === "入機" || g.status === "貨存" || g.status === "存貨") partnerBStockCost = roundMoney(partnerBStockCost + c);
         }
       });
 
-      const partnerATotalCost = partnerAShippedCost + partnerAStockCost;
-      const partnerBTotalCost = partnerBShippedCost + partnerBStockCost;
-      const partnerAProfit = partnerAInc - partnerATotalCost;
-      const partnerBProfit = partnerBInc - partnerBTotalCost;
-      const totalAllInc = partnerAInc + partnerBInc;
+      const partnerATotalCost = roundMoney(partnerAShippedCost + partnerAStockCost);
+      const partnerBTotalCost = roundMoney(partnerBShippedCost + partnerBStockCost);
+      const partnerAProfit = roundMoney(partnerAInc - partnerATotalCost);
+      const partnerBProfit = roundMoney(partnerBInc - partnerBTotalCost);
+      const totalAllInc = roundMoney(partnerAInc + partnerBInc);
 
       const unpaidCoins = loc.step3CoinsTotal || 0;
       const unpaidCash = unpaidCoins * COIN_RATE;
 
       document.getElementById("statCoins").textContent = `${loc.unredeemedCoins || 0} 幣`;
       document.getElementById("statCoinCash").textContent = `約 HK$ ${loc.unredeemedCash || 0} (1幣=HK$5)`;
-      document.getElementById("statRedeemed").textContent = `$${totalAllInc}`;
+      document.getElementById("statRedeemed").textContent = `$${formatMoney(totalAllInc)}`;
       document.getElementById("statHalfRedeemed").textContent = `雙方總累計營收`;
       document.getElementById("statUnpaidCoins").textContent = `${unpaidCoins} 幣`;
       document.getElementById("statUnpaidCash").textContent = `HK$ ${unpaidCash}`;
       document.getElementById("statStock").textContent = `庫存 ${loc.stockCount || 0} 隻`;
 
-      document.getElementById("statNetA").textContent = `$${partnerAProfit}`;
-      document.getElementById("statDetailA").textContent = `收入 $${partnerAInc} · 總成本 $${partnerATotalCost}`;
-      document.getElementById("statNetB").textContent = `$${partnerBProfit}`;
-      document.getElementById("statDetailB").textContent = `收入 $${partnerBInc} · 總成本 $${partnerBTotalCost}`;
-      document.getElementById("statCostTotal").textContent = `$${partnerATotalCost + partnerBTotalCost}`;
+      document.getElementById("statNetA").textContent = `$${formatMoney(partnerAProfit)}`;
+      document.getElementById("statDetailA").textContent = `收入 $${formatMoney(partnerAInc)} · 總成本 $${formatMoney(partnerATotalCost)}`;
+      document.getElementById("statNetB").textContent = `$${formatMoney(partnerBProfit)}`;
+      document.getElementById("statDetailB").textContent = `收入 $${formatMoney(partnerBInc)} · 總成本 $${formatMoney(partnerBTotalCost)}`;
+      document.getElementById("statCostTotal").textContent = `$${formatMoney(partnerATotalCost + partnerBTotalCost)}`;
       document.getElementById("statCostShared").textContent = `$0`;
 
       const unredCoins = getLocationStep2Sum(loc);
@@ -2181,17 +2198,17 @@
       document.getElementById("toggleCoinMonthlyBtn").textContent = coinPageMonthlyExpanded ? "▲ 收起月覽" : "▼ 展開月覽";
       document.getElementById("coinPageMonthlySummary").classList.toggle("hidden", !coinPageMonthlyExpanded);
 
-      document.getElementById("partnerATotalInc").textContent = `$${partnerAInc}`;
-      document.getElementById("partnerAShippedCost").textContent = `$${partnerAShippedCost}`;
-      document.getElementById("partnerAStockCost").textContent = `$${partnerAStockCost}`;
-      document.getElementById("partnerATotalCost").textContent = `$${partnerATotalCost}`;
-      document.getElementById("partnerAShare").textContent = `$${partnerAProfit}`;
+      document.getElementById("partnerATotalInc").textContent = `$${formatMoney(partnerAInc)}`;
+      document.getElementById("partnerAShippedCost").textContent = `$${formatMoney(partnerAShippedCost)}`;
+      document.getElementById("partnerAStockCost").textContent = `$${formatMoney(partnerAStockCost)}`;
+      document.getElementById("partnerATotalCost").textContent = `$${formatMoney(partnerATotalCost)}`;
+      document.getElementById("partnerAShare").textContent = `$${formatMoney(partnerAProfit)}`;
 
-      document.getElementById("partnerBTotalInc").textContent = `$${partnerBInc}`;
-      document.getElementById("partnerBShippedCost").textContent = `$${partnerBShippedCost}`;
-      document.getElementById("partnerBStockCost").textContent = `$${partnerBStockCost}`;
-      document.getElementById("partnerBTotalCost").textContent = `$${partnerBTotalCost}`;
-      document.getElementById("partnerBShare").textContent = `$${partnerBProfit}`;
+      document.getElementById("partnerBTotalInc").textContent = `$${formatMoney(partnerBInc)}`;
+      document.getElementById("partnerBShippedCost").textContent = `$${formatMoney(partnerBShippedCost)}`;
+      document.getElementById("partnerBStockCost").textContent = `$${formatMoney(partnerBStockCost)}`;
+      document.getElementById("partnerBTotalCost").textContent = `$${formatMoney(partnerBTotalCost)}`;
+      document.getElementById("partnerBShare").textContent = `$${formatMoney(partnerBProfit)}`;
 
       const summaryDiv = document.getElementById("allLocationsSummary");
       summaryDiv.innerHTML = "";
@@ -2204,18 +2221,19 @@
         Object.values(l.monthlyStats || {}).forEach(bucket => {
           (bucket.records || []).forEach(r => {
             if (r.type === "legacy" || r.type === "manual") {
-              if (r.owner === ledger.partnerA) lAInc += (r.cash || 0);
-              if (r.owner === ledger.partnerB) lBInc += (r.cash || 0);
+              const amt = Number(r.cash) || 0;
+              if (r.owner === ledger.partnerA) lAInc = roundMoney(lAInc + amt);
+              if (r.owner === ledger.partnerB) lBInc = roundMoney(lBInc + amt);
             }
           });
         });
         (l.goodsList || []).forEach(g => {
-          const c = g.cost || 0;
-          if (g.owner === ledger.partnerA) lACost += c;
-          else if (g.owner === ledger.partnerB) lBCost += c;
+          const c = Number(g.cost) || 0;
+          if (g.owner === ledger.partnerA) lACost = roundMoney(lACost + c);
+          else if (g.owner === ledger.partnerB) lBCost = roundMoney(lBCost + c);
         });
-        const lAProfit = lAInc - lACost;
-        const lBProfit = lBInc - lBCost;
+        const lAProfit = roundMoney(lAInc - lACost);
+        const lBProfit = roundMoney(lBInc - lBCost);
 
         const wrapper = document.createElement("div");
         wrapper.className = "py-3 border-b border-slate-100 last:border-b-0";
@@ -2231,8 +2249,8 @@
               <div class="text-slate-500 text-[11px]">庫存 ${l.stockCount || 0} 隻 · 未兌 ${getLocationStep2Sum(l)} 幣 · 未入帳 ${l.step3CoinsTotal || 0} 幣 (HK$${(l.step3CoinsTotal || 0) * COIN_RATE})</div>
             </div>
             <div class="text-right text-xs space-y-0.5">
-              <div><strong class="text-blue-900">${ledger.partnerA}利潤 :</strong> <span class="font-extrabold text-emerald-700">$${lAProfit}</span></div>
-              <div><strong class="text-purple-900">${ledger.partnerB}利潤 :</strong> <span class="font-extrabold text-emerald-700">$${lBProfit}</span></div>
+              <div><strong class="text-blue-900">${ledger.partnerA}利潤 :</strong> <span class="font-extrabold text-emerald-700">$${formatMoney(lAProfit)}</span></div>
+              <div><strong class="text-purple-900">${ledger.partnerB}利潤 :</strong> <span class="font-extrabold text-emerald-700">$${formatMoney(lBProfit)}</span></div>
             </div>
           </div>
           ${isExpanded ? `<div class="mt-2 pl-2 pr-1 py-2 bg-slate-50 rounded-xl border border-slate-200 divide-y divide-slate-200">${renderMonthlyHtml(l, id)}</div>` : ""}
@@ -2326,7 +2344,7 @@
                 <div class="font-bold text-slate-800 flex items-center gap-1.5">
                   <span class="px-1.5 py-0.5 rounded ${statusBadge}">${g.status}</span>
                   <span>${g.name}</span>
-                  <span class="text-slate-400">· 成本 $${g.cost || 0} · ${g.owner}</span>
+                  <span class="text-slate-400">· 成本 $${formatMoney(g.cost || 0)} · ${g.owner}</span>
                 </div>
                 <div class="flex items-center gap-1">
                   <button onclick="cycleGoodsStatus('${g.id}', '入機')" class="px-1.5 py-0.5 rounded border text-[10px] ${g.status === '入機' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white border-slate-300'}">入</button>
